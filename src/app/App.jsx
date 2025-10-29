@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../shared/ui/components/common';
 import LazyLoadErrorBoundary from './LazyLoadErrorBoundary';
 
 // Lazy-loaded components
-const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/Dashboard'));
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/ModernDashboard')); 
 const EnhancedDashboard = lazy(() => import('../features/dashboard/components/EnhancedDashboard'));
 const WidgetTest = lazy(() => import('../features/dashboard/components/WidgetTest'));
 const DataManagement = lazy(() => import('../features/settings/components/DataManagement'));
@@ -80,7 +80,7 @@ function App() {
                             <Route key="dashboard" path="/dashboard" element={<Dashboard />} />
                             <Route key="dashboard-enhanced" path="/dashboard/enhanced" element={<EnhancedDashboard />} />
                             <Route key="dashboard-test" path="/dashboard/test" element={<WidgetTest />} />
-                            
+
                             <Route key="data-management" path="/data/management" element={<DataManagement />} />
                             <Route key="tournaments" path="/tournaments" element={<Tournaments />} />
                             <Route key="tournament-detail" path="/tournaments/:id" element={<TournamentDetail />} />

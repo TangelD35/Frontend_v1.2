@@ -1,25 +1,22 @@
 import {
     Users, Target, TrendingUp, TrendingDown, Calendar, Shield, Zap,
     BarChart3, Play, Download, Eye, ArrowRight, Activity,
-    MapPin, Star, Trophy, Clock, AlertCircle, CheckCircle, Flag,
-    Wifi, WifiOff, RefreshCw
+    MapPin, Star, Clock, AlertCircle, CheckCircle, Flag
 } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
     GlassCard,
     AnimatedButton,
     GradientBadge,
-    ModernTable,
     ModernModal,
     LoadingState,
     ErrorState,
     ThemeSwitcher
-} from '../../../../../shared/ui/components/modern';
-import { useRealTimeStats } from '../../../../../shared/hooks/useRealTimeStats';
-import { useAuth } from '../../../../../shared/hooks/useAuth';
-import { useNotifications } from '../../../../../shared/hooks/useNotifications';
+} from '../../../../shared/ui/components/modern';
+import { useRealTimeStats } from '../../../../shared/hooks/useWebSocket';
+import RecentAnalysisCard from './components/RecentAnalysisCard';
 
 // Componente optimizado para estadística
 const ModernStatCard = memo(({ stat, index }) => {
@@ -44,14 +41,13 @@ const ModernStatCard = memo(({ stat, index }) => {
                     >
                         <stat.icon className="w-6 h-6 text-white" />
                     </motion.div>
-                    <div className={`flex items-center gap-1 text-sm font-medium ${
-                        stat.trend === 'up' ? 'text-green-600 dark:text-green-400' :
-                        stat.trend === 'down' ? 'text-red-600 dark:text-red-400' :
-                        'text-gray-600 dark:text-gray-400'
-                    }`}>
+                    <div className={`flex items-center gap-1 text-sm font-medium ${stat.trend === 'up' ? 'text-green-600 dark:text-green-400' :
+                            stat.trend === 'down' ? 'text-red-600 dark:text-red-400' :
+                                'text-gray-600 dark:text-gray-400'
+                        }`}>
                         {stat.trend === 'up' ? <TrendingUp className="w-4 h-4" /> :
-                         stat.trend === 'down' ? <TrendingDown className="w-4 h-4" /> :
-                         <Activity className="w-4 h-4" />}
+                            stat.trend === 'down' ? <TrendingDown className="w-4 h-4" /> :
+                                <Activity className="w-4 h-4" />}
                         <span>{stat.change}</span>
                     </div>
                 </div>
@@ -79,68 +75,71 @@ const ModernStatCard = memo(({ stat, index }) => {
 
 // Componente optimizado para jugador
 const ModernPlayerCard = memo(({ player, index, onViewDetails }) => {
+    const metrics = useMemo(() => [
+        { label: 'PPG', value: player.ppg ?? '--', color: 'text-red-600 dark:text-red-400' },
+        { label: 'RPG', value: player.rpg ?? '--', color: 'text-blue-600 dark:text-blue-400' },
+        { label: 'APG', value: player.apg ?? '--', color: 'text-purple-600 dark:text-purple-400' }
+    ], [player]);
+
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1, duration: 0.4, type: 'spring' }}
-            className="group"
+            className="group w-full"
         >
             <GlassCard
                 hover
-                className="p-4 cursor-pointer transition-all duration-300 hover:scale-[1.05] hover:shadow-xl"
+                className="p-4 sm:p-5 lg:p-6 cursor-pointer transición-all duración-300 hover:scale-[1.04] hover:shadow-xl"
                 onClick={() => onViewDetails('player', player.id)}
             >
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                     {/* Avatar con rating */}
                     <motion.div
-                        whileHover={{ scale: 1.1, rotate: 360 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative"
+                        whileHover={{ scale: 1.06, rotate: 8 }}
+                        transition={{ duration: 0.4 }}
+                        className="relative self-start"
                     >
-                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 via-blue-500 to-red-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                            <div className="absolute -inset-1 bg-gradient-to-br from-red-400 to-blue-400 rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300 animate-pulse"></div>
-                            <span className="relative text-white font-bold text-lg">{player.rating}</span>
+                        <div className="w-14 h-14 bg-gradient-to-br from-red-500 via-blue-500 to-red-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transición-all duración-300">
+                            <div className="absolute -inset-1 bg-gradient-to-br from-red-400 to-blue-400 rounded-full opacity-20 group-hover:opacity-40 transición-opacity duración-300 animate-pulse"></div>
+                            <span className="relative text-white font-bold text-lg">{player.rating ?? '--'}</span>
                         </div>
                         <Star className="w-3 h-3 absolute -top-1 -right-1 text-yellow-400 animate-pulse" />
                     </motion.div>
 
                     {/* Info del jugador */}
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-800 dark:text-white text-base truncate">
-                            {player.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {player.position}
-                        </p>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center">
-                                <p className="font-bold text-red-600 dark:text-red-400">{player.ppg}</p>
-                                <p className="text-gray-500 dark:text-gray-400">PPG</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="font-bold text-blue-600 dark:text-blue-400">{player.rpg}</p>
-                                <p className="text-gray-500 dark:text-gray-400">RPG</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="font-bold text-purple-600 dark:text-purple-400">{player.apg}</p>
-                                <p className="text-gray-500 dark:text-gray-400">APG</p>
-                            </div>
+                    <div className="flex-1 min-w-0 space-y-3 sm:space-y-2">
+                        <div className="space-y-1">
+                            <h3 className="font-bold text-gray-800 dark:text-white text-base truncate">
+                                {player.name || 'Jugador sin nombre'}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {player.position || 'Sin posición'}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm">
+                            {metrics.map((metric) => (
+                                <div className="text-center" key={metric.label}>
+                                    <p className={`font-bold ${metric.color}`}>{metric.value}</p>
+                                    <p className="text-gray-500 dark:text-gray-400">{metric.label}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-row sm:flex-col gap-2 sm:items-end self-stretch">
                         <GradientBadge
                             variant={player.impact === 'high' ? 'success' : 'warning'}
                             size="small"
                             className="animate-pulse"
                         >
-                            {player.impact === 'high' ? '⭐ Alto' : '⭐ Medio'}
+                            {player.impact === 'high' ? 'Alto' : 'Medio'}
                         </GradientBadge>
                         <AnimatedButton
                             variant="ghost"
                             size="sm"
+                            aria-label={`Ver detalles de ${player.name || 'jugador'}`}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onViewDetails('player', player.id);
@@ -156,15 +155,21 @@ const ModernPlayerCard = memo(({ player, index, onViewDetails }) => {
 
 const ModernDashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
-    const { stats, isConnected, lastUpdate } = useRealTimeStats();
-    const { notifications } = useNotifications();
+    const prefersReducedMotion = useReducedMotion();
+    const { stats, isConnected } = useRealTimeStats();
+    const dashboardTopRef = useRef(null);
 
     // Estados optimizados
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [upcomingGames, setUpcomingGames] = useState([]);
+    const [isUpcomingLoading, setIsUpcomingLoading] = useState(true);
+    const [keyPlayers, setKeyPlayers] = useState([]);
+    const [isKeyPlayersLoading, setIsKeyPlayersLoading] = useState(true);
+    const [recentAnalysis, setRecentAnalysis] = useState([]);
+    const [isRecentAnalysisLoading, setIsRecentAnalysisLoading] = useState(true);
 
     // Datos optimizados con useMemo
     const teamStats = useMemo(() => [
@@ -206,88 +211,125 @@ const ModernDashboard = () => {
         },
     ], [stats]);
 
-    const upcomingGames = useMemo(() => [
-        {
-            id: 1,
-            tournament: 'FIBA AmeriCup 2025',
-            opponent: 'Estados Unidos',
-            date: '2025-03-15',
-            time: '20:00',
-            venue: 'Madison Square Garden',
-            prediction: '45%',
-            confidence: 'high',
-            status: 'analysis_pending',
-            homeLogo: '🇩🇴',
-            awayLogo: '🇺🇸'
-        },
-        {
-            id: 2,
-            tournament: 'Clasificatorio JO Paris 2024',
-            opponent: 'Canadá',
-            date: '2025-02-22',
-            time: '18:30',
-            venue: 'Palacio de los Deportes',
-            prediction: '52%',
-            confidence: 'medium',
-            status: 'in_study',
-            homeLogo: '🇩🇴',
-            awayLogo: '🇨🇦'
-        }
-    ], []);
+    useEffect(() => {
+        let isActive = true;
+        setIsUpcomingLoading(true);
+        setIsKeyPlayersLoading(true);
+        setIsRecentAnalysisLoading(true);
 
-    const keyPlayers = useMemo(() => [
-        {
-            id: 1,
-            name: 'Karl-Anthony Towns',
-            position: 'Pívot',
-            rating: 95,
-            ppg: 22.5,
-            rpg: 11.2,
-            apg: 3.8,
-            impact: 'high'
-        },
-        {
-            id: 2,
-            name: 'Al Horford',
-            position: 'Ala-Pívot',
-            rating: 88,
-            ppg: 12.3,
-            rpg: 8.7,
-            apg: 3.2,
-            impact: 'medium'
-        },
-        {
-            id: 3,
-            name: 'Chris Duarte',
-            position: 'Escolta',
-            rating: 82,
-            ppg: 15.8,
-            rpg: 4.2,
-            apg: 2.5,
-            impact: 'high'
-        }
-    ], []);
+        const timer = setTimeout(() => {
+            if (!isActive) return;
 
-    const recentAnalysis = useMemo(() => [
-        {
-            id: 1,
-            title: 'Análisis Ofensivo vs Argentina',
-            date: '2024-10-15',
-            type: 'offensive',
-            result: 'Victoria 89-84',
-            confidence: 'high',
-            status: 'completed'
-        },
-        {
-            id: 2,
-            title: 'Estudio Defensivo Canadá',
-            date: '2024-10-08',
-            type: 'defensive',
-            result: 'Derrota 76-80',
-            confidence: 'medium',
-            status: 'in_review'
+            setUpcomingGames([
+                {
+                    id: 1,
+                    tournament: 'FIBA AmeriCup 2025',
+                    opponent: 'Estados Unidos',
+                    date: '2025-03-15',
+                    time: '20:00',
+                    venue: 'Madison Square Garden',
+                    prediction: '45%',
+                    confidence: 'high',
+                    status: 'analysis_pending',
+                    homeLogo: '🇩🇴',
+                    awayLogo: '🇺🇸'
+                },
+                {
+                    id: 2,
+                    tournament: 'Clasificatorio JO Paris 2024',
+                    opponent: 'Canadá',
+                    date: '2025-02-22',
+                    time: '18:30',
+                    venue: 'Palacio de los Deportes',
+                    prediction: '52%',
+                    confidence: 'medium',
+                    status: 'in_study',
+                    homeLogo: '🇩🇴',
+                    awayLogo: '🇨🇦'
+                }
+            ]);
+            setKeyPlayers([
+                {
+                    id: 1,
+                    name: 'Karl-Anthony Towns',
+                    position: 'Pívot',
+                    rating: 95,
+                    ppg: 22.5,
+                    rpg: 11.2,
+                    apg: 3.8,
+                    impact: 'high'
+                },
+                {
+                    id: 2,
+                    name: 'Al Horford',
+                    position: 'Ala-Pívot',
+                    rating: 88,
+                    ppg: 12.3,
+                    rpg: 8.7,
+                    apg: 3.2,
+                    impact: 'medium'
+                },
+                {
+                    id: 3,
+                    name: 'Chris Duarte',
+                    position: 'Escolta',
+                    rating: 82,
+                    ppg: 15.8,
+                    rpg: 4.2,
+                    apg: 2.5,
+                    impact: 'high'
+                }
+            ]);
+            setRecentAnalysis([
+                {
+                    id: 1,
+                    title: 'Análisis Ofensivo vs Argentina',
+                    date: '2024-10-15',
+                    type: 'offensive',
+                    result: 'Victoria 89-84',
+                    confidence: 'high',
+                    status: 'completed'
+                },
+                {
+                    id: 2,
+                    title: 'Estudio Defensivo Canadá',
+                    date: '2024-10-08',
+                    type: 'defensive',
+                    result: 'Derrota 76-80',
+                    confidence: 'medium',
+                    status: 'in_review'
+                }
+            ]);
+            setIsUpcomingLoading(false);
+            setIsKeyPlayersLoading(false);
+            setIsRecentAnalysisLoading(false);
+        }, 600);
+
+        return () => {
+            isActive = false;
+            clearTimeout(timer);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!isAnalysisModalOpen && !isExportModalOpen) return;
+
+        const targetElement = dashboardTopRef.current;
+        if (!targetElement) {
+            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+            return;
         }
-    ], []);
+
+        const rect = targetElement.getBoundingClientRect();
+        const nav = document.querySelector('[data-app-navbar]') || document.querySelector('nav');
+        const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+        const offset = Math.max(0, rect.top + window.scrollY - navHeight - 16);
+
+        window.requestAnimationFrame(() => {
+            window.scrollTo({ top: offset, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+        });
+    }, [isAnalysisModalOpen, isExportModalOpen, prefersReducedMotion]);
 
     // Handlers optimizados con useCallback
     const handleRunAnalysis = useCallback(() => {
@@ -366,20 +408,20 @@ const ModernDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen space-y-8">
+        <div ref={dashboardTopRef} className="min-h-screen space-y-8">
             {/* Header moderno con glassmorphism y colores dominicanos */}
             <motion.div
                 initial={{ opacity: 0, y: -30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-                <GlassCard hover className="p-8 relative overflow-hidden">
+                <GlassCard hover className="p-6 md:p-8 relative overflow-hidden">
                     {/* Background Pattern Dominicano */}
                     <div className="absolute inset-0 bg-gradient-to-br from-red-50/30 via-blue-50/20 to-purple-50/30 dark:from-red-900/10 dark:via-blue-900/5 dark:to-purple-900/10" />
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-red-500/10 to-transparent rounded-bl-full" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-tr-full" />
 
-                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div className="flex items-center gap-6">
                             <motion.div
                                 whileHover={{ scale: 1.1, rotate: 5 }}
@@ -412,7 +454,7 @@ const ModernDashboard = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 mt-6 lg:mt-0">
+                        <div className="flex flex-wrap items-center gap-4 mt-6 lg:mt-0">
                             {/* Connection Status */}
                             <motion.div
                                 className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-lg px-4 py-3 border border-green-200 dark:border-green-800"
@@ -467,22 +509,22 @@ const ModernDashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
             >
                 {teamStats.map((stat, index) => (
                     <ModernStatCard key={stat.label} stat={stat} index={index} />
                 ))}
             </motion.div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8">
                 {/* Próximos Compromisos */}
                 <motion.div
-                    className="xl:col-span-2"
+                    className="lg:col-span-2 2xl:col-span-2"
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4, duration: 0.6 }}
                 >
-                    <GlassCard hover className="p-8">
+                    <GlassCard hover className="p-6 md:p-8">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                                 <Calendar className="w-7 h-7 text-blue-600" />
@@ -504,67 +546,76 @@ const ModernDashboard = () => {
                         </div>
 
                         <div className="space-y-4">
-                            {upcomingGames.map((game, index) => {
-                                const confidenceConfig = getConfidenceBadge(game.confidence);
-                                const statusConfig = getStatusBadge(game.status);
+                            {isUpcomingLoading ? (
+                                Array.from({ length: 2 }).map((_, skeletonIndex) => (
+                                    <div
+                                        key={`upcoming-skeleton-${skeletonIndex}`}
+                                        className="h-36 rounded-2xl bg-gray-100/80 dark:bg-gray-800/40 animate-pulse"
+                                    />
+                                ))
+                            ) : upcomingGames.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <p className="font-medium">Sin compromisos próximos.</p>
+                                    <p className="text-sm">Regresa más tarde o programa un nuevo partido.</p>
+                                </div>
+                            ) : (
+                                upcomingGames.map((game, index) => {
+                                    const confidenceConfig = getConfidenceBadge(game.confidence);
+                                    const statusConfig = getStatusBadge(game.status);
 
-                                return (
-                                    <motion.div
-                                        key={game.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.15, duration: 0.5 }}
-                                        className="group p-6 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-blue-900/20 dark:to-purple-900/10 rounded-2xl border border-blue-200/30 dark:border-gray-600 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-300 cursor-pointer hover:shadow-xl hover:scale-[1.02] backdrop-blur-sm"
-                                        onClick={() => navigate(`/games/${game.id}`)}
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <GradientBadge variant="info" size="small">
-                                                {game.tournament}
-                                            </GradientBadge>
-                                            <div className="flex items-center gap-2">
-                                                <GradientBadge variant={statusConfig.variant} size="small">
-                                                    {statusConfig.label}
+                                    return (
+                                        <motion.div
+                                            key={game.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.15, duration: 0.5 }}
+                                            className="group relative overflow-hidden p-6 lg:p-7 bg-gradient-to-br from-blue-50/50 to-purple-50/30 dark:from-blue-900/20 dark:to-purple-900/10 rounded-2xl border border-blue-200/30 dark:border-gray-600 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-300 cursor-pointer hover:shadow-xl hover:scale-[1.02] backdrop-blur-sm"
+                                            onClick={() => navigate(`/games/${game.id}`)}
+                                        >
+                                            <div className="flex items-center justify-between mb-3">
+                                                <GradientBadge variant="info" size="small">
+                                                    {game.tournament}
                                                 </GradientBadge>
-                                                <GradientBadge variant={confidenceConfig.variant} size="small">
-                                                    {confidenceConfig.label}
-                                                </GradientBadge>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-4 flex-1">
-                                                <div className="text-center">
-                                                    <div className="text-3xl mb-2 animate-bounce">{game.homeLogo}</div>
-                                                    <p className="font-bold text-gray-800 dark:text-white text-sm">DOM</p>
-                                                </div>
-                                                <div className="text-center px-6">
-                                                    <span className="text-xl text-gray-400 font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">VS</span>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-3xl mb-2">{game.awayLogo}</div>
-                                                    <p className="font-bold text-gray-800 dark:text-white text-sm">{game.opponent}</p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <GradientBadge variant={statusConfig.variant} size="small">
+                                                        {statusConfig.label}
+                                                    </GradientBadge>
+                                                    <GradientBadge variant={confidenceConfig.variant} size="small">
+                                                        {confidenceConfig.label}
+                                                    </GradientBadge>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+                                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                    <div className="text-center flex-shrink-0">
+                                                        <div className="text-3xl mb-2 animate-bounce">{game.homeLogo}</div>
+                                                        <p className="font-bold text-gray-800 dark:text-white text-sm">DOM</p>
+                                                    </div>
+                                                    <div className="text-center px-4">
+                                                        <span className="text-base md:text-xl text-gray-400 font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                                                            VS
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-center flex-shrink-0">
+                                                        <div className="text-3xl mb-2">{game.awayLogo}</div>
+                                                        <p className="font-bold text-gray-800 dark:text-white text-sm">{game.opponent}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm md:self-end">
                                                     <Calendar className="w-4 h-4" />
                                                     <span>{new Date(game.date).toLocaleDateString('es-ES')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                                     <Clock className="w-4 h-4" />
                                                     <span className="font-bold text-blue-600 dark:text-blue-400">{game.time}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500 mb-4">
                                                 <MapPin className="w-3 h-3" />
                                                 <span className="truncate">{game.venue}</span>
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                                 <div className="flex items-center gap-2">
                                                     <Target className="w-4 h-4 text-orange-500" />
                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -580,13 +631,12 @@ const ModernDashboard = () => {
                                                     </GradientBadge>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Hover Effect */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-blue-500/5 to-red-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    </motion.div>
-                                );
-                            })}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-blue-500/5 to-red-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        </motion.div>
+                                    );
+                                })
+                            )}
                         </div>
                     </GlassCard>
                 </motion.div>
@@ -597,7 +647,7 @@ const ModernDashboard = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6, duration: 0.6 }}
                 >
-                    <GlassCard hover className="p-8">
+                    <GlassCard hover className="p-6 md:p-8">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                                 <Users className="w-7 h-7 text-purple-600" />
@@ -619,14 +669,28 @@ const ModernDashboard = () => {
                         </div>
 
                         <div className="space-y-4">
-                            {keyPlayers.map((player, index) => (
-                                <ModernPlayerCard
-                                    key={player.id}
-                                    player={player}
-                                    index={index}
-                                    onViewDetails={handleViewDetails}
-                                />
-                            ))}
+                            {isKeyPlayersLoading ? (
+                                Array.from({ length: 3 }).map((_, skeletonIndex) => (
+                                    <div
+                                        key={`player-skeleton-${skeletonIndex}`}
+                                        className="h-24 rounded-2xl bg-gray-100/80 dark:bg-gray-800/40 animate-pulse"
+                                    />
+                                ))
+                            ) : keyPlayers.length === 0 ? (
+                                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                    <p className="font-medium">No hay jugadores destacados aun.</p>
+                                    <p className="text-sm">Actualiza la base de datos o agrega nuevos registros.</p>
+                                </div>
+                            ) : (
+                                keyPlayers.map((player, index) => (
+                                    <ModernPlayerCard
+                                        key={player.id}
+                                        player={player}
+                                        index={index}
+                                        onViewDetails={handleViewDetails}
+                                    />
+                                ))
+                            )}
                         </div>
                     </GlassCard>
                 </motion.div>
@@ -638,7 +702,7 @@ const ModernDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.6 }}
             >
-                <GlassCard hover className="p-8">
+                <GlassCard hover className="p-6 md:p-8">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                             <Activity className="w-7 h-7 text-orange-600" />
@@ -659,45 +723,35 @@ const ModernDashboard = () => {
                         </AnimatedButton>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {recentAnalysis.map((analysis, index) => {
-                            const confidenceConfig = getConfidenceBadge(analysis.confidence);
-                            const statusConfig = getStatusBadge(analysis.status);
-
-                            return (
-                                <motion.div
-                                    key={analysis.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                                    className="group p-5 bg-gradient-to-br from-orange-50/50 via-yellow-50/30 to-red-50/20 dark:from-orange-900/20 dark:via-yellow-900/10 dark:to-red-900/10 rounded-2xl hover:from-orange-100/70 hover:via-yellow-100/50 hover:to-red-100/30 dark:hover:from-orange-800/30 dark:hover:via-yellow-800/20 dark:hover:to-red-800/20 transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02] border border-orange-200/30 dark:border-orange-700/30"
-                                    onClick={() => navigate('/analytics')}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <GradientBadge variant={analysis.type === 'offensive' ? 'success' : 'primary'} size="small">
-                                            {analysis.type === 'offensive' ? 'Ofensiva' : 'Defensa'}
-                                        </GradientBadge>
-                                        <div className="flex items-center gap-2">
-                                            <GradientBadge variant={confidenceConfig.variant} size="small">
-                                                {confidenceConfig.label}
-                                            </GradientBadge>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                {new Date(analysis.date).toLocaleDateString('es-ES')}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <h3 className="font-bold text-gray-800 dark:text-white mb-2">{analysis.title}</h3>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">{analysis.result}</span>
-                                        <GradientBadge variant={statusConfig.variant} size="small">
-                                            {statusConfig.label}
-                                        </GradientBadge>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
+                    {recentAnalysis.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                            <p className="font-medium">Aún no hay análisis recientes.</p>
+                            <p className="text-sm mt-1">Ejecuta un nuevo análisis para ver resultados aquí.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {isRecentAnalysisLoading ? (
+                                Array.from({ length: 2 }).map((_, skeletonIndex) => (
+                                    <div
+                                        key={`analysis-skeleton-${skeletonIndex}`}
+                                        className="h-32 lg:h-36 rounded-2xl bg-gray-100/80 dark:bg-gray-800/40 animate-pulse"
+                                    />
+                                ))
+                            ) : (
+                                recentAnalysis.map((analysis, index) => (
+                                    <RecentAnalysisCard
+                                        key={analysis.id}
+                                        analysis={analysis}
+                                        index={index}
+                                        onNavigate={navigate}
+                                        getConfidenceBadge={getConfidenceBadge}
+                                        getStatusBadge={getStatusBadge}
+                                        prefersReducedMotion={prefersReducedMotion}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    )}
                 </GlassCard>
             </motion.div>
 

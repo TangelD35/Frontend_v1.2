@@ -1,24 +1,21 @@
 import {
     Users, Target, TrendingUp, TrendingDown, Calendar, Shield, Zap,
-    BarChart3, Play, Flag, Crosshair, Download,
-    Eye, ArrowRight, Activity, MapPin, Clock, Award, Star,
-    Wifi, WifiOff, AlertCircle, CheckCircle, RefreshCw
+    BarChart3, Play, Flag, Download,
+    Eye, ArrowRight, Activity, MapPin, Clock,
+    AlertCircle, CheckCircle
 } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ActionButton,
     Badge,
-    StatsGrid,
     Modal,
     Select,
     Toast
 } from '../../../../shared/ui/components/common';
 import { GlassCard, AnimatedButton } from '../../../../shared/ui/components/modern';
 import { useRealTimeStats } from '../../../../shared/hooks/useWebSocket';
-import useAuth from '../../../../shared/hooks/useAuth';
-import { useNotifications } from '../../../../shared/hooks/useNotifications';
 
 // Componente optimizado para estadística individual
 const StatCard = memo(({ stat, index }) => {
@@ -91,7 +88,8 @@ const GameCard = memo(({ game, index, onViewDetails }) => {
             planned: { variant: 'success', label: 'Planificado' },
             completed: { variant: 'success', label: 'Completado' },
             in_review: { variant: 'warning', label: 'En Revisión' },
-            validated: { variant: 'success', label: 'Validado' }
+            validated: { variant: 'success', label: 'Validado' },
+            default: { variant: 'default', label: 'Sin Estado' }
         };
         return config[status] || config.default;
     };
@@ -245,7 +243,7 @@ const PlayerCard = memo(({ player, index, onViewDetails }) => {
                         >
                             <Eye className="w-4 h-4" />
                         </button>
-                        <div className="w-6 h-1 bg-gradient-to-r from-red-200 to-blue-200 dark:from-red-800 to-blue-800 rounded-full"></div>
+                        <div className="w-6 h-1 bg-gradient-to-r from-red-200 to-blue-200 dark:from-red-800 dark:to-blue-800 rounded-full"></div>
                     </div>
                 </div>
             </GlassCard>
@@ -255,17 +253,13 @@ const PlayerCard = memo(({ player, index, onViewDetails }) => {
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
-    const { stats, isConnected, lastUpdate } = useRealTimeStats();
-    const { notifications } = useNotifications();
+    const { stats, isConnected } = useRealTimeStats();
 
     // Estados optimizados
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
     const [analysisType, setAnalysisType] = useState('comprehensive');
-    const [isLoading, setIsLoading] = useState(false);
-
     // Datos optimizados con useMemo
     const teamStats = useMemo(() => [
         {
@@ -446,32 +440,6 @@ const Dashboard = () => {
                 break;
         }
     }, [navigate]);
-
-    // Loading state mejorado
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center space-y-4"
-                >
-                    <div className="relative">
-                        <div className="w-16 h-16 border-4 border-red-200 dark:border-red-800 rounded-full animate-spin border-t-red-500 dark:border-t-red-400 mx-auto" />
-                        <div className="absolute inset-0 w-16 h-16 border-4 border-transparent rounded-full animate-pulse border-l-blue-500 dark:border-l-blue-400 mx-auto" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                            Cargando Dashboard
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Preparando datos en tiempo real...
-                        </p>
-                    </div>
-                </motion.div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen space-y-8">

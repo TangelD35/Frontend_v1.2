@@ -1,0 +1,153 @@
+/* ===== LIGHT THEME ===== */
+/* Modern UI Redesign - Light Theme Variables */
+
+:root {
+    /* ===== PRIMARY GRADIENTS ===== */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    --danger-gradient: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+    --info-gradient: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+
+    /* ===== GLASSMORPHISM ===== */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --glass-blur: blur(10px);
+    --glass-blur-strong: blur(16px);
+
+    /* ===== ELEVATIONS ===== */
+    --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.16);
+    --elevation-4: 0 16px 48px rgba(0, 0, 0, 0.20);
+    --elevation-hover: 0 12px 32px rgba(0, 0, 0, 0.18);
+
+    /* ===== SPACING SYSTEM ===== */
+    --spacing-xs: 0.25rem;
+    /* 4px */
+    --spacing-sm: 0.5rem;
+    /* 8px */
+    --spacing-md: 1rem;
+    /* 16px */
+    --spacing-lg: 1.5rem;
+    /* 24px */
+    --spacing-xl: 2rem;
+    /* 32px */
+    --spacing-2xl: 3rem;
+    /* 48px */
+    --spacing-3xl: 4rem;
+    /* 64px */
+    --spacing-4xl: 6rem;
+    /* 96px */
+
+    /* ===== BORDER RADIUS ===== */
+    --radius-sm: 0.5rem;
+    /* 8px */
+    --radius-md: 1rem;
+    /* 16px */
+    --radius-lg: 1.5rem;
+    /* 24px */
+    --radius-xl: 2rem;
+    /* 32px */
+    --radius-2xl: 2.5rem;
+    /* 40px */
+    --radius-full: 9999px;
+
+    /* ===== TRANSITIONS ===== */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* ===== MODERN COLOR PALETTE ===== */
+    /* Purple Scale */
+    --purple-50: #faf5ff;
+    --purple-100: #f3e8ff;
+    --purple-200: #e9d5ff;
+    --purple-300: #d8b4fe;
+    --purple-400: #c084fc;
+    --purple-500: #a855f7;
+    --purple-600: #9333ea;
+    --purple-700: #7e22ce;
+    --purple-800: #6b21a8;
+    --purple-900: #581c87;
+
+    /* Pink Scale */
+    --pink-50: #fdf2f8;
+    --pink-100: #fce7f3;
+    --pink-200: #fbcfe8;
+    --pink-300: #f9a8d4;
+    --pink-400: #f472b6;
+    --pink-500: #ec4899;
+    --pink-600: #db2777;
+    --pink-700: #be185d;
+    --pink-800: #9d174d;
+    --pink-900: #831843;
+
+    /* Cyan Scale */
+    --cyan-50: #ecfeff;
+    --cyan-100: #cffafe;
+    --cyan-200: #a5f3fc;
+    --cyan-300: #67e8f9;
+    --cyan-400: #22d3ee;
+    --cyan-500: #06b6d4;
+    --cyan-600: #0891b2;
+    --cyan-700: #0e7490;
+    --cyan-800: #155e75;
+    --cyan-900: #164e63;
+
+    /* ===== SEMANTIC COLORS (LIGHT) ===== */
+    --color-background: #ffffff;
+    --color-background-secondary: #f8fafc;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-surface-hover: #f1f5f9;
+
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #475569;
+    --color-text-tertiary: #94a3b8;
+    --color-text-inverse: #ffffff;
+    --color-text-disabled: #cbd5e1;
+
+    --color-border: #e2e8f0;
+    --color-border-hover: #cbd5e1;
+    --color-border-focus: #667eea;
+    --color-border-error: #ef4444;
+
+    /* ===== COMPONENT SPECIFIC ===== */
+    --card-bg: rgba(255, 255, 255, 0.7);
+    --card-border: rgba(255, 255, 255, 0.18);
+    --card-shadow: var(--elevation-2);
+    --card-hover-shadow: var(--elevation-hover);
+
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --input-border: #e2e8f0;
+    --input-focus-border: #667eea;
+    --input-focus-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+
+    --button-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --button-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+    --modal-backdrop: rgba(15, 23, 42, 0.5);
+    --modal-bg: rgba(255, 255, 255, 0.95);
+
+    --toast-bg: rgba(255, 255, 255, 0.95);
+    --toast-shadow: var(--elevation-3);
+
+    /* ===== TABLE SPECIFIC ===== */
+    --table-header-bg: rgba(102, 126, 234, 0.08);
+    --table-row-hover: rgba(102, 126, 234, 0.05);
+    --table-border: rgba(226, 232, 240, 0.5);
+
+    /* ===== CHART COLORS ===== */
+    --chart-primary: #667eea;
+    --chart-secondary: #764ba2;
+    --chart-accent-1: #f093fb;
+    --chart-accent-2: #4facfe;
+    --chart-accent-3: #00f2fe;
+    --chart-grid: rgba(148, 163, 184, 0.1);
+    --chart-tooltip-bg: rgba(255, 255, 255, 0.95);
+}

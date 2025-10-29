@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144" width="144" height="144">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CE1126;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#002D62;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="144" height="144" rx="22.5" fill="url(#bgGradient)"/>
+  
+  <!-- Basketball court outline -->
+  <g stroke="#FFFFFF" stroke-width="2.25" fill="none" opacity="0.9">
+    <rect x="33.75" y="39.375" width="76.5" height="65.25" rx="2.25"/>
+    <circle cx="72" cy="72" r="11.25"/>
+    <path d="M 45 50.625 Q 50.625 72 45 93.375"/>
+    <path d="M 99 50.625 Q 93.375 72 99 93.375"/>
+  </g>
+  
+  <!-- Basketball -->
+  <g>
+    <circle cx="72" cy="72" r="16.875" fill="#FF6B35" stroke="#FFFFFF" stroke-width="1.125"/>
+    <path d="M 72 55.125 Q 78.75 72 72 88.875" 
+          stroke="#FFFFFF" stroke-width="0.84375" fill="none"/>
+    <path d="M 72 55.125 Q 65.25 72 72 88.875" 
+          stroke="#FFFFFF" stroke-width="0.84375" fill="none"/>
+    <ellipse cx="72" cy="72" rx="16.875" ry="5.625" 
+             stroke="#FFFFFF" stroke-width="0.84375" fill="none"/>
+  </g>
+  
+  <!-- Dominican flag colors accent -->
+  <g opacity="0.8">
+    <rect x="39.375" y="45" width="11.25" height="11.25" 
+          rx="2.25" fill="#CE1126"/>
+    <rect x="93.375" y="45" width="11.25" height="11.25" 
+          rx="2.25" fill="#002D62"/>
+  </g>
+</svg>

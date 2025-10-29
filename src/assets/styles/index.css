@@ -1,0 +1,383 @@
+/* Import theme variables and advanced components theme */
+@import '../../shared/ui/components/common/styles/themeVariables.css';
+@import '../../shared/ui/components/common/styles/advancedComponentsTheme.css';
+
+/* Import modern theme system */
+@import './themes/light.css';
+@import './themes/dark.css';
+@import './themes/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== ESTILOS BASE PERSONALIZADOS ===== */
+@layer base {
+    html {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+            'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+            sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: #f8fafc;
+        color: #1f2937;
+        line-height: 1.6;
+    }
+
+    /* Scrollbar personalizado */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Selección de texto */
+    ::selection {
+        background-color: #3b82f6;
+        color: white;
+    }
+}
+
+/* ===== COMPONENTES PERSONALIZADOS ===== */
+@layer components {
+
+    /* Botones personalizados */
+    .btn-primary {
+        @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply bg-white text-gray-700 font-medium py-3 px-6 rounded-xl border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+    }
+
+    .btn-success {
+        @apply bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+    }
+
+    /* Tarjetas personalizadas */
+    .card {
+        @apply bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300;
+    }
+
+    .card-hover {
+        @apply card hover:-translate-y-1 hover:border-blue-200;
+    }
+
+    /* Badges personalizados */
+    .badge-success {
+        @apply bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium border border-green-200;
+    }
+
+    .badge-warning {
+        @apply bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium border border-yellow-200;
+    }
+
+    .badge-error {
+        @apply bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium border border-red-200;
+    }
+
+    .badge-info {
+        @apply bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-200;
+    }
+
+    /* Inputs personalizados */
+    .input-primary {
+        @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400;
+    }
+
+    /* Gradientes temáticos de la Selección Dominicana */
+    .gradient-dominical {
+        @apply bg-gradient-to-r from-red-600 via-white to-blue-600;
+    }
+
+    .gradient-dominical-soft {
+        @apply bg-gradient-to-r from-red-500 to-blue-500;
+    }
+
+    .gradient-basketball {
+        @apply bg-gradient-to-br from-orange-500 to-red-600;
+    }
+}
+
+/* ===== UTILIDADES PERSONALIZADAS ===== */
+@layer utilities {
+
+    /* Animaciones personalizadas */
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-pulse-slow {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .animate-bounce-slow {
+        animation: bounce 2s infinite;
+    }
+
+    /* Sombras personalizadas */
+    .shadow-glow {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+
+    .shadow-glow-hover {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Texto con gradiente */
+    .text-gradient {
+        @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+    }
+
+    .text-gradient-dominical {
+        @apply bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent;
+    }
+
+    /* Efectos de glassmorphism */
+    .glass {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .glass-dark {
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* ===== ANIMACIONES PERSONALIZADAS ===== */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Clases de animación */
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+}
+
+.animate-slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+}
+
+/* ===== ESTILOS ESPECÍFICOS PARA COMPONENTES DE BALONCESTO ===== */
+.basketball-court {
+    background: linear-gradient(135deg, #1a56db 0%, #7e22ce 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.basketball-court::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Efectos de partícula para fondos dinámicos */
+.particles::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    animation: particle-float 20s infinite linear;
+}
+
+@keyframes particle-float {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(50px, 50px);
+    }
+}
+
+/* ===== ESTILOS PARA GRAFICOS Y DATAVIZ ===== */
+.chart-grid {
+    background-image:
+        linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* ===== RESPONSIVE DESIGN UTILITIES ===== */
+@media (max-width: 640px) {
+    .mobile-padding {
+        @apply px-4;
+    }
+
+    .mobile-text-lg {
+        @apply text-lg;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-break {
+        page-break-after: always;
+    }
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: dark) {
+    .dark\:invert {
+        filter: invert(1);
+    }
+}
+
+/* ===== HIGH CONTRAST MODE SUPPORT ===== */
+@media (prefers-contrast: high) {
+    .card {
+        border-width: 2px;
+    }
+
+    .btn-primary {
+        border: 2px solid #1e40af;
+    }
+}
+
+/* ===== REDUCED MOTION SUPPORT ===== */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Eliminar completamente los estilos de búsqueda nativos */
+input[type="search"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+    display: none;
+}
+
+input[type="search"]::-moz-search-cancel-button {
+    display: none;
+}
+
+/* Transiciones suaves para el cambio de tema */
+* {
+    @apply transition-colors duration-200;
+}
+
+/* Variables CSS para dark mode */
+:root {
+    --background: #ffffff;
+    --foreground: #111827;
+}
+
+.dark {
+    --background: #111827;
+    --foreground: #ffffff;
+}
+
+/* Scrollbar personalizado para dark mode */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+}

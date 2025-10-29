@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo-rdscore.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="description"
+    content="Sistema de análisis táctico y predictivo de la Selección Nacional de Baloncesto de la República Dominicana">
+  <title> BasketscoreRD - Sistema de Análisis</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#CE1126" />
+  <meta name="background-color" content="#ffffff" />
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- iOS PWA Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="RDscore" />
+  <link rel="apple-touch-icon" href="/logo-rdscore.png" />
+
+  <!-- Android PWA Support -->
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Windows PWA Support -->
+  <meta name="msapplication-TileColor" content="#CE1126" />
+  <meta name="msapplication-TileImage" content="/logo-rdscore.png" />
+
+  <!-- Open Graph meta tags for social sharing -->
+  <meta property="og:title" content="RDscore">
+  <meta property="og:description"
+    content="Sistema de análisis táctico y predictivo para la Selección Nacional de Baloncesto de la República Dominicana">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/logo-rdscore.png">
+
+  <!-- Favicon alternatives -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/logo-rdscore.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/logo-rdscore.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/logo-rdscore.png" />
+  <link rel="shortcut icon" type="image/png" href="/logo-rdscore.png" />
+</head>
+
+<body>
+  <div id="root">
+    <!-- Loading screen shown while React loads -->
+    <div class="loading-screen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #CE1126 0%, #002D62 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        z-index: 9999;
+      ">
+      <div style="
+          width: 60px;
+          height: 60px;
+          border: 3px solid rgba(255,255,255,0.3);
+          border-top: 3px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 20px;
+        "></div>
+      <h1 style="font-size: 24px; margin-bottom: 10px; font-weight: 600;">
+        BasketscoreRD
+      </h1>
+      <p style="opacity: 0.8;">Cargando sistema de análisis...</p>
+    </div>
+  </div>
+
+  <style>
+    /* Safe area CSS variables */
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top);
+      --safe-area-inset-right: env(safe-area-inset-right);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom);
+      --safe-area-inset-left: env(safe-area-inset-left);
+    }
+
+    /* Safe area utility classes */
+    .safe-area-pt {
+      padding-top: var(--safe-area-inset-top);
+    }
+
+    .safe-area-pr {
+      padding-right: var(--safe-area-inset-right);
+    }
+
+    .safe-area-pb {
+      padding-bottom: var(--safe-area-inset-bottom);
+    }
+
+    .safe-area-pl {
+      padding-left: var(--safe-area-inset-left);
+    }
+
+    /* Prevent zoom on input focus (iOS) */
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+
+    /* Prevent pull-to-refresh on body */
+    body {
+      overscroll-behavior-y: contain;
+      touch-action: manipulation;
+    }
+
+    /* Loading animation */
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    #root:not(:empty) .loading-screen {
+      display: none;
+    }
+  </style>
+
+  <script>
+    (function () {
+      const theme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.classList.add(theme);
+    })();
+  </script>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

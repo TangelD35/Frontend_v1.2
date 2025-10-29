@@ -1,0 +1,94 @@
+/* ===== DARK THEME ===== */
+/* Modern UI Redesign - Dark Theme Variables */
+
+[data-theme="dark"] {
+    /* ===== PRIMARY GRADIENTS ===== */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    --danger-gradient: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+    --info-gradient: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+
+    /* ===== GLASSMORPHISM (DARK) ===== */
+    --glass-bg: rgba(17, 25, 40, 0.75);
+    --glass-bg-strong: rgba(17, 25, 40, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.125);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-blur: blur(10px);
+    --glass-blur-strong: blur(16px);
+
+    /* ===== ELEVATIONS (DARK) ===== */
+    --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --elevation-4: 0 16px 48px rgba(0, 0, 0, 0.6);
+    --elevation-hover: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+    /* Spacing, radius, and transitions remain the same */
+
+    /* ===== SEMANTIC COLORS (DARK) ===== */
+    --color-background: #0f172a;
+    --color-background-secondary: #1e293b;
+    --color-surface: #1e293b;
+    --color-surface-elevated: #334155;
+    --color-surface-hover: #475569;
+
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-tertiary: #94a3b8;
+    --color-text-inverse: #0f172a;
+    --color-text-disabled: #475569;
+
+    --color-border: #334155;
+    --color-border-hover: #475569;
+    --color-border-focus: #667eea;
+    --color-border-error: #f87171;
+
+    /* ===== COMPONENT SPECIFIC (DARK) ===== */
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-shadow: var(--elevation-2);
+    --card-hover-shadow: var(--elevation-hover);
+
+    --input-bg: rgba(30, 41, 59, 0.8);
+    --input-border: #334155;
+    --input-focus-border: #667eea;
+    --input-focus-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+
+    --button-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --button-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+
+    --modal-backdrop: rgba(0, 0, 0, 0.7);
+    --modal-bg: rgba(30, 41, 59, 0.95);
+
+    --toast-bg: rgba(30, 41, 59, 0.95);
+    --toast-shadow: var(--elevation-3);
+
+    /* ===== TABLE SPECIFIC (DARK) ===== */
+    --table-header-bg: rgba(102, 126, 234, 0.15);
+    --table-row-hover: rgba(102, 126, 234, 0.1);
+    --table-border: rgba(51, 65, 85, 0.5);
+
+    /* ===== CHART COLORS (DARK) ===== */
+    --chart-primary: #8b9aff;
+    --chart-secondary: #9d6bc7;
+    --chart-accent-1: #f5a8ff;
+    --chart-accent-2: #6fc5ff;
+    --chart-accent-3: #4dffff;
+    --chart-grid: rgba(148, 163, 184, 0.15);
+    --chart-tooltip-bg: rgba(30, 41, 59, 0.95);
+}
+
+/* ===== DARK MODE SCROLLBAR ===== */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}

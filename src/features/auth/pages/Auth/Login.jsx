@@ -24,7 +24,7 @@ const Login = () => {
     // Redirect si ya está autenticado
     useEffect(() => {
         if (isAuthenticated) {
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         }
     }, [isAuthenticated, navigate]);
 
@@ -89,11 +89,7 @@ const Login = () => {
             return;
         }
 
-        const result = await login(formData);
-
-        if (result.success) {
-            navigate('/dashboard');
-        }
+        await login(formData);
     };
 
     // Usar credenciales de demostración desde constantes

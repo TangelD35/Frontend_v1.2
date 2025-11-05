@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import authService from '../api/endpoints/auth';
 
 const useAuthStore = create(
     persist(
@@ -11,41 +12,21 @@ const useAuthStore = create(
             error: null,
 
             // Inicializar autenticación
-            initializeAuth: () => {
+            initializeAuth: async () => {
                 const token = localStorage.getItem('token');
-                if (token) {
-                    const userData = get().getMockUserData();
+                if (!token) {
                     set({
-                        user: userData,
-                        isAuthenticated: true,
+                        user: null,
+                        token: null,
+                        isAuthenticated: false,
                         isLoading: false,
                     });
-                } else {
-                    set({ isLoading: false });
+                    return;
                 }
-            },
 
-            // Datos de usuario simulados (centralizado)
-            getMockUserData: () => ({
-                id: 1,
-                email: 'analista@basktscorerd.com',
-                name: 'Analista BasktscoreRD',
-                full_name: 'Analista Senior',
-                username: 'analista_basktscorerd',
-                role: 'analyst'
-            }),
-
-            // Login
-            login: async (credentials) => {
-                set({ isLoading: true, error: null });
+                set({ isLoading: true });
                 try {
-                    // Simulación de login (comentar cuando API esté lista)
-                    // const response = await api.post('/auth/login', credentials);
-
-                    const userData = get().getMockUserData();
-                    const token = `simulated_jwt_token_${Date.now()}`;
-
-                    localStorage.setItem('token', token);
+                    const userData = await authService.getCurrentUser();
                     set({
                         user: userData,
                         token,
@@ -53,9 +34,34 @@ const useAuthStore = create(
                         isLoading: false,
                         error: null,
                     });
+                } catch (_error) {
+                    authService.logout();
+                    set({
+                        user: null,
+                        token: null,
+                        isAuthenticated: false,
+                        isLoading: false,
+                        error: null,
+                    });
+                }
+            },
+
+            // Login
+            login: async (credentials) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const { token, user } = await authService.login(credentials);
+
+                    set({
+                        user,
+                        token,
+                        isAuthenticated: true,
+                        isLoading: false,
+                        error: null,
+                    });
                     return { success: true };
                 } catch (_error) {
-                    const errorMessage = _error.response?.data?.message || 'Error al iniciar sesión';
+                    const errorMessage = _error.response?.data?.detail || 'Error al iniciar sesión';
                     set({
                         user: null,
                         token: null,
@@ -71,16 +77,27 @@ const useAuthStore = create(
             register: async (userData) => {
                 set({ isLoading: true, error: null });
                 try {
-                    // Simular llamada API - reemplazar con tu servicio real
-                    console.warn('Register attempt:', userData);
+                    const data = await authService.register(userData);
 
                     set({
                         isLoading: false,
                         error: null,
                     });
-                    return { success: true, data: userData };
+                    return { success: true, data };
                 } catch (error) {
-                    const errorMessage = error.response?.data?.message || 'Error al registrarse';
+                    const detail = error.response?.data?.detail;
+                    let errorMessage = 'Error al registrarse';
+
+                    if (Array.isArray(detail)) {
+                        errorMessage = detail
+                            .map((issue) => issue.msg || issue.detail || JSON.stringify(issue))
+                            .join('\n');
+                    } else if (typeof detail === 'string') {
+                        errorMessage = detail;
+                    } else if (detail && typeof detail === 'object') {
+                        errorMessage = detail.msg || detail.detail || JSON.stringify(detail);
+                    }
+
                     set({
                         isLoading: false,
                         error: errorMessage,
@@ -91,7 +108,7 @@ const useAuthStore = create(
 
             // Logout
             logout: () => {
-                localStorage.removeItem('token');
+                authService.logout();
                 set({
                     user: null,
                     token: null,
@@ -110,13 +127,14 @@ const useAuthStore = create(
 
                 set({ isLoading: true });
                 try {
-                    const userData = get().getMockUserData();
+                    const userData = await authService.getCurrentUser();
                     set({
                         user: userData,
+                        isAuthenticated: true,
                         isLoading: false,
                     });
                 } catch (error) {
-                    localStorage.removeItem('token');
+                    authService.logout();
                     set({
                         user: null,
                         token: null,

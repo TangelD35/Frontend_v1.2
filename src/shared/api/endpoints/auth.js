@@ -30,9 +30,12 @@ export const authService = {
     register: async (userData) => {
         const response = await axiosInstance.post('/auth/register', {
             email: userData.email,
-            username: userData.username || userData.email.split('@')[0],
+            username: userData.username,
             password: userData.password,
-            full_name: userData.name || userData.full_name,
+            full_name: userData.full_name,
+            phone: userData.phone ?? null,
+            organization: userData.organization ?? null,
+            role: userData.role ?? null,
             is_active: true,
             is_superuser: false
         });

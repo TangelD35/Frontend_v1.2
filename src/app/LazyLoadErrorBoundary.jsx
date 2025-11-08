@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import logger from '../shared/utils/logger';
 
 class LazyLoadErrorBoundary extends React.Component {
     constructor(props) {
@@ -17,11 +18,11 @@ class LazyLoadErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
-        console.error('Lazy load error caught:', error, errorInfo);
+        logger.error('Lazy load error caught', error, errorInfo);
 
         // Log specific information about the error
         if (error.message && error.message.includes('Failed to fetch dynamically imported module')) {
-            console.error('Dynamic import failed - possible MIME type or network issue');
+            logger.error('Dynamic import failed - possible MIME type or network issue');
         }
 
         // Auto-retry once for network errors

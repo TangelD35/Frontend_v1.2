@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
-import config from '../../../lib/constants';
+import { config } from '../../../lib/constants';
+import logger from '../../utils/logger';
 
 class WebSocketService {
     constructor() {
@@ -24,7 +25,7 @@ class WebSocketService {
             this.setupEventListeners();
             return this.socket;
         } catch (error) {
-            console.error('Error connecting to WebSocket:', error);
+            logger.error('Error connecting to WebSocket', error);
             return null;
         }
     }
@@ -33,14 +34,18 @@ class WebSocketService {
         if (!this.socket) return;
 
         this.socket.on('connect', () => {
-            console.log('WebSocket connected');
+            if (config.logging?.enableWebSocketLogs) {
+                logger.info('WebSocket connected');
+            }
             this.isConnected = true;
             this.reconnectAttempts = 0;
             this.emit('connection_status', { connected: true });
         });
 
         this.socket.on('disconnect', (reason) => {
-            console.log('WebSocket disconnected:', reason);
+            if (config.logging?.enableWebSocketLogs) {
+                logger.warn('WebSocket disconnected', null, reason);
+            }
             this.isConnected = false;
             this.emit('connection_status', { connected: false, reason });
         });
@@ -49,13 +54,15 @@ class WebSocketService {
             this.reconnectAttempts++;
             // Solo mostrar error después de varios intentos fallidos
             if (this.reconnectAttempts >= 3) {
-                console.warn('WebSocket: Backend no disponible (intentos:', this.reconnectAttempts, ')');
+                logger.warn(`WebSocket: Backend no disponible (intentos: ${this.reconnectAttempts})`);
             }
             this.emit('connection_error', { error, attempts: this.reconnectAttempts });
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-            console.log('WebSocket reconnected after', attemptNumber, 'attempts');
+            if (config.logging?.enableWebSocketLogs) {
+                logger.info(`WebSocket reconnected after ${attemptNumber} attempts`);
+            }
             this.emit('reconnected', { attempts: attemptNumber });
         });
 
@@ -92,7 +99,7 @@ class WebSocketService {
             try {
                 callback(data);
             } catch (error) {
-                console.error(`Error in listener for event ${event}:`, error);
+                logger.error(`Error in listener for event ${event}`, error);
             }
         });
     }
@@ -129,7 +136,7 @@ class WebSocketService {
             this.socket.emit(event, data);
             return true;
         } else {
-            console.warn('WebSocket not connected. Cannot send:', event, data);
+            logger.warn('WebSocket not connected. Cannot send', null, { event, data });
             return false;
         }
     }

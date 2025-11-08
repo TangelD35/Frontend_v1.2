@@ -23,7 +23,7 @@ export const config = {
 
     // Configuración de autenticación
     auth: {
-        tokenKey: 'authToken',
+        tokenKey: 'token',
         jwtExpiry: parseInt(import.meta.env.VITE_JWT_EXPIRY) || 3600,
     },
 

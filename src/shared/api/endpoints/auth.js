@@ -33,6 +33,8 @@ export const authService = {
             username: userData.username,
             password: userData.password,
             full_name: userData.full_name,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
             phone: userData.phone ?? null,
             organization: userData.organization ?? null,
             role: userData.role ?? null,
@@ -40,6 +42,28 @@ export const authService = {
             is_superuser: false
         });
         return response.data;
+    },
+
+    // Verificar disponibilidad de username
+    checkUsernameAvailability: async (username) => {
+        try {
+            // El backend no tiene este endpoint aún, pero podemos prepararlo
+            // Por ahora retornamos true asumiendo que está disponible
+            // TODO: Implementar endpoint en backend para verificar disponibilidad
+            return { available: true };
+        } catch (error) {
+            return { available: false, error: error.message };
+        }
+    },
+
+    // Verificar disponibilidad de email
+    checkEmailAvailability: async (email) => {
+        try {
+            // Similar al username, preparado para futura implementación
+            return { available: true };
+        } catch (error) {
+            return { available: false, error: error.message };
+        }
     },
 
     // Logout

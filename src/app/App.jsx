@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../shared/ui/components/common';
 import LazyLoadErrorBoundary from './LazyLoadErrorBoundary';
 
 // Lazy-loaded components
-const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/ModernDashboard')); 
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/ModernDashboard'));
 const EnhancedDashboard = lazy(() => import('../features/dashboard/components/EnhancedDashboard'));
 const WidgetTest = lazy(() => import('../features/dashboard/components/WidgetTest'));
 const DataManagement = lazy(() => import('../features/settings/components/DataManagement'));
@@ -64,8 +64,9 @@ function App() {
     const { initializeAuth } = useAuthStore();
 
     useEffect(() => {
+        // Inicializar autenticación solo una vez al montar la app
         initializeAuth();
-    }, [initializeAuth]);
+    }, []); // Sin dependencias para ejecutar solo una vez
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-500">

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config as appConfig } from '../../lib/constants';
+import logger from '../utils/logger';
 
 // Configuración base del cliente API
 const apiClient = axios.create({
@@ -14,14 +15,14 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
     (config) => {
         // Agregar token de autenticación si existe
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem(appConfig.auth.tokenKey || 'token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
         // Log de requests en desarrollo
         if (appConfig.logging?.enableApiLogs) {
-            console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+            logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
                 data: config.data,
                 params: config.params
             });
@@ -30,7 +31,7 @@ apiClient.interceptors.request.use(
         return config;
     },
     (error) => {
-        console.error('❌ Request Error:', error);
+        logger.error('Request Error', error);
         return Promise.reject(error);
     }
 );
@@ -40,7 +41,7 @@ apiClient.interceptors.response.use(
     (response) => {
         // Log de responses en desarrollo
         if (appConfig.logging?.enableApiLogs) {
-            console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+            logger.debug(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
                 status: response.status,
                 data: response.data
             });
@@ -54,41 +55,52 @@ apiClient.interceptors.response.use(
             // El servidor respondió con un código de error
             const { status, data } = error.response;
 
-            console.error(`❌ API Error ${status}:`, data);
+            logger.error(`API Error ${status}`, null, data);
 
             // Manejo específico de errores
             switch (status) {
                 case 401:
                     // Token expirado o no válido
-                    localStorage.removeItem('authToken');
+                    logger.warn('Token expirado o no válido, redirigiendo a login');
+                    localStorage.removeItem(appConfig.auth.tokenKey || 'token');
                     window.location.href = '/login';
                     break;
                 case 403:
-                    console.error('Acceso denegado');
+                    logger.warn('Acceso denegado');
                     break;
                 case 404:
-                    console.error('Recurso no encontrado');
+                    logger.warn('Recurso no encontrado');
+                    break;
+                case 409:
+                    // Conflict - usuario o recurso ya existe
+                    logger.warn('Conflicto: recurso ya existe', null, data.detail || data.message);
                     break;
                 case 422:
-                    console.error('Error de validación:', data.errors || data.message);
+                    logger.warn('Error de validación', null, data.errors || data.message);
                     break;
                 case 500:
-                    console.error('Error interno del servidor');
+                    logger.error('Error interno del servidor');
                     break;
                 default:
-                    console.error('Error desconocido:', data.message || 'Error en la comunicación con el servidor');
+                    logger.error('Error desconocido', null, data.message || 'Error en la comunicación con el servidor');
             }
 
-            // Retornar error estructurado
+            // Retornar error estructurado preservando toda la información del error original
             return Promise.reject({
+                response: {
+                    status,
+                    data: data, // Preservar data completa para que authStore pueda acceder a detail
+                    ...error.response
+                },
                 status,
-                message: data.message || 'Error en la comunicación con el servidor',
+                message: data.message || data.detail || 'Error en la comunicación con el servidor',
+                detail: data.detail || data.message, // Preservar detail para errores 409
                 errors: data.errors || null,
                 originalError: error
             });
         } else if (error.request) {
             // La petición fue hecha pero no se recibió respuesta
-            console.error('❌ Network Error:', error.request);
+            logger.error('Network Error', error);
             return Promise.reject({
                 status: 0,
                 message: 'Error de conexión. Verifica tu conexión a internet.',
@@ -96,7 +108,7 @@ apiClient.interceptors.response.use(
             });
         } else {
             // Algo pasó al configurar la petición
-            console.error('❌ Request Setup Error:', error.message);
+            logger.error('Request Setup Error', error);
             return Promise.reject({
                 status: -1,
                 message: error.message,
@@ -165,18 +177,19 @@ export const api = {
 
 // Configuración de autenticación
 export const setAuthToken = (token) => {
+    const tokenKey = appConfig.auth.tokenKey || 'token';
     if (token) {
-        localStorage.setItem('authToken', token);
+        localStorage.setItem(tokenKey, token);
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
-        localStorage.removeItem('authToken');
+        localStorage.removeItem(tokenKey);
         delete apiClient.defaults.headers.common['Authorization'];
     }
 };
 
 // Obtener token actual
 export const getAuthToken = () => {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem(appConfig.auth.tokenKey || 'token');
 };
 
 // Verificar si está autenticado

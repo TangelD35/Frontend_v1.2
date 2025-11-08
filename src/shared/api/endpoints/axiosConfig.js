@@ -1,39 +1,16 @@
-import axios from 'axios';
+/**
+ * Cliente API unificado
+ * 
+ * Este archivo re-exporta el cliente API principal (apiClient) de client.js
+ * para mantener compatibilidad con código existente que importa axiosInstance.
+ * 
+ * Todos los endpoints ahora usan la misma instancia de axios con interceptores
+ * y manejo de errores centralizado.
+ */
+import apiClient from '../client';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-// Interceptor para agregar token a las peticiones
-axiosInstance.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-// Interceptor para manejar errores de respuesta
-axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            // Token expirado o inválido
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
-        return Promise.reject(error);
-    }
-);
+// Re-exportar el cliente principal como axiosInstance para compatibilidad
+// Esto asegura que todos los endpoints usen la misma instancia con interceptores
+const axiosInstance = apiClient;
 
 export default axiosInstance;

@@ -137,21 +137,12 @@ const Login = () => {
     ];
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#002D62] via-slate-900 to-[#CE1126] text-white">
-            {/* Patrón de fondo con baloncesto */}
-            <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(255,255,255,0.03) 100px, rgba(255,255,255,0.03) 200px)`
-                }}></div>
-                        </div>
-            
-            {/* Efectos de luz animados con colores dominicanos */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-[#CE1126]/30 blur-3xl animate-pulse" />
-                <div className="absolute top-1/2 -left-32 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-[#002D62]/40 blur-3xl animate-pulse delay-700" />
-                <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute top-1/4 right-1/4 h-32 w-32 rounded-full bg-white/5 blur-2xl animate-pulse delay-300" />
-                    </div>
+        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-[#002D62] to-slate-900 text-white">
+            {/* Efectos de luz sutiles */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full bg-[#CE1126]/20 blur-3xl" />
+                <div className="absolute bottom-0 left-0 h-[500px] w-[500px] rounded-full bg-[#002D62]/30 blur-3xl" />
+            </div>
 
             <div className="relative flex min-h-screen flex-col lg:flex-row">
                 {/* Panel izquierdo */}
@@ -163,15 +154,8 @@ const Login = () => {
                     <div className="relative z-10">
                         <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-xl blur-md opacity-50"></div>
-                                    <div className="relative bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/20">
-                                        <img
-                                            src="/logo-rdscore.png"
-                                            alt="BasktscoreRD Logo"
-                                            className="h-10 w-auto drop-shadow-lg sm:h-12"
-                                        />
-                                    </div>
+                                <div className="relative flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-[#CE1126] to-[#002D62] shadow-lg">
+                                    <Basketball className="h-7 w-7 text-white" fill="currentColor" />
                                 </div>
                                 <div>
                                     <p className="text-sm uppercase tracking-[0.2em] text-white/90 font-bold">BasktscoreRD</p>
@@ -188,51 +172,45 @@ const Login = () => {
                             </div>
                         </div>
 
-                        <h2 className="text-3xl font-bold leading-snug text-white sm:text-4xl mb-4">
-                            <span className="bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-                                Analiza el rendimiento de la
-                            </span>
+                        <h2 className="text-3xl font-bold leading-tight text-white sm:text-4xl mb-4">
+                            Análisis Táctico
                             <br />
-                            <span className="bg-gradient-to-r from-[#CE1126] via-red-400 to-[#CE1126] bg-clip-text text-transparent">
-                                Selección Nacional
+                            <span className="bg-gradient-to-r from-[#CE1126] to-red-400 bg-clip-text text-transparent">
+                                Selección Nacional RD
                             </span>
                         </h2>
 
-                        <p className="mt-6 text-sm text-white/90 sm:text-base leading-relaxed font-medium">
-                            Plataforma oficial de análisis táctico y predictivo para el rendimiento ofensivo y defensivo 
-                            de la Selección Nacional de Baloncesto de República Dominicana en torneos internacionales.
+                        <p className="mt-4 text-sm text-white/80 sm:text-base leading-relaxed">
+                            Plataforma oficial de análisis y predicción del rendimiento de la Selección Nacional 
+                            de Baloncesto en torneos internacionales (2010-2025).
                         </p>
 
                         <div className="mt-10 space-y-4">
                             {featureHighlights.map(({ icon, title, subtitle }, index) => (
                                 <div 
                                     key={title} 
-                                    className="group flex items-start gap-4 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-white/5 p-5 shadow-lg shadow-black/20 backdrop-blur-sm hover:border-[#CE1126]/50 hover:bg-white/10 transition-all duration-300"
-                                    style={{ animationDelay: `${index * 100}ms` }}
+                                    className="group flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm hover:border-[#CE1126]/30 hover:bg-white/10 transition-all duration-200"
                                 >
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-md group-hover:scale-105 transition-transform duration-200">
                                         {icon}
-                            </div>
+                                    </div>
                                     <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-                                        <p className="text-sm text-white/80 leading-relaxed">{subtitle}</p>
-                        </div>
-                            </div>
+                                        <h3 className="text-base font-semibold text-white mb-0.5">{title}</h3>
+                                        <p className="text-xs text-white/70 leading-relaxed">{subtitle}</p>
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>
 
-                    <div className="mt-10 space-y-4 sm:mt-12 relative z-10">
-                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/70 font-semibold">
-                            <Shield className="w-4 h-4 text-[#CE1126]" />
-                            Sistema Seguro
+                    <div className="mt-8 relative z-10">
+                        <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg border border-white/10 backdrop-blur-sm">
+                            <Shield className="w-4 h-4 text-[#CE1126] flex-shrink-0" />
+                            <p className="text-xs text-white/80">
+                                Datos protegidos con encriptación de nivel empresarial
+                            </p>
                         </div>
-                        <div className="p-4 bg-gradient-to-r from-white/10 to-white/5 rounded-xl border border-white/20 backdrop-blur-sm">
-                            <p className="text-sm text-white/90">
-                            Datos protegidos con encriptación de nivel empresarial y acceso controlado por roles.
-                        </p>
                     </div>
-                </div>
             </div>
 
             {/* Panel derecho - Formulario de login */}
@@ -241,44 +219,25 @@ const Login = () => {
                         {/* Efecto de brillo superior */}
                         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                         
-                        <div className="border-b border-white/20 bg-gradient-to-r from-[#CE1126]/10 via-transparent to-[#002D62]/10 px-5 py-6 sm:px-8 sm:py-8 backdrop-blur-sm">
-                            <div className="flex items-center justify-between gap-3 sm:gap-4">
+                        <div className="border-b border-white/10 px-6 py-6 sm:px-8">
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#CE1126]/50 bg-gradient-to-r from-[#CE1126]/20 to-[#002D62]/20 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-sm shadow-lg">
-                                        <Shield className="h-4 w-4" />
-                                        Acceso Oficial BasktscoreRD
-                                    </span>
-                                    <h2 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
-                                        <span className="bg-gradient-to-r from-white via-white/90 to-white bg-clip-text text-transparent">
-                                            Iniciar Sesión
-                                        </span>
+                                    <h2 className="text-2xl font-bold text-white sm:text-3xl">
+                                        Iniciar Sesión
                                     </h2>
-                                    <p className="mt-2 text-sm text-white/80 sm:text-base font-medium">
-                                        Accede al análisis táctico y predictivo de la Selección Nacional (2010-2025)
+                                    <p className="mt-1 text-sm text-white/70">
+                                        Accede al sistema de análisis táctico
                                     </p>
                                 </div>
                                 <div className="hidden sm:block">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-2xl blur-lg opacity-50"></div>
-                                        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-xl">
-                                            <LogIn className="h-8 w-8" />
-                                        </div>
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-lg">
+                                        <LogIn className="h-6 w-6" />
                                     </div>
-                        </div>
-                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="px-5 py-8 sm:px-8 sm:py-10">
-                            <div className="text-center mb-6">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <Basketball className="w-6 h-6 text-[#CE1126]" fill="currentColor" />
-                                    <h1 className="text-2xl font-bold bg-gradient-to-r from-[#CE1126] to-[#002D62] bg-clip-text text-transparent">
-                                        Bienvenido
-                                    </h1>
-                                    <Basketball className="w-6 h-6 text-[#002D62]" fill="currentColor" />
-                        </div>
-                                <p className="text-sm text-white/70">Accede al sistema de análisis táctico</p>
-                    </div>
+                        <div className="px-6 py-6 sm:px-8 sm:py-8">
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Error del servidor */}
@@ -308,11 +267,11 @@ const Login = () => {
                                     name="username"
                                     value={formData.username}
                                     onChange={handleChange}
-                                            className={`w-full pl-10 pr-4 py-3 bg-white/90 border rounded-2xl text-slate-900 focus:ring-4 focus:ring-[#CE1126]/30 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.username
-                                                ? 'border-red-400/70 bg-red-50'
+                                            className={`w-full pl-10 pr-4 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.username
+                                                ? 'border-red-400 bg-red-50'
                                                 : isFormTouched && formData.username && !validationErrors.username
-                                                    ? 'border-emerald-400/70 bg-emerald-50/60'
-                                                    : 'border-transparent'
+                                                    ? 'border-emerald-400 bg-emerald-50'
+                                                    : 'border-white/20'
                                         }`}
                                     placeholder="usuario o tu@email.com"
                                     disabled={isLoading}
@@ -346,11 +305,11 @@ const Login = () => {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                            className={`w-full pl-10 pr-12 py-3 bg-white/90 border rounded-2xl text-slate-900 focus:ring-4 focus:ring-[#CE1126]/30 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.password
-                                                ? 'border-red-400/70 bg-red-50'
+                                            className={`w-full pl-10 pr-12 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.password
+                                                ? 'border-red-400 bg-red-50'
                                                 : isFormTouched && formData.password && formData.password.length >= 6 && !validationErrors.password
-                                                    ? 'border-emerald-400/70 bg-emerald-50/60'
-                                                    : 'border-transparent'
+                                                    ? 'border-emerald-400 bg-emerald-50'
+                                                    : 'border-white/20'
                                         }`}
                                     placeholder="••••••••"
                                     disabled={isLoading}
@@ -403,9 +362,8 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={isLoading || !formData.username || !formData.password}
-                                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-red-600 to-[#002D62] px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#CE1126]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#CE1126]/60 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-200 hover:shadow-xl hover:shadow-[#CE1126]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
                         >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                                     <span className="relative flex items-center justify-center gap-2">
                             {isLoading ? (
                                 <>

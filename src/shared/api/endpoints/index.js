@@ -5,3 +5,4 @@ export { default as playersService } from './players';
 export { default as gamesService } from './games';
 export { default as predictionsService } from './predictions';
 export { default as analyticsService } from './analytics';
+export { default as advancedAnalyticsService } from './advancedAnalytics';

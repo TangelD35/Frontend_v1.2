@@ -141,7 +141,7 @@ const Login = () => {
         <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
             {/* Imagen de fondo más visible */}
             <div 
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
                 style={{ 
                     backgroundImage: `url(${backgroundImage})`,
                     imageRendering: '-webkit-optimize-contrast',
@@ -151,7 +151,7 @@ const Login = () => {
             ></div>
             
             {/* Overlay oscuro sobre la imagen */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-[#002D62]/75 to-slate-950/85"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-[#002D62]/70 to-slate-950/80"></div>
             
             {/* Fondo con patrón de cuadrícula sutil */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -165,27 +165,6 @@ const Login = () => {
             <div className="relative flex min-h-screen items-center justify-center p-4">
                 {/* Contenedor del formulario centrado */}
                 <div className="w-full max-w-md relative z-10">
-                    {/* Imagen destacada arriba */}
-                    <div className="mb-6 flex justify-center">
-                        <div className="relative w-full max-w-xs h-32 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl">
-                            <img 
-                                src={backgroundImage} 
-                                alt="Basketball" 
-                                className="w-full h-full object-cover"
-                                style={{
-                                    imageRendering: '-webkit-optimize-contrast',
-                                    backfaceVisibility: 'hidden',
-                                    transform: 'translateZ(0)',
-                                }}
-                                loading="eager"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
-                            <div className="absolute bottom-3 left-0 right-0 text-center">
-                                <p className="text-xs font-bold text-white/90 uppercase tracking-wider drop-shadow-lg">Selección Nacional RD</p>
-                            </div>
-                        </div>
-                    </div>
-                    
                     {/* Logo y título arriba */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center mb-4">

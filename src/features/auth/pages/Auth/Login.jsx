@@ -8,6 +8,7 @@ import {
 import useAuthStore from '../../../../shared/store/authStore';
 import { VALIDATION_RULES, ERROR_MESSAGES, APP_INFO } from '../../../../lib/constants';
 import logger from '../../../../shared/utils/logger';
+import backgroundImage from '../../../../assets/images/unnamed.jpg';
 
 // Componente Basketball personalizado (lucide-react no tiene este icono)
 const Basketball = ({ className, fill = 'none' }) => (
@@ -138,6 +139,15 @@ const Login = () => {
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+            {/* Imagen de fondo sutil */}
+            <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+            ></div>
+            
+            {/* Overlay oscuro sobre la imagen */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-[#002D62]/80 to-slate-950/90"></div>
+            
             {/* Fondo con patrón de cuadrícula sutil */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             

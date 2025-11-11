@@ -9,6 +9,7 @@ import useAuthStore from '../../../../shared/store/authStore';
 import { VALIDATION_RULES, ERROR_MESSAGES, APP_INFO } from '../../../../lib/constants';
 import logger from '../../../../shared/utils/logger';
 import backgroundImage from '../../../../assets/images/baskt.webp';
+import './Login.css';
 
 // Componente Basketball personalizado (lucide-react no tiene este icono)
 const Basketball = ({ className, fill = 'none' }) => (
@@ -32,6 +33,9 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
     const [isFormTouched, setIsFormTouched] = useState(false);
+    const [fieldTouched, setFieldTouched] = useState({ username: false, password: false });
+    const [loginAttempts, setLoginAttempts] = useState(0);
+    const [isBlocked, setIsBlocked] = useState(false);
 
     // Redirect si ya está autenticado
     useEffect(() => {
@@ -79,18 +83,46 @@ const Login = () => {
             [name]: type === 'checkbox' ? checked : (value || ''),
         }));
 
-        // Limpiar error de validación del campo
-        if (validationErrors[name]) {
-            setValidationErrors(prev => ({
-                ...prev,
-                [name]: '',
-            }));
+        // Validación en tiempo real solo si el campo ya fue tocado
+        if (fieldTouched[name] && name !== 'rememberMe') {
+            const errors = {};
+            if (name === 'username') {
+                if (!value.trim()) {
+                    errors.username = 'El usuario o email es requerido';
+                } else if (value.includes('@')) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(value)) {
+                        errors.username = 'Email inválido';
+                    }
+                } else if (value.length < VALIDATION_RULES.USERNAME_MIN_LENGTH) {
+                    errors.username = `Mínimo ${VALIDATION_RULES.USERNAME_MIN_LENGTH} caracteres`;
+                }
+            } else if (name === 'password') {
+                if (!value) {
+                    errors.password = 'La contraseña es requerida';
+                } else if (value.length < VALIDATION_RULES.PASSWORD_MIN_LENGTH) {
+                    errors.password = `Mínimo ${VALIDATION_RULES.PASSWORD_MIN_LENGTH} caracteres`;
+                }
+            }
+            setValidationErrors(prev => ({ ...prev, ...errors, [name]: errors[name] || '' }));
+        } else {
+            // Limpiar error si existe
+            if (validationErrors[name]) {
+                setValidationErrors(prev => ({ ...prev, [name]: '' }));
+            }
         }
 
         // Limpiar error del servidor
         if (error) {
             clearError();
         }
+    };
+
+    const handleBlur = (e) => {
+        const { name } = e.target;
+        setFieldTouched(prev => ({ ...prev, [name]: true }));
+        // Trigger validation on blur
+        handleChange(e);
     };
 
     const handleSubmit = async (e) => {
@@ -101,21 +133,47 @@ const Login = () => {
             return;
         }
 
+        // Verificar si está bloqueado
+        if (isBlocked) {
+            return;
+        }
+
         try {
             logger.debug('Iniciando sesión', { username: formData.username });
             const result = await login(formData);
             
             if (result?.success) {
                 logger.info('Login exitoso, redirigiendo al dashboard');
-                // El useEffect se encargará de navegar cuando isAuthenticated cambie
-                // Pero también podemos navegar directamente aquí para asegurar
+                setLoginAttempts(0); // Reset intentos
                 setTimeout(() => {
                     navigate('/dashboard', { replace: true });
                 }, 100);
+            } else {
+                // Incrementar intentos fallidos
+                const newAttempts = loginAttempts + 1;
+                setLoginAttempts(newAttempts);
+                
+                // Bloquear después de 5 intentos
+                if (newAttempts >= 5) {
+                    setIsBlocked(true);
+                    setTimeout(() => {
+                        setIsBlocked(false);
+                        setLoginAttempts(0);
+                    }, 30000); // 30 segundos de bloqueo
+                }
             }
         } catch (err) {
             logger.error('Error en login', err);
-            // El error ya se maneja en el authStore
+            const newAttempts = loginAttempts + 1;
+            setLoginAttempts(newAttempts);
+            
+            if (newAttempts >= 5) {
+                setIsBlocked(true);
+                setTimeout(() => {
+                    setIsBlocked(false);
+                    setLoginAttempts(0);
+                }, 30000);
+            }
         }
     };
 
@@ -209,11 +267,31 @@ const Login = () => {
                             </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Mensaje de bloqueo */}
+                        {isBlocked && (
+                            <div className="bg-orange-500/10 border-2 border-orange-400/50 text-orange-100 px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm animate-pulse">
+                                <Shield className="w-5 h-5 flex-shrink-0 text-orange-300" />
+                                <div>
+                                    <p className="text-sm font-bold">Cuenta bloqueada temporalmente</p>
+                                    <p className="text-xs text-orange-200/80">Demasiados intentos fallidos. Espera 30 segundos.</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Error del servidor */}
-                        {error && (
-                                    <div className="bg-red-500/10 border-2 border-red-400/50 text-red-100 px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
-                                        <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-300" />
-                                        <span className="text-sm font-medium">{error}</span>
+                        {error && !isBlocked && (
+                            <div className="bg-red-500/10 border-2 border-red-400/50 text-red-100 px-4 py-3 rounded-xl backdrop-blur-sm">
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-300 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium">{error}</p>
+                                        {loginAttempts > 0 && loginAttempts < 5 && (
+                                            <p className="text-xs text-red-200/70 mt-1">
+                                                Intentos restantes: {5 - loginAttempts}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -236,14 +314,16 @@ const Login = () => {
                                     name="username"
                                     value={formData.username}
                                     onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    autoComplete="username"
                                             className={`w-full pl-10 pr-4 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.username
-                                                ? 'border-red-400 bg-red-50'
-                                                : isFormTouched && formData.username && !validationErrors.username
+                                                ? 'border-red-400 bg-red-50 shake'
+                                                : fieldTouched.username && formData.username && !validationErrors.username
                                                     ? 'border-emerald-400 bg-emerald-50'
                                                     : 'border-white/20'
                                         }`}
                                     placeholder="usuario o tu@email.com"
-                                    disabled={isLoading}
+                                    disabled={isLoading || isBlocked}
                                 />
                                 {isFormTouched && formData.username && !validationErrors.username && (
                                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -274,14 +354,16 @@ const Login = () => {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    autoComplete="current-password"
                                             className={`w-full pl-10 pr-12 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.password
-                                                ? 'border-red-400 bg-red-50'
-                                                : isFormTouched && formData.password && formData.password.length >= 6 && !validationErrors.password
+                                                ? 'border-red-400 bg-red-50 shake'
+                                                : fieldTouched.password && formData.password && formData.password.length >= 6 && !validationErrors.password
                                                     ? 'border-emerald-400 bg-emerald-50'
                                                     : 'border-white/20'
                                         }`}
                                     placeholder="••••••••"
-                                    disabled={isLoading}
+                                    disabled={isLoading || isBlocked}
                                 />
                                 <button
                                     type="button"
@@ -330,8 +412,8 @@ const Login = () => {
                         {/* Botón de submit */}
                         <button
                             type="submit"
-                            disabled={isLoading || !formData.username || !formData.password}
-                                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-200 hover:shadow-xl hover:shadow-[#CE1126]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
+                            disabled={isLoading || !formData.username || !formData.password || isBlocked}
+                                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-200 hover:shadow-xl hover:shadow-[#CE1126]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg disabled:grayscale"
                         >
                                     <span className="relative flex items-center justify-center gap-2">
                             {isLoading ? (

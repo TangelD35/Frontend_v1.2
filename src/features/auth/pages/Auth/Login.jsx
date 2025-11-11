@@ -37,12 +37,12 @@ const Login = () => {
     const [loginAttempts, setLoginAttempts] = useState(0);
     const [isBlocked, setIsBlocked] = useState(false);
 
-    // Redirect si ya está autenticado
+    // Redirect si ya está autenticado (solo al cargar la página)
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && !isLoading) {
             navigate('/dashboard', { replace: true });
         }
-    }, [isAuthenticated, navigate]);
+    }, []); // Solo ejecutar al montar el componente
 
     // Limpiar errores al desmontar
     useEffect(() => {
@@ -145,13 +145,28 @@ const Login = () => {
             if (result?.success) {
                 logger.info('Login exitoso, redirigiendo al dashboard');
                 setLoginAttempts(0); // Reset intentos
-                setTimeout(() => {
-                    navigate('/dashboard', { replace: true });
-                }, 100);
+                // Navegar al dashboard
+                navigate('/dashboard', { replace: true });
             } else {
-                // Incrementar intentos fallidos
+                // Login fallido - NO navegar, quedarse en la página
                 const newAttempts = loginAttempts + 1;
                 setLoginAttempts(newAttempts);
+                
+                // Analizar el mensaje de error para mostrar mensaje específico
+                const errorMsg = result?.error || error || '';
+                const lowerError = errorMsg.toLowerCase();
+                
+                // Determinar si es error de usuario o contraseña
+                if (lowerError.includes('usuario') || lowerError.includes('username') || lowerError.includes('user not found')) {
+                    setValidationErrors(prev => ({ ...prev, username: 'Usuario no encontrado' }));
+                } else if (lowerError.includes('contraseña') || lowerError.includes('password') || lowerError.includes('incorrect') || lowerError.includes('incorrecta')) {
+                    setValidationErrors(prev => ({ ...prev, password: 'Contraseña incorrecta' }));
+                } else if (lowerError.includes('credenciales') || lowerError.includes('credentials')) {
+                    setValidationErrors(prev => ({ 
+                        username: 'Credenciales incorrectas',
+                        password: 'Credenciales incorrectas'
+                    }));
+                }
                 
                 // Bloquear después de 5 intentos
                 if (newAttempts >= 5) {
@@ -164,6 +179,7 @@ const Login = () => {
             }
         } catch (err) {
             logger.error('Error en login', err);
+            // Error de red u otro - NO navegar
             const newAttempts = loginAttempts + 1;
             setLoginAttempts(newAttempts);
             

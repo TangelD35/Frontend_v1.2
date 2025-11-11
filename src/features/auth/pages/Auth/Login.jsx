@@ -142,7 +142,12 @@ const Login = () => {
             {/* Imagen de fondo más visible */}
             <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
+                style={{ 
+                    backgroundImage: `url(${backgroundImage})`,
+                    imageRendering: '-webkit-optimize-contrast',
+                    backfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                }}
             ></div>
             
             {/* Overlay oscuro sobre la imagen */}
@@ -167,10 +172,16 @@ const Login = () => {
                                 src={backgroundImage} 
                                 alt="Basketball" 
                                 className="w-full h-full object-cover"
+                                style={{
+                                    imageRendering: '-webkit-optimize-contrast',
+                                    backfaceVisibility: 'hidden',
+                                    transform: 'translateZ(0)',
+                                }}
+                                loading="eager"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
                             <div className="absolute bottom-3 left-0 right-0 text-center">
-                                <p className="text-xs font-bold text-white/90 uppercase tracking-wider">Selección Nacional RD</p>
+                                <p className="text-xs font-bold text-white/90 uppercase tracking-wider drop-shadow-lg">Selección Nacional RD</p>
                             </div>
                         </div>
                     </div>

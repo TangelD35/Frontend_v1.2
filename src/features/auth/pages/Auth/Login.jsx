@@ -8,7 +8,7 @@ import {
 import useAuthStore from '../../../../shared/store/authStore';
 import { VALIDATION_RULES, ERROR_MESSAGES, APP_INFO } from '../../../../lib/constants';
 import logger from '../../../../shared/utils/logger';
-import backgroundImage from '../../../../assets/images/unnamed.jpg';
+import backgroundImage from '../../../../assets/images/baskt.webp';
 
 // Componente Basketball personalizado (lucide-react no tiene este icono)
 const Basketball = ({ className, fill = 'none' }) => (

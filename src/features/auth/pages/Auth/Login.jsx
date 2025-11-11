@@ -169,7 +169,7 @@ const Login = () => {
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center mb-4">
                             <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-[#CE1126] via-white to-[#002D62] p-1 shadow-2xl shadow-[#CE1126]/50">
-                                <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center p-3">
+                                <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center p-1">
                                     <img 
                                         src="/logo-rdscore.png" 
                                         alt="BasktscoreRD Logo" 
@@ -177,7 +177,7 @@ const Login = () => {
                                         style={{
                                             imageRendering: '-webkit-optimize-contrast',
                                             backfaceVisibility: 'hidden',
-                                            transform: 'translateZ(0)',
+                                            transform: 'translateZ(0) scale(1.15)',
                                             filter: 'brightness(1.1) contrast(1.1)',
                                         }}
                                     />

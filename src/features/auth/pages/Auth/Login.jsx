@@ -8,7 +8,6 @@ import {
 import useAuthStore from '../../../../shared/store/authStore';
 import { VALIDATION_RULES, ERROR_MESSAGES, APP_INFO } from '../../../../lib/constants';
 import logger from '../../../../shared/utils/logger';
-import logoImage from '../../../../assets/images/unnamed.jpg';
 
 // Componente Basketball personalizado (lucide-react no tiene este icono)
 const Basketball = ({ className, fill = 'none' }) => (
@@ -154,13 +153,9 @@ const Login = () => {
                     {/* Logo y título arriba */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center mb-4">
-                            <div className="relative h-16 w-16 rounded-2xl overflow-hidden bg-gradient-to-br from-[#CE1126] to-[#002D62] p-0.5 shadow-2xl shadow-[#CE1126]/50">
-                                <div className="h-full w-full rounded-2xl overflow-hidden bg-slate-950">
-                                    <img 
-                                        src={logoImage} 
-                                        alt="BasktscoreRD Logo" 
-                                        className="h-full w-full object-cover"
-                                    />
+                            <div className="relative h-20 w-20 rounded-2xl bg-gradient-to-br from-[#CE1126] to-[#002D62] p-0.5 shadow-2xl shadow-[#CE1126]/50">
+                                <div className="h-full w-full rounded-2xl bg-slate-950 flex items-center justify-center">
+                                    <Basketball className="h-10 w-10 text-white" fill="currentColor" />
                                 </div>
                             </div>
                         </div>

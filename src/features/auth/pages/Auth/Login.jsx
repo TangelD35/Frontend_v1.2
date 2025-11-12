@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-    LogIn, Eye, EyeOff, AlertCircle, Shield, Trophy,
+    LogIn, Eye, EyeOff, AlertCircle, Trophy,
     Target, BarChart3, Mail, Lock, User, CheckCircle2,
     Globe, TrendingUp, Activity, Award, Loader2
 } from 'lucide-react';
@@ -34,15 +34,13 @@ const Login = () => {
     const [validationErrors, setValidationErrors] = useState({});
     const [isFormTouched, setIsFormTouched] = useState(false);
     const [fieldTouched, setFieldTouched] = useState({ username: false, password: false });
-    const [loginAttempts, setLoginAttempts] = useState(0);
-    const [isBlocked, setIsBlocked] = useState(false);
 
-    // Redirect si ya está autenticado (solo al cargar la página)
+    // Redirect si ya está autenticado
     useEffect(() => {
-        if (isAuthenticated && !isLoading) {
+        if (isAuthenticated) {
             navigate('/dashboard', { replace: true });
         }
-    }, []); // Solo ejecutar al montar el componente
+    }, [isAuthenticated, navigate]);
 
     // Limpiar errores al desmontar
     useEffect(() => {
@@ -134,62 +132,48 @@ const Login = () => {
         }
 
         // Verificar si está bloqueado
-        if (isBlocked) {
-            return;
-        }
-
         try {
             logger.debug('Iniciando sesión', { username: formData.username });
             const result = await login(formData);
             
             if (result?.success) {
                 logger.info('Login exitoso, redirigiendo al dashboard');
-                setLoginAttempts(0); // Reset intentos
                 // Navegar al dashboard
                 navigate('/dashboard', { replace: true });
             } else {
                 // Login fallido - NO navegar, quedarse en la página
-                const newAttempts = loginAttempts + 1;
-                setLoginAttempts(newAttempts);
+                setFieldTouched({ username: true, password: true });
                 
                 // Analizar el mensaje de error para mostrar mensaje específico
                 const errorMsg = result?.error || error || '';
                 const lowerError = errorMsg.toLowerCase();
+                const newFieldErrors = {};
                 
                 // Determinar si es error de usuario o contraseña
                 if (lowerError.includes('usuario') || lowerError.includes('username') || lowerError.includes('user not found')) {
-                    setValidationErrors(prev => ({ ...prev, username: 'Usuario no encontrado' }));
-                } else if (lowerError.includes('contraseña') || lowerError.includes('password') || lowerError.includes('incorrect') || lowerError.includes('incorrecta')) {
-                    setValidationErrors(prev => ({ ...prev, password: 'Contraseña incorrecta' }));
-                } else if (lowerError.includes('credenciales') || lowerError.includes('credentials')) {
-                    setValidationErrors(prev => ({ 
-                        username: 'Credenciales incorrectas',
-                        password: 'Credenciales incorrectas'
-                    }));
+                    newFieldErrors.username = 'Usuario no encontrado';
                 }
-                
-                // Bloquear después de 5 intentos
-                if (newAttempts >= 5) {
-                    setIsBlocked(true);
-                    setTimeout(() => {
-                        setIsBlocked(false);
-                        setLoginAttempts(0);
-                    }, 30000); // 30 segundos de bloqueo
+
+                if (lowerError.includes('contraseña') || lowerError.includes('password') || lowerError.includes('incorrect') || lowerError.includes('incorrecta')) {
+                    newFieldErrors.password = 'Contraseña incorrecta';
                 }
+
+                if (lowerError.includes('credenciales') || lowerError.includes('credentials')) {
+                    newFieldErrors.username = 'Credenciales incorrectas';
+                    newFieldErrors.password = 'Credenciales incorrectas';
+                }
+
+                if (Object.keys(newFieldErrors).length === 0) {
+                    newFieldErrors.username = 'Credenciales incorrectas';
+                    newFieldErrors.password = 'Credenciales incorrectas';
+                }
+
+                setValidationErrors(prev => ({ ...prev, ...newFieldErrors }));
             }
         } catch (err) {
             logger.error('Error en login', err);
             // Error de red u otro - NO navegar
-            const newAttempts = loginAttempts + 1;
-            setLoginAttempts(newAttempts);
-            
-            if (newAttempts >= 5) {
-                setIsBlocked(true);
-                setTimeout(() => {
-                    setIsBlocked(false);
-                    setLoginAttempts(0);
-                }, 30000);
-            }
+            setFieldTouched({ username: true, password: true });
         }
     };
 
@@ -283,29 +267,13 @@ const Login = () => {
                             </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Mensaje de bloqueo */}
-                        {isBlocked && (
-                            <div className="bg-orange-500/10 border-2 border-orange-400/50 text-orange-100 px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm animate-pulse">
-                                <Shield className="w-5 h-5 flex-shrink-0 text-orange-300" />
-                                <div>
-                                    <p className="text-sm font-bold">Cuenta bloqueada temporalmente</p>
-                                    <p className="text-xs text-orange-200/80">Demasiados intentos fallidos. Espera 30 segundos.</p>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Error del servidor */}
-                        {error && !isBlocked && (
+                        {error && (
                             <div className="bg-red-500/10 border-2 border-red-400/50 text-red-100 px-4 py-3 rounded-xl backdrop-blur-sm">
                                 <div className="flex items-start gap-2">
                                     <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-300 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium">{error}</p>
-                                        {loginAttempts > 0 && loginAttempts < 5 && (
-                                            <p className="text-xs text-red-200/70 mt-1">
-                                                Intentos restantes: {5 - loginAttempts}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -339,7 +307,7 @@ const Login = () => {
                                                     : 'border-white/20'
                                         }`}
                                     placeholder="usuario o tu@email.com"
-                                    disabled={isLoading || isBlocked}
+                                    disabled={isLoading}
                                 />
                                 {isFormTouched && formData.username && !validationErrors.username && (
                                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -379,7 +347,7 @@ const Login = () => {
                                                     : 'border-white/20'
                                         }`}
                                     placeholder="••••••••"
-                                    disabled={isLoading || isBlocked}
+                                    disabled={isLoading}
                                 />
                                 <button
                                     type="button"
@@ -428,7 +396,7 @@ const Login = () => {
                         {/* Botón de submit */}
                         <button
                             type="submit"
-                            disabled={isLoading || !formData.username || !formData.password || isBlocked}
+                            disabled={isLoading || !formData.username || !formData.password}
                                     className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-200 hover:shadow-xl hover:shadow-[#CE1126]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg disabled:grayscale"
                         >
                                     <span className="relative flex items-center justify-center gap-2">

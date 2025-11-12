@@ -62,10 +62,14 @@ const useAuthStore = create(
                 try {
                     const { token, user } = await authService.login(credentials);
 
-                        // Asegurar que el token se guarda en localStorage
-                        if (token && typeof window !== 'undefined') {
-                            localStorage.setItem('token', token);
-                        }
+                    if (!token) {
+                        throw new Error('Credenciales incorrectas');
+                    }
+
+                    // Asegurar que el token se guarda en localStorage
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('token', token);
+                    }
 
                     set({
                         user,
@@ -74,14 +78,15 @@ const useAuthStore = create(
                         isLoading: false,
                         error: null,
                     });
-                        return { success: true, user, token };
+                    return { success: true, user, token };
                 } catch (_error) {
-                        const errorMessage = _error.response?.data?.detail || _error.message || 'Error al iniciar sesión';
+                    const backendDetail = _error.response?.data?.detail;
+                    const errorMessage = backendDetail || _error.message || 'Error al iniciar sesión';
 
-                        // Limpiar token si hay error
-                        if (typeof window !== 'undefined') {
-                            localStorage.removeItem('token');
-                        }
+                    // Limpiar token si hay error
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('token');
+                    }
 
                     set({
                         user: null,

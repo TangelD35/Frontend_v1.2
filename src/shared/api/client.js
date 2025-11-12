@@ -60,10 +60,17 @@ apiClient.interceptors.response.use(
             // Manejo específico de errores
             switch (status) {
                 case 401:
-                    // Token expirado o no válido
-                    logger.warn('Token expirado o no válido, redirigiendo a login');
+                    // Token expirado o credenciales inválidas
+                    logger.warn('Token expirado o no válido');
                     localStorage.removeItem(appConfig.auth.tokenKey || 'token');
-                    window.location.href = '/login';
+
+                    // Evitar redirección automática para endpoints de autenticación
+                    const requestUrl = error.config?.url || '';
+                    const isAuthEndpoint = ['/auth/login', '/auth/register', '/auth/me'].some(endpoint => requestUrl.includes(endpoint));
+
+                    if (!isAuthEndpoint) {
+                        window.location.href = '/login';
+                    }
                     break;
                 case 403:
                     logger.warn('Acceso denegado');

@@ -690,21 +690,21 @@ const Register = () => {
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#002D62]/30 rounded-full blur-3xl -ml-24 -mb-24"></div>
 
                         <div className="relative z-10">
-                            <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
+                            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 animate-fade-in">
+                                <div className="flex items-center gap-3 group">
                                     <div className="relative">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-xl blur-md opacity-50"></div>
-                                        <div className="relative bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/20">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-xl blur-md opacity-50 transition-all duration-500 group-hover:opacity-70 group-hover:blur-lg"></div>
+                                        <div className="relative bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/20 transition-all duration-500 group-hover:scale-105">
                                             <img
                                                 src="/logo-rdscore.png"
                                                 alt="BasktscoreRD Logo"
-                                                className="h-10 w-auto drop-shadow-lg sm:h-12"
+                                                className="h-10 w-auto drop-shadow-lg sm:h-12 transition-transform duration-500 group-hover:scale-110"
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-sm uppercase tracking-[0.2em] text-white/90 font-bold">BasktscoreRD</p>
-                                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                                        <p className="text-sm uppercase tracking-[0.2em] text-white/90 font-bold transition-colors duration-300 group-hover:text-white">BasktscoreRD</p>
+                                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent transition-all duration-300 group-hover:scale-105">
                                             Centro de Análisis Táctico
                                         </h1>
                                     </div>
@@ -717,7 +717,7 @@ const Register = () => {
                                 </div>
                             </div>
 
-                            <h2 className="text-3xl font-bold leading-snug text-white sm:text-4xl mb-4">
+                            <h2 className="text-3xl font-bold leading-snug text-white sm:text-4xl mb-4 transition-all duration-300 hover:scale-105">
                                 <span className="bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
                                     Analiza el rendimiento de la
                                 </span>
@@ -727,7 +727,7 @@ const Register = () => {
                                 </span>
                             </h2>
 
-                            <p className="mt-6 text-sm text-white/90 sm:text-base leading-relaxed font-medium">
+                            <p className="mt-6 text-sm text-white/90 sm:text-base leading-relaxed font-medium transition-colors duration-300 hover:text-white">
                                 Plataforma oficial de análisis táctico y predictivo para el rendimiento ofensivo y defensivo
                                 de la Selección Nacional de Baloncesto de República Dominicana en torneos internacionales.
                             </p>
@@ -736,15 +736,15 @@ const Register = () => {
                                 {featureHighlights.map(({ icon, title, subtitle }, index) => (
                                     <div
                                         key={title}
-                                        className="group flex items-start gap-4 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-white/5 p-5 shadow-lg shadow-black/20 backdrop-blur-sm hover:border-[#CE1126]/50 hover:bg-white/10 transition-all duration-300"
+                                        className="group flex items-start gap-4 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-white/5 p-5 shadow-lg shadow-black/20 backdrop-blur-sm hover:border-[#CE1126]/50 hover:bg-white/15 hover:shadow-[#CE1126]/30 transition-all duration-300 hover:scale-[1.02]"
                                         style={{ animationDelay: `${index * 100}ms` }}
                                     >
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                                             {icon}
                                         </div>
                                         <div className="flex-1">
-                                            <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-                                            <p className="text-sm text-white/80 leading-relaxed">{subtitle}</p>
+                                            <h3 className="text-lg font-bold text-white mb-1 transition-all duration-300 group-hover:text-[#CE1126]">{title}</h3>
+                                            <p className="text-sm text-white/80 leading-relaxed transition-colors duration-300 group-hover:text-white/90">{subtitle}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -774,10 +774,12 @@ const Register = () => {
                     </div>
 
                     {/* Panel derecho */}
-                    <div className="flex w-full flex-1 items-center justify-center px-5 py-10 sm:px-8 lg:px-12 relative z-10">
-                        <div className="w-full max-w-xl overflow-hidden rounded-[28px] border-2 border-white/20 bg-gradient-to-br from-white/10 via-white/5 to-white/10 shadow-2xl shadow-black/50 backdrop-blur-xl sm:max-w-2xl sm:rounded-[32px] relative">
+                    <div className="flex w-full flex-1 items-center justify-center px-5 py-10 sm:px-8 lg:px-12 relative z-10 animate-fade-in">
+                        <div className="group w-full max-w-xl overflow-hidden rounded-[28px] border-2 border-white/20 bg-gradient-to-br from-white/10 via-white/5 to-white/10 shadow-2xl shadow-black/50 backdrop-blur-xl sm:max-w-2xl sm:rounded-[32px] relative transition-all duration-500 hover:border-white/30 hover:shadow-[#CE1126]/20">
                             {/* Efecto de brillo superior */}
                             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                            {/* Borde gradiente animado */}
+                            <div className="absolute inset-0 rounded-[28px] sm:rounded-[32px] bg-gradient-to-r from-[#CE1126]/50 via-[#002D62]/50 to-[#CE1126]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl animate-pulse-slow"></div>
 
                             <div className="border-b border-white/20 bg-gradient-to-r from-[#CE1126]/10 via-transparent to-[#002D62]/10 px-5 py-6 sm:px-8 sm:py-8 backdrop-blur-sm">
                                 <div className="flex items-center justify-between gap-3 sm:gap-4">
@@ -786,20 +788,20 @@ const Register = () => {
                                             <Shield className="h-4 w-4" />
                                             Registro Oficial BasktscoreRD
                                         </span>
-                                        <h2 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
+                                        <h2 className="mt-4 text-2xl font-bold text-white sm:text-3xl transition-all duration-300">
                                             <span className="bg-gradient-to-r from-white via-white/90 to-white bg-clip-text text-transparent">
                                                 Crear cuenta de analista
                                             </span>
                                         </h2>
-                                        <p className="mt-2 text-sm text-white/80 sm:text-base font-medium">
+                                        <p className="mt-2 text-sm text-white/80 sm:text-base font-medium transition-colors duration-300">
                                             Accede al análisis táctico y predictivo de la Selección Nacional (2010-2025)
                                         </p>
                                     </div>
-                                    <div className="hidden sm:block">
+                                    <div className="hidden sm:block group">
                                         <div className="relative">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-2xl blur-lg opacity-50"></div>
-                                            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-xl">
-                                                <UserPlus className="h-8 w-8" />
+                                            <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-2xl blur-lg opacity-50 transition-all duration-500 group-hover:opacity-70 group-hover:blur-xl"></div>
+                                            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                                                <UserPlus className="h-8 w-8 transition-transform duration-500 group-hover:scale-110" />
                                             </div>
                                         </div>
                                     </div>
@@ -809,8 +811,8 @@ const Register = () => {
                             <form onSubmit={handleSubmit} className="space-y-6 px-5 py-8 text-slate-900 sm:px-8 sm:py-10">
                                 {/* Error del servidor */}
                                 {error && (
-                                    <div className="flex items-center gap-2 rounded-2xl border border-red-200/60 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-                                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <div className="flex items-center gap-2 rounded-2xl border border-red-200/60 bg-red-500/10 px-4 py-3 text-sm text-red-100 animate-shake">
+                                        <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
                                         <span>{error}</span>
                                     </div>
                                 )}
@@ -1298,13 +1300,14 @@ const Register = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleNext}
-                                                    className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-red-600 to-[#002D62] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#CE1126]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#CE1126]/60"
+                                                    className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-red-600 to-[#002D62] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#CE1126]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#CE1126]/60 active:scale-[0.98]"
                                                 >
+                                                    {/* Efecto de brillo al hover */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                                                     <span className="relative z-10 flex items-center gap-2">
                                                         Continuar
                                                         <Zap className="w-4 h-4" />
                                                     </span>
-                                                    <span className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                                                 </button>
                                             )}
 
@@ -1312,9 +1315,10 @@ const Register = () => {
                                                 <button
                                                     type="submit"
                                                     disabled={isLoading || !formData.acceptTerms || !formData.acceptPrivacy}
-                                                    className="group relative flex w-full sm:w-auto items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-red-600 to-[#002D62] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#CE1126]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#CE1126]/60 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                                                    className="group relative flex w-full sm:w-auto items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-red-600 to-[#002D62] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#CE1126]/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#CE1126]/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
                                                 >
-                                                    <span className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                                    {/* Efecto de brillo al hover */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                                                     <span className="relative flex items-center gap-2">
                                                         {buttonStatus === 'loading' && <Loader2 className="h-5 w-5 animate-spin" />}
                                                         {buttonStatus === 'idle' && !isLoading && buttonStatus !== 'success' && buttonStatus !== 'error' && (

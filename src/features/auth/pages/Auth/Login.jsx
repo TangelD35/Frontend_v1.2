@@ -135,7 +135,7 @@ const Login = () => {
         try {
             logger.debug('Iniciando sesión', { username: formData.username });
             const result = await login(formData);
-            
+
             if (result?.success) {
                 logger.info('Login exitoso, redirigiendo al dashboard');
                 // Navegar al dashboard
@@ -143,12 +143,12 @@ const Login = () => {
             } else {
                 // Login fallido - NO navegar, quedarse en la página
                 setFieldTouched({ username: true, password: true });
-                
+
                 // Analizar el mensaje de error para mostrar mensaje específico
                 const errorMsg = result?.error || error || '';
                 const lowerError = errorMsg.toLowerCase();
                 const newFieldErrors = {};
-                
+
                 // Determinar si es error de usuario o contraseña
                 if (lowerError.includes('usuario') || lowerError.includes('username') || lowerError.includes('user not found')) {
                     newFieldErrors.username = 'Usuario no encontrado';
@@ -198,22 +198,22 @@ const Login = () => {
     return (
         <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
             {/* Imagen de fondo más visible */}
-            <div 
+            <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
-                style={{ 
+                style={{
                     backgroundImage: `url(${backgroundImage})`,
                     imageRendering: '-webkit-optimize-contrast',
                     backfaceVisibility: 'hidden',
                     transform: 'translateZ(0)',
                 }}
             ></div>
-            
+
             {/* Overlay oscuro sobre la imagen */}
             <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-[#002D62]/70 to-slate-950/80"></div>
-            
+
             {/* Fondo con patrón de cuadrícula sutil */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-            
+
             {/* Efectos de luz modernos */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-[#CE1126]/20 blur-3xl" />
@@ -224,14 +224,14 @@ const Login = () => {
                 {/* Contenedor del formulario centrado */}
                 <div className="w-full max-w-md relative z-10">
                     {/* Logo y título arriba */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center mb-4">
-                            <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-[#CE1126] via-white to-[#002D62] p-1 shadow-2xl shadow-[#CE1126]/50">
-                                <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center p-1">
-                                    <img 
-                                        src="/logo-rdscore.png" 
-                                        alt="BasktscoreRD Logo" 
-                                        className="h-full w-full object-contain drop-shadow-lg"
+                    <div className="text-center mb-8 animate-fade-in">
+                        <div className="inline-flex items-center justify-center mb-4 group">
+                            <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-[#CE1126] via-white to-[#002D62] p-1 shadow-2xl shadow-[#CE1126]/50 transition-all duration-500 group-hover:shadow-[#CE1126]/70 group-hover:scale-105">
+                                <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center p-1 transition-transform duration-500 group-hover:rotate-6">
+                                    <img
+                                        src="/logo-rdscore.png"
+                                        alt="BasketscoreRD Logo"
+                                        className="h-full w-full object-contain drop-shadow-lg transition-transform duration-500 group-hover:scale-110"
                                         style={{
                                             imageRendering: '-webkit-optimize-contrast',
                                             backfaceVisibility: 'hidden',
@@ -242,193 +242,195 @@ const Login = () => {
                                 </div>
                             </div>
                         </div>
-                        <h1 className="text-3xl font-bold mb-2">
+                        <h1 className="text-3xl font-bold mb-2 transition-all duration-300 hover:scale-105">
                             <span className="bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
-                                BasktscoreRD
+                                BasketscoreRD
                             </span>
                         </h1>
-                        <p className="text-sm text-white/60">
+                        <p className="text-sm text-white/60 transition-colors duration-300 hover:text-white/80">
                             Sistema de Análisis Táctico • Selección Nacional RD
                         </p>
                     </div>
                     {/* Formulario */}
-                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl">
+                    <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:border-white/20 hover:shadow-[#CE1126]/20">
                         {/* Borde gradiente animado */}
-                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#CE1126]/50 via-[#002D62]/50 to-[#CE1126]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
-                        
+                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#CE1126]/50 via-[#002D62]/50 to-[#CE1126]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl animate-pulse-slow"></div>
+
                         <div className="relative p-8 sm:p-10">
                             <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-white mb-1">
+                                <h2 className="text-2xl font-bold text-white mb-1 transition-all duration-300">
                                     Bienvenido de vuelta
                                 </h2>
-                                <p className="text-sm text-white/60">
+                                <p className="text-sm text-white/60 transition-colors duration-300">
                                     Ingresa tus credenciales para continuar
                                 </p>
                             </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Error del servidor */}
-                        {error && (
-                            <div className="bg-red-500/10 border-2 border-red-400/50 text-red-100 px-4 py-3 rounded-xl backdrop-blur-sm">
-                                <div className="flex items-start gap-2">
-                                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-300 mt-0.5" />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">{error}</p>
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                {/* Error del servidor */}
+                                {error && (
+                                    <div className="bg-red-500/10 border-2 border-red-400/50 text-red-100 px-4 py-3 rounded-xl backdrop-blur-sm animate-shake">
+                                        <div className="flex items-start gap-2">
+                                            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-300 mt-0.5 animate-pulse" />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{error}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                )}
 
-                        {/* Username/Email */}
-                        <div>
+                                {/* Username/Email */}
+                                <div>
                                     <label htmlFor="username" className="block text-sm font-bold text-white mb-2">
-                                Usuario o Email
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    {formData.username.includes('@') ? (
+                                        Usuario o Email
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            {formData.username.includes('@') ? (
                                                 <Mail className="w-5 h-5 text-white/60" />
-                                    ) : (
+                                            ) : (
                                                 <User className="w-5 h-5 text-white/60" />
-                                    )}
-                                </div>
-                                <input
-                                    type="text"
-                                    id="username"
-                                    name="username"
-                                    value={formData.username}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    autoComplete="username"
+                                            )}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            id="username"
+                                            name="username"
+                                            value={formData.username}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            autoComplete="username"
                                             className={`w-full pl-10 pr-4 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.username
                                                 ? 'border-red-400 bg-red-50 shake'
                                                 : fieldTouched.username && formData.username && !validationErrors.username
                                                     ? 'border-emerald-400 bg-emerald-50'
                                                     : 'border-white/20'
-                                        }`}
-                                    placeholder="usuario o tu@email.com"
-                                    disabled={isLoading}
-                                />
-                                {isFormTouched && formData.username && !validationErrors.username && (
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                                }`}
+                                            placeholder="usuario o tu@email.com"
+                                            disabled={isLoading}
+                                        />
+                                        {isFormTouched && formData.username && !validationErrors.username && (
+                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                                                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                            {validationErrors.username && (
+                                    {validationErrors.username && (
                                         <p className="mt-2 text-sm text-red-200 flex items-center gap-1">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {validationErrors.username}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                                    <label htmlFor="password" className="block text-sm font-bold text-white mb-2">
-                                Contraseña
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Lock className="w-5 h-5 text-white/60" />
+                                            <AlertCircle className="w-4 h-4" />
+                                            {validationErrors.username}
+                                        </p>
+                                    )}
                                 </div>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    autoComplete="current-password"
+
+                                {/* Password */}
+                                <div>
+                                    <label htmlFor="password" className="block text-sm font-bold text-white mb-2">
+                                        Contraseña
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Lock className="w-5 h-5 text-white/60" />
+                                        </div>
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            id="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            autoComplete="current-password"
                                             className={`w-full pl-10 pr-12 py-3 bg-white/95 border-2 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 placeholder:text-slate-400 ${validationErrors.password
                                                 ? 'border-red-400 bg-red-50 shake'
                                                 : fieldTouched.password && formData.password && formData.password.length >= 6 && !validationErrors.password
                                                     ? 'border-emerald-400 bg-emerald-50'
                                                     : 'border-white/20'
-                                        }`}
-                                    placeholder="••••••••"
-                                    disabled={isLoading}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
+                                                }`}
+                                            placeholder="••••••••"
+                                            disabled={isLoading}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#CE1126] hover:text-[#002D62] transition-colors"
-                                    disabled={isLoading}
-                                >
-                                    {showPassword ? (
-                                        <EyeOff className="w-5 h-5" />
-                                    ) : (
-                                        <Eye className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </div>
-                            {validationErrors.password && (
+                                            disabled={isLoading}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="w-5 h-5" />
+                                            ) : (
+                                                <Eye className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    {validationErrors.password && (
                                         <p className="mt-2 text-sm text-red-200 flex items-center gap-1">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {validationErrors.password}
-                                </p>
-                            )}
-                        </div>
+                                            <AlertCircle className="w-4 h-4" />
+                                            {validationErrors.password}
+                                        </p>
+                                    )}
+                                </div>
 
-                        {/* Recordar sesión y recuperar contraseña */}
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    name="rememberMe"
-                                    checked={formData.rememberMe}
-                                    onChange={handleChange}
+                                {/* Recordar sesión y recuperar contraseña */}
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="rememberMe"
+                                            checked={formData.rememberMe}
+                                            onChange={handleChange}
                                             className="w-4 h-4 text-[#CE1126] border-white/30 rounded focus:ring-[#CE1126] bg-white/20 transition-colors"
-                                    disabled={isLoading}
-                                />
+                                            disabled={isLoading}
+                                        />
                                         <span className="ml-2 text-sm text-white/80 hover:text-white transition-colors font-medium">
-                                    Recordarme
-                                </span>
-                            </label>
-                            <Link
-                                to="/forgot-password"
+                                            Recordarme
+                                        </span>
+                                    </label>
+                                    <Link
+                                        to="/forgot-password"
                                         className="text-sm text-white/80 hover:text-[#CE1126] font-semibold transition-colors"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
-                        </div>
+                                    >
+                                        ¿Olvidaste tu contraseña?
+                                    </Link>
+                                </div>
 
-                        {/* Botón de submit */}
-                        <button
-                            type="submit"
-                            disabled={isLoading || !formData.username || !formData.password}
-                                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-200 hover:shadow-xl hover:shadow-[#CE1126]/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg disabled:grayscale"
-                        >
+                                {/* Botón de submit */}
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || !formData.username || !formData.password}
+                                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#CE1126]/30 transition-all duration-300 hover:shadow-2xl hover:shadow-[#CE1126]/50 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg disabled:grayscale disabled:hover:scale-100"
+                                >
+                                    {/* Efecto de brillo al hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                                     <span className="relative flex items-center justify-center gap-2">
-                            {isLoading ? (
-                                <>
+                                        {isLoading ? (
+                                            <>
                                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                    Iniciando sesión...
-                                </>
-                            ) : (
-                                <>
+                                                Iniciando sesión...
+                                            </>
+                                        ) : (
+                                            <>
                                                 <LogIn className="h-5 w-5" />
-                                    Iniciar Sesión
-                                </>
-                            )}
+                                                Iniciar Sesión
+                                            </>
+                                        )}
                                     </span>
-                        </button>
-                    </form>
+                                </button>
+                            </form>
 
-                    {/* Link a registro */}
+                            {/* Link a registro */}
                             <div className="mt-6 text-center text-sm text-white/70">
-                            ¿No tienes cuenta?{' '}
-                            <Link
-                                to="/register"
+                                ¿No tienes cuenta?{' '}
+                                <Link
+                                    to="/register"
                                     className="font-bold text-[#CE1126] hover:text-[#002D62] transition-colors"
-                            >
-                                Regístrate aquí
-                            </Link>
-                    </div>
+                                >
+                                    Regístrate aquí
+                                </Link>
+                            </div>
 
                         </div>
                     </div>
-                    
+
                     {/* Footer */}
                     <div className="mt-8 text-center">
                         <div className="flex items-center justify-center gap-2 text-xs text-white/40 mb-2">

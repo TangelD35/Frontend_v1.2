@@ -106,9 +106,8 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 right-0 z-40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border-b border-white/20 dark:border-gray-700/50 shadow-lg">
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-purple-500/5 to-blue-500/5 pointer-events-none" />
+            <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/20 dark:border-white/10 bg-white/70 dark:bg-slate-950/70 backdrop-blur-3xl shadow-[0_20px_40px_-24px_rgba(8,25,43,0.8)]">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-purple-500/5 to-blue-500/5 dark:from-[#0f2244]/40 dark:via-transparent dark:to-[#5a0f1c]/40 opacity-70 pointer-events-none" />
 
                 <div className="px-4 sm:px-6 relative z-10">
                     <div className="flex items-center justify-between h-16">
@@ -117,13 +116,13 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                             {/* Menu Toggle Button with enhanced animation */}
                             <button
                                 onClick={onMenuToggle}
-                                className="p-2 rounded-xl hover:bg-gradient-to-br hover:from-red-50 hover:to-blue-50 dark:hover:from-red-900/30 dark:hover:to-blue-900/30 transition-all duration-300 group"
+                                className="p-2 rounded-xl bg-gray-100/50 dark:bg-white/5 hover:bg-gray-200/50 dark:hover:bg-white/10 transition-all duration-200 border border-gray-300/20 dark:border-white/10"
                                 aria-label="Toggle menu"
                             >
                                 {isSidebarOpen ? (
-                                    <X className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-red-600 group-hover:rotate-90 transition-all duration-300" />
+                                    <X className="w-5 h-5 text-gray-600 dark:text-white/80" />
                                 ) : (
-                                    <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-red-600 group-hover:scale-110 transition-all duration-300" />
+                                    <Menu className="w-5 h-5 text-gray-600 dark:text-white/80" />
                                 )}
                             </button>
 
@@ -145,7 +144,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                                         {APP_INFO.NAME}
                                     </h1>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-                                        Plataforma analítica BasktscoreRD
+                                        Plataforma analítica
                                     </p>
                                 </div>
                             </button>
@@ -295,9 +294,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
             {/* Search Modal */}
             {showSearchModal && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center pt-20">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl mx-4 overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="fixed inset-0 z-50 bg-black/50 dark:bg-slate-950/80 backdrop-blur-sm flex items-start justify-center pt-20">
+                    <div className="w-full max-w-2xl mx-4 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl shadow-2xl">
+                        <div className="p-4 border-b border-gray-200 dark:border-white/10">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
@@ -305,14 +304,14 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                                     placeholder="Buscar jugadores, equipos, partidos, estadísticas..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border-0 rounded-xl focus:ring-2 focus:ring-red-500 text-lg"
+                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:ring-2 focus:ring-red-500"
                                     autoFocus
                                 />
                                 <button
                                     onClick={() => setShowSearchModal(false)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                                 >
-                                    <X className="w-5 h-5 text-gray-500" />
+                                    <X className="w-5 h-5 text-gray-500 dark:text-white/60" />
                                 </button>
                             </div>
                         </div>
@@ -320,29 +319,29 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                         <div className="p-4 max-h-96 overflow-y-auto">
                             {searchQuery ? (
                                 <div className="space-y-3">
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="text-sm text-gray-500 dark:text-white/50">
                                         Resultados para "{searchQuery}"
                                     </div>
                                     {/* Resultados simulados */}
                                     <div className="space-y-2">
-                                        <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                                        <div className="p-3 rounded-lg border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors">
                                             <div className="font-medium text-gray-900 dark:text-white">Karl-Anthony Towns</div>
-                                            <div className="text-sm text-gray-500">Jugador - Centro</div>
+                                            <div className="text-sm text-gray-500 dark:text-white/50">Jugador - Centro</div>
                                         </div>
-                                        <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                                        <div className="p-3 rounded-lg border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors">
                                             <div className="font-medium text-gray-900 dark:text-white">Selección Nacional</div>
-                                            <div className="text-sm text-gray-500">Equipo - República Dominicana</div>
+                                            <div className="text-sm text-gray-500 dark:text-white/50">Equipo - República Dominicana</div>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Búsquedas recientes</div>
+                                    <div className="text-sm font-medium text-gray-600 dark:text-white/70">Búsquedas recientes</div>
                                     <div className="space-y-2">
-                                        <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                                        <div className="p-3 rounded-lg border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors">
                                             <div className="font-medium text-gray-900 dark:text-white">Estadísticas 2024</div>
                                         </div>
-                                        <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                                        <div className="p-3 rounded-lg border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors">
                                             <div className="font-medium text-gray-900 dark:text-white">Análisis vs USA</div>
                                         </div>
                                     </div>

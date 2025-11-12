@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Trophy,
-    Mail, Lock, User, Phone, Building, Shield, Check,
+    Mail, Lock, User, Phone, Building, Check,
     Target, BarChart3, Users, Globe, Loader2, XCircle,
     Activity, Zap, Award, TrendingUp
 } from 'lucide-react';
+import '../Login/Login.css';
 
 // Componente Basketball personalizado (lucide-react no tiene este icono)
 const Basketball = ({ className, fill = 'none' }) => (
@@ -658,21 +659,28 @@ const Register = () => {
 
     return (
         <>
-            <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#002D62] via-slate-900 to-[#CE1126] text-white">
-                {/* Patrón de fondo con baloncesto */}
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(255,255,255,0.03) 100px, rgba(255,255,255,0.03) 200px)`
-                    }}></div>
-                </div>
+            <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+                {/* Imagen de fondo más visible */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+                    style={{
+                        backgroundImage: `url(/baskt.webp)`,
+                        imageRendering: '-webkit-optimize-contrast',
+                        backfaceVisibility: 'hidden',
+                        transform: 'translateZ(0)',
+                    }}
+                ></div>
 
-                {/* Efectos de luz animados con colores dominicanos */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-[#CE1126]/30 blur-3xl animate-pulse" />
-                    <div className="absolute top-1/2 -left-32 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-[#002D62]/40 blur-3xl animate-pulse delay-700" />
-                    <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                    <div className="absolute top-1/4 right-1/4 h-32 w-32 rounded-full bg-white/5 blur-2xl animate-pulse delay-300" />
-            </div>
+                {/* Overlay oscuro sobre la imagen */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-[#002D62]/70 to-slate-950/80"></div>
+
+                {/* Fondo con patrón de cuadrícula sutil */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                {/* Efectos de luz modernos */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-[#CE1126]/20 blur-3xl" />
+                    <div className="absolute top-1/2 -left-40 h-80 w-80 rounded-full bg-[#002D62]/20 blur-3xl" />
+                </div>
 
             <div className="relative flex min-h-screen flex-col lg:flex-row">
                 {/* Panel izquierdo */}

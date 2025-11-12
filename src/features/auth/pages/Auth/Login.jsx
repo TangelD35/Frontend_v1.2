@@ -432,7 +432,7 @@ const Login = () => {
                     {/* Footer */}
                     <div className="mt-8 text-center">
                         <div className="flex items-center justify-center gap-2 text-xs text-white/40 mb-2">
-                            <Shield className="w-3 h-3" />
+                            <Lock className="w-3 h-3" />
                             <span>Datos protegidos con encriptación de nivel empresarial</span>
                         </div>
                         <p className="text-xs text-white/30">

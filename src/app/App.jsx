@@ -66,6 +66,7 @@ function App() {
     useEffect(() => {
         // Inicializar autenticación solo una vez al montar la app
         initializeAuth();
+        console.log('🔧 Autenticación habilitada');
     }, []); // Sin dependencias para ejecutar solo una vez
 
     return (

@@ -1,33 +1,34 @@
-import { Plus, Shield, Edit, Trash2, Eye, Grid, List } from 'lucide-react';
+import { Plus, Shield, Edit, Trash2, Eye, Grid, List, Search, Users, Calendar, MapPin, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import useViewMode from '../../../../shared/hooks/useViewMode';
-import useFilters from '../../../../shared/hooks/useFilters';
 import { teamSchema } from '../../../../lib/validations/schemas';
-import {
-    SectionHeader,
-    ActionButton,
-    Badge,
-    StatsGrid,
-    Table,
-    CardView,
-    SearchAndFilter,
-    Modal,
-    Input,
-    Select,
-    Textarea,
-    Toast
-} from '../../../../shared/ui/components/common';
+import { useTeams } from '../../hooks/useTeams';
 
 const Teams = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    // Hook para cambiar entre vista de cartas y tabla
+    const { viewMode, isTableView, toggleViewMode } = useViewMode('cards', 'teams-view');
 
-    // Hooks personalizados
-    const { viewMode, isTableView, toggleViewMode } = useViewMode('table', 'teams-view');
+    // Hook para manejar equipos desde el backend
+    const {
+        teams,
+        loading,
+        error,
+        pagination,
+        filters,
+        createTeam,
+        updateTeam,
+        deleteTeam,
+        updateFilters,
+        updatePagination
+    } = useTeams();
 
     // Usar el hook de validación
     const {
@@ -43,187 +44,138 @@ const Teams = () => {
     } = useFormValidation({
         name: '',
         country: '',
-        category: '',
         coach: '',
-        founded: '',
-        description: ''
+        founded_year: '',
+        is_national_team: false
     }, teamSchema);
 
-    const teams = [
-        {
-            id: 1,
-            name: 'Estados Unidos',
-            logo: '🇺🇸',
-            country: 'USA',
-            category: 'Selección Nacional',
-            wins: 245,
-            losses: 18,
-            winRate: 93.1,
-            worldRanking: 1,
-            coach: 'Steve Kerr',
-            avgPoints: 98.5,
-            avgDefense: 78.2
-        },
-        {
-            id: 2,
-            name: 'España',
-            logo: '🇪🇸',
-            country: 'ESP',
-            category: 'Selección Nacional',
-            wins: 189,
-            losses: 56,
-            winRate: 77.1,
-            worldRanking: 2,
-            coach: 'Sergio Scariolo',
-            avgPoints: 87.3,
-            avgDefense: 81.5
-        },
-        {
-            id: 3,
-            name: 'República Dominicana',
-            logo: '🇩🇴',
-            country: 'DOM',
-            category: 'Selección Nacional',
-            wins: 45,
-            losses: 33,
-            winRate: 57.7,
-            worldRanking: 18,
-            coach: 'Néstor García',
-            avgPoints: 82.4,
-            avgDefense: 85.1
-        },
-    ];
-
-    // Configuración de filtros
-    const filterConfig = {
-        category: {
-            defaultValue: 'all',
-            filterFn: (team, value) => value === 'all' || team.category === value
-        },
-        searchFields: ['name', 'country', 'coach', 'category']
+    // Función para obtener el emoji de la bandera del país
+    const getCountryFlag = (country) => {
+        const flags = {
+            'USA': '🇺🇸', 'ESP': '🇪🇸', 'DOM': '🇩🇴', 'ARG': '🇦🇷', 'BRA': '🇧🇷',
+            'CAN': '🇨🇦', 'FRA': '🇫🇷', 'GER': '🇩🇪', 'ITA': '🇮🇹', 'AUS': '🇦🇺'
+        };
+        return flags[country?.toUpperCase()] || '🏀';
     };
 
-    const {
-        searchTerm,
-        setSearchTerm,
-        filters,
-        updateFilters,
-        filteredData: filteredTeams,
-        hasActiveFilters,
-        totalCount,
-        filteredCount
-    } = useFilters(teams, filterConfig);
+    // Handlers
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        updateFilters({ search: value });
+    };
 
-    // Filtros disponibles
-    const availableFilters = [
-        {
-            key: 'category',
-            label: 'Categoría',
-            options: [
-                { value: 'all', label: 'Todas las categorías' },
-                { value: 'Selección Nacional', label: 'Selección Nacional' },
-                { value: 'Club', label: 'Club' },
-                { value: 'Universidad', label: 'Universidad' }
-            ],
-            defaultValue: 'all'
+    const openCreateModal = () => {
+        setSelectedTeam(null);
+        reset();
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (team) => {
+        setSelectedTeam(team);
+        setFieldValue('name', team.name);
+        setFieldValue('country', team.country);
+        setFieldValue('coach', team.coach || '');
+        setFieldValue('founded_year', team.founded_year || '');
+        setFieldValue('is_national_team', team.is_national_team || false);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedTeam(null);
+        reset();
+    };
+
+    const handleFormSubmit = validateAndSubmit(async (formData) => {
+        try {
+            if (selectedTeam) {
+                await updateTeam(selectedTeam.id, formData);
+                setToast({ isVisible: true, type: 'success', message: 'Equipo actualizado exitosamente' });
+            } else {
+                await createTeam(formData);
+                setToast({ isVisible: true, type: 'success', message: 'Equipo creado exitosamente' });
+            }
+            closeModal();
+        } catch (error) {
+            setToast({ isVisible: true, type: 'error', message: error.message || 'Error al procesar la solicitud' });
         }
-    ];
+    });
 
-    const stats = [
-        {
-            title: 'Total Equipos',
-            value: totalCount.toString(),
-            icon: Shield,
-            change: '+2',
-            trend: 'up',
-            description: hasActiveFilters ? `${filteredCount} filtrados` : 'Equipos registrados'
-        },
-        {
-            title: 'Promedio Victorias',
-            value: '68.2%',
-            icon: Shield,
-            change: '+3.5%',
-            trend: 'up',
-            description: 'Porcentaje de victorias'
-        },
-        {
-            title: 'Ranking Promedio',
-            value: '7',
-            icon: Shield,
-            change: '-2',
-            trend: 'up',
-            description: 'Posición mundial promedio'
-        },
-    ];
+    const handleDelete = async (teamId) => {
+        if (window.confirm('¿Estás seguro de que deseas eliminar este equipo?')) {
+            try {
+                await deleteTeam(teamId);
+                setToast({ isVisible: true, type: 'success', message: 'Equipo eliminado exitosamente' });
+            } catch (error) {
+                setToast({ isVisible: true, type: 'error', message: error.message || 'Error al eliminar el equipo' });
+            }
+        }
+    };
 
+    const handlePageChange = (page) => {
+        updatePagination({ skip: (page - 1) * pagination.limit });
+    };
+
+    const currentPage = Math.floor(pagination.skip / pagination.limit) + 1;
+    const totalPages = Math.ceil(pagination.total / pagination.limit);
+
+    // Columnas para la vista de tabla
     const columns = [
         {
-            key: 'logo',
-            label: 'Logo',
-            sortable: false,
-            render: (value) => <span className="text-3xl">{value}</span>
-        },
-        {
-            key: 'name',
-            label: 'Equipo',
-            render: (value, row) => (
-                <div>
-                    <p className="font-semibold text-gray-800">{value}</p>
-                    <p className="text-xs text-gray-500">{row.coach}</p>
+            key: 'country',
+            label: 'País',
+            render: (team) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xl">{getCountryFlag(team.country)}</span>
+                    <span className="font-medium">{team.country}</span>
                 </div>
             )
         },
-        { key: 'category', label: 'Categoría' },
         {
-            key: 'worldRanking',
-            label: 'Ranking',
-            render: (value) => <Badge variant="primary">#{value}</Badge>
-        },
-        {
-            key: 'record',
-            label: 'Récord',
-            sortable: false,
-            render: (_, row) => `${row.wins}V - ${row.losses}D`
-        },
-        {
-            key: 'winRate',
-            label: '% Victorias',
-            render: (value) => (
-                <span className="font-semibold text-green-600">{value.toFixed(1)}%</span>
+            key: 'name',
+            label: 'Nombre del Equipo',
+            render: (team) => (
+                <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{team.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {team.is_national_team ? 'Selección Nacional' : 'Club'}
+                    </p>
+                </div>
             )
+        },
+        {
+            key: 'coach',
+            label: 'Entrenador',
+            render: (team) => team.coach || <span className="text-gray-400 italic">No especificado</span>
+        },
+        {
+            key: 'founded_year',
+            label: 'Fundado',
+            render: (team) => team.founded_year || <span className="text-gray-400 italic">No especificado</span>
         },
         {
             key: 'actions',
             label: 'Acciones',
-            sortable: false,
-            render: (_, row) => (
-                <div className="flex items-center gap-1">
+            render: (team) => (
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/teams/${row.id}`);
-                        }}
-                        className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
+                        onClick={() => navigate(`/teams/${team.id}`)}
+                        className="p-2 text-gray-400 hover:text-[#CE1126] dark:hover:text-[#002D62] hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         title="Ver detalles"
                     >
                         <Eye className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(row);
-                        }}
-                        className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600"
+                        onClick={() => openEditModal(team)}
+                        className="p-2 text-gray-400 hover:text-[#002D62] dark:hover:text-[#CE1126] hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         title="Editar"
                     >
                         <Edit className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(row);
-                        }}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-600"
+                        onClick={() => handleDelete(team.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         title="Eliminar"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -233,256 +185,392 @@ const Teams = () => {
         }
     ];
 
-
-
-    const handleEdit = (team) => {
-        setSelectedTeam(team);
-        setFieldValue('name', team.name);
-        setFieldValue('country', team.country);
-        setFieldValue('category', team.category);
-        setFieldValue('coach', team.coach);
-        setFieldValue('founded', team.founded || '');
-        setFieldValue('description', team.description || '');
-        setIsModalOpen(true);
-    };
-
-    const handleDelete = (team) => {
-        if (confirm(`¿Eliminar "${team.name}"?`)) {
-            setToast({
-                isVisible: true,
-                type: 'success',
-                message: `Equipo "${team.name}" eliminado`
-            });
-        }
-    };
-
-    const onSubmit = async (formData) => {
-        try {
-            console.log('Datos del equipo:', formData);
-
-            setToast({
-                isVisible: true,
-                type: 'success',
-                message: selectedTeam ? 'Equipo actualizado' : 'Equipo creado'
-            });
-            setIsModalOpen(false);
-            reset();
-        } catch (error) {
-            setToast({
-                isVisible: true,
-                type: 'error',
-                message: 'Error al guardar el equipo'
-            });
-        }
-    };
-
-    const openCreateModal = () => {
-        setSelectedTeam(null);
-        reset();
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        reset();
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 transition-all duration-500 p-6">
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 mb-8 border border-white/20 dark:border-gray-700/50">
-                <SectionHeader
-                    title="Equipos Rivales"
-                    description="Análisis y gestión de equipos internacionales"
-                    icon={Shield}
-                    action={
-                        <div className="flex gap-3">
-                            <ActionButton
-                                variant="secondary"
-                                icon={isTableView ? Grid : List}
-                                onClick={toggleViewMode}
-                                className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                            >
-                                {isTableView ? 'Vista Tarjetas' : 'Vista Tabla'}
-                            </ActionButton>
-                            <ActionButton
-                                variant="primary"
-                                icon={Plus}
-                                onClick={openCreateModal}
-                                className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                            >
-                                Agregar Equipo
-                            </ActionButton>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/10 dark:to-indigo-900/20">
+            {/* Header profesional */}
+            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-8 py-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                            <div className="p-4 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-xl shadow-lg">
+                                <Shield className="w-7 h-7 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Gestión de Equipos
+                                </h1>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                    Sistema de análisis táctico • BasketscoreRD
+                                </p>
+                            </div>
                         </div>
-                    }
-                />
+                        
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={toggleViewMode}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                            >
+                                {isTableView ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                                {isTableView ? 'Cartas' : 'Tabla'}
+                            </button>
+                            <button
+                                onClick={openCreateModal}
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#CE1126] hover:bg-[#B00E20] dark:bg-[#002D62] dark:hover:bg-[#001F4A] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nuevo Equipo
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/30 dark:border-gray-700/30">
-                <StatsGrid stats={stats} className="mb-0" />
-            </div>
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
+                                <Users className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Total de Equipos</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
+                                <MapPin className="w-6 h-6 text-[#002D62] dark:text-[#CE1126]" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {new Set(teams.map(team => team.country)).size}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Países Representados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/30 dark:border-gray-700/30 shadow-lg">
-                <SearchAndFilter
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    filters={availableFilters}
-                    activeFilters={filters}
-                    onFilterChange={updateFilters}
-                    placeholder="Buscar equipos..."
-                    className="mb-0"
-                />
-            </div>
-
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden">
-                {isTableView ? (
-                    <div className="p-6">
-                        <Table
-                            columns={columns}
-                            data={filteredTeams}
-                            onRowClick={(row) => navigate(`/teams/${row.id}`)}
-                            sortable
-                            hoverable
+                {/* Search */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                    <div className="relative max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar equipos por nombre o país..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
                         />
                     </div>
-                ) : (
-                    <div className="p-6">
-                        <CardView
-                            data={filteredTeams}
-                            onView={(team) => navigate(`/teams/${team.id}`)}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            renderCard={(team) => (
-                                <div className="group bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 dark:from-gray-700 dark:via-blue-900/20 dark:to-purple-900/10 rounded-2xl p-6 border border-blue-200/30 dark:border-gray-600/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="text-6xl group-hover:scale-110 transition-transform duration-300">{team.logo}</div>
-                                        <div className="flex-1">
-                                            <h3 className="text-xl font-bold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{team.name}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{team.coach}</p>
-                                            <Badge variant="primary" className="mt-2 shadow-sm">{team.category}</Badge>
+                </div>
+
+                {/* Teams Content */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm overflow-hidden">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CE1126] dark:border-[#002D62]"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-20">
+                            <p className="text-red-600 dark:text-red-400">{error}</p>
+                        </div>
+                    ) : teams.length === 0 ? (
+                        <div className="text-center py-20">
+                            <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600 dark:text-gray-400">No se encontraron equipos</p>
+                        </div>
+                    ) : isTableView ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        {columns.map((column) => (
+                                            <th key={column.key} className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                                {column.label}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {teams.map((team) => (
+                                        <tr key={team.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            {columns.map((column) => (
+                                                <td key={column.key} className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                                    {column.render(team)}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                            {teams.map((team) => (
+                                <div
+                                    key={team.id}
+                                    className="group bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-[#CE1126]/30 dark:hover:border-[#002D62]/30 transition-all duration-200 hover:shadow-lg"
+                                >
+                                    {/* Header */}
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-2xl">
+                                            {getCountryFlag(team.country)}
                                         </div>
-                                        <div className="text-center">
-                                            <Badge variant="primary" className="text-lg px-3 py-1 shadow-lg">#{team.worldRanking}</Badge>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ranking Mundial</p>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                                                {team.name}
+                                            </h3>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <MapPin className="w-3 h-3 text-gray-400" />
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">{team.country}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-blue-200/50 dark:border-gray-600/50">
-                                        <div className="text-center bg-green-50/50 dark:bg-green-900/20 rounded-lg p-3">
-                                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Pts/Partido</p>
-                                            <p className="text-lg font-bold text-green-700 dark:text-green-300">{team.avgPoints}</p>
+                                    
+                                    {/* Información */}
+                                    <div className="space-y-2 mb-4">
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {team.is_national_team ? 'Selección Nacional' : 'Club'}
                                         </div>
-                                        <div className="text-center bg-blue-50/50 dark:bg-blue-900/20 rounded-lg p-3">
-                                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Def/Partido</p>
-                                            <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{team.avgDefense}</p>
-                                        </div>
-                                        <div className="text-center bg-purple-50/50 dark:bg-purple-900/20 rounded-lg p-3">
-                                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">% Vict.</p>
-                                            <p className="text-lg font-bold text-purple-700 dark:text-purple-300">{team.winRate.toFixed(1)}%</p>
+                                        {team.coach && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <Users className="w-3 h-3" />
+                                                {team.coach}
+                                            </div>
+                                        )}
+                                        {team.founded_year && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <Calendar className="w-3 h-3" />
+                                                {team.founded_year}
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Acciones */}
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            onClick={() => navigate(`/teams/${team.id}`)}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-[#CE1126]/10 dark:bg-[#002D62]/20 text-[#CE1126] dark:text-[#002D62] rounded-lg text-sm font-medium hover:bg-[#CE1126]/20 dark:hover:bg-[#002D62]/30 transition-colors"
+                                        >
+                                            <Eye className="w-3 h-3" />
+                                            Ver
+                                        </button>
+                                        
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => openEditModal(team)}
+                                                className="p-1.5 text-gray-400 hover:text-[#002D62] dark:hover:text-[#CE1126] hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Edit className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(team.id)}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
+                            ))}
+                            </div>
+                            
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        Mostrando {pagination.skip + 1} - {Math.min(pagination.skip + pagination.limit, pagination.total)} de {pagination.total} equipos
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </button>
+                                        
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => handlePageChange(page)}
+                                                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                                                    currentPage === page
+                                                        ? 'bg-[#CE1126] dark:bg-[#002D62] text-white'
+                                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                        
+                                        <button
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={currentPage === totalPages}
+                                            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
                             )}
-                            columns={3}
-                        />
-                    </div>
-                )}
+                        </>
+                    )}
+                </div>
             </div>
 
-            <Modal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                title={selectedTeam ? 'Editar Equipo' : 'Agregar Equipo'}
-                size="large"
-            >
-                <form onSubmit={validateAndSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input
-                            label="Nombre del Equipo"
-                            name="name"
-                            value={values.name}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.name && errors.name}
-                            required
-                        />
-                        <Input
-                            label="País"
-                            name="country"
-                            value={values.country}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.country && errors.country}
-                            required
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Select
-                            label="Categoría"
-                            name="category"
-                            value={values.category}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.category && errors.category}
-                            options={[
-                                { value: 'Selección Nacional', label: 'Selección Nacional' },
-                                { value: 'Club', label: 'Club' },
-                                { value: 'Universidad', label: 'Universidad' }
-                            ]}
-                            required
-                        />
-                        <Input
-                            label="Entrenador"
-                            name="coach"
-                            value={values.coach}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.coach && errors.coach}
-                            required
-                        />
-                    </div>
-                    <Input
-                        label="Fecha de Fundación"
-                        name="founded"
-                        type="date"
-                        value={values.founded}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.founded && errors.founded}
-                    />
-                    <Textarea
-                        label="Descripción"
-                        name="description"
-                        value={values.description}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.description && errors.description}
-                        rows={3}
-                    />
-                    <div className="flex gap-3 justify-end pt-4">
-                        <ActionButton
-                            variant="secondary"
-                            type="button"
-                            onClick={closeModal}
-                            disabled={isSubmitting}
-                        >
-                            Cancelar
-                        </ActionButton>
-                        <ActionButton
-                            variant="primary"
-                            type="submit"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Guardando...' : (selectedTeam ? 'Actualizar' : 'Crear')}
-                        </ActionButton>
-                    </div>
-                </form>
-            </Modal>
+            {/* Modal para crear/editar equipo */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {selectedTeam ? 'Editar Equipo' : 'Crear Nuevo Equipo'}
+                            </h2>
+                        </div>
+                        
+                        <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Nombre del Equipo *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={values.name}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        placeholder="Ej: Los Angeles Lakers"
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        required
+                                    />
+                                    {touched.name && errors.name && (
+                                        <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                                    )}
+                                </div>
 
-            <Toast
-                type={toast.type}
-                message={toast.message}
-                isVisible={toast.isVisible}
-                onClose={() => setToast({ ...toast, isVisible: false })}
-            />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        País *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="country"
+                                        value={values.country}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        placeholder="Ej: USA"
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        required
+                                    />
+                                    {touched.country && errors.country && (
+                                        <p className="text-red-600 text-sm mt-1">{errors.country}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Entrenador
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="coach"
+                                        value={values.coach}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        placeholder="Ej: Phil Jackson"
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                    />
+                                    {touched.coach && errors.coach && (
+                                        <p className="text-red-600 text-sm mt-1">{errors.coach}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Año de Fundación
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="founded_year"
+                                        value={values.founded_year}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        placeholder="Ej: 1947"
+                                        min="1800"
+                                        max={new Date().getFullYear()}
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                    />
+                                    {touched.founded_year && errors.founded_year && (
+                                        <p className="text-red-600 text-sm mt-1">{errors.founded_year}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3">
+                                <input
+                                    type="checkbox"
+                                    id="is_national_team"
+                                    name="is_national_team"
+                                    checked={values.is_national_team}
+                                    onChange={handleChange}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                />
+                                <label htmlFor="is_national_team" className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                                    Es Selección Nacional
+                                </label>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    disabled={isSubmitting}
+                                    className="px-6 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl font-medium transition-colors duration-200"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-6 py-3 bg-[#CE1126] hover:bg-[#B00E20] dark:bg-[#002D62] dark:hover:bg-[#001F4A] text-white font-medium rounded-lg shadow-md transition-colors duration-200 disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Procesando...' : (selectedTeam ? 'Actualizar' : 'Crear')} Equipo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast para notificaciones */}
+            {toast.isVisible && (
+                <div className="fixed bottom-4 right-4 z-50">
+                    <div className={`px-6 py-4 rounded-xl shadow-lg ${
+                        toast.type === 'success' ? 'bg-green-600 text-white' :
+                        toast.type === 'error' ? 'bg-red-600 text-white' :
+                        'bg-blue-600 text-white'
+                    }`}>
+                        <p>{toast.message}</p>
+                        <button
+                            onClick={() => setToast({ ...toast, isVisible: false })}
+                            className="ml-4 text-white/80 hover:text-white"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

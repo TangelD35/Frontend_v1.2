@@ -5,39 +5,43 @@ export const tournamentSchema = {
     name: [
         validationRules.required,
         validationRules.minLength(3),
-        validationRules.maxLength(100),
+        validationRules.maxLength(200),
+    ],
+    season: [
+        validationRules.required,
+        validationRules.minLength(4),
+        validationRules.maxLength(50),
     ],
     type: [
-        validationRules.required,
+        validationRules.maxLength(100),
     ],
-    startDate: [
+    sede: [
+        validationRules.maxLength(150),
+    ],
+    start_date: [
         validationRules.required,
         validationRules.date,
     ],
-    endDate: [
+    end_date: [
+        validationRules.required,
         validationRules.date,
         validationRules.custom(
             (value, formData) => {
-                if (!value || !formData.startDate) return true;
-                return new Date(value) >= new Date(formData.startDate);
+                if (!value || !formData.start_date) return true;
+                return new Date(value) >= new Date(formData.start_date);
             },
             'La fecha de fin debe ser posterior a la de inicio'
         ),
     ],
-    location: [
-        validationRules.required,
-        validationRules.minLength(2),
-        validationRules.maxLength(200),
-    ],
-    teams: [
+    total_participants: [
         validationRules.required,
         validationRules.number,
         validationRules.integer,
         validationRules.min(2),
         validationRules.max(100),
     ],
-    description: [
-        validationRules.maxLength(500),
+    is_international: [
+        // Campo booleano, no necesita validación especial
     ],
 };
 
@@ -46,68 +50,83 @@ export const teamSchema = {
     name: [
         validationRules.required,
         validationRules.minLength(2),
-        validationRules.maxLength(100),
+        validationRules.maxLength(255),
     ],
     country: [
         validationRules.required,
         validationRules.minLength(2),
-        validationRules.maxLength(50),
-    ],
-    category: [
-        validationRules.required,
-    ],
-    coach: [
-        validationRules.required,
-        validationRules.minLength(3),
         validationRules.maxLength(100),
     ],
-    founded: [
-        validationRules.date,
-        validationRules.pastDate,
+    coach: [
+        validationRules.minLength(3),
+        validationRules.maxLength(150),
     ],
-    description: [
-        validationRules.maxLength(500),
+    founded_year: [
+        validationRules.number,
+        validationRules.integer,
+        validationRules.min(1800),
+        validationRules.max(new Date().getFullYear()),
+    ],
+    is_national_team: [
+        // Boolean field, no validation needed
     ],
 };
 
 // Esquema de validación para Jugadores
 export const playerSchema = {
-    name: [
+    first_name: [
         validationRules.required,
-        validationRules.minLength(3),
+        validationRules.minLength(2),
         validationRules.maxLength(100),
         validationRules.pattern(
             /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
             'El nombre solo puede contener letras y espacios'
         ),
     ],
-    number: [
+    last_name: [
         validationRules.required,
+        validationRules.minLength(2),
+        validationRules.maxLength(100),
+        validationRules.pattern(
+            /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
+            'El apellido solo puede contener letras y espacios'
+        ),
+    ],
+    full_name: [
+        validationRules.required,
+        validationRules.minLength(3),
+        validationRules.maxLength(200),
+    ],
+    jersey_number: [
         validationRules.number,
         validationRules.integer,
         validationRules.min(0),
         validationRules.max(99),
     ],
-    position: [
-        validationRules.required,
-    ],
-    age: [
-        validationRules.required,
+    height_cm: [
         validationRules.number,
         validationRules.integer,
-        validationRules.min(15),
-        validationRules.max(50),
+        validationRules.min(150),
+        validationRules.max(250),
     ],
-    height: [
+    position: [
+        // Opcional, se valida con opciones predefinidas
+    ],
+    nationality: [
+        validationRules.maxLength(100),
+    ],
+    birth_date: [
+        validationRules.date,
+    ],
+    team_id: [
         validationRules.required,
-        validationRules.pattern(
-            /^\d\.\d{2}m$/,
-            'Formato de altura inválido. Use: 2.13m'
+    ],
+    status: [
+        validationRules.required,
+        validationRules.custom(
+            (value) => ['activo', 'inactivo'].includes(value),
+            'El status debe ser activo o inactivo'
         ),
-    ],
-    team: [
-        validationRules.required,
-        validationRules.minLength(2),
     ],
 };
 

@@ -8,7 +8,7 @@
  * - Puede ser fácilmente extendido para enviar logs a servicios externos
  */
 
-import { config } from '../../lib/constants';
+import { config } from '../../lib/constants/index';
 
 /**
  * Niveles de log disponibles

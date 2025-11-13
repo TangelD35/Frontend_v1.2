@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { config } from '../../../lib/constants';
+import { config } from '../../../lib/constants/index';
 import logger from '../../utils/logger';
 
 class WebSocketService {

@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { config as appConfig } from '../../lib/constants';
+
 import logger from '../utils/logger';
 
 // Configuración base del cliente API
 const apiClient = axios.create({
-    baseURL: appConfig.api.baseURL,
+    baseURL: `${appConfig.api.baseURL}/api/v1`,
     timeout: appConfig.api.timeout,
     headers: {
         'Content-Type': 'application/json',

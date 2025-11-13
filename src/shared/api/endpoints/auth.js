@@ -1,5 +1,6 @@
 import axiosInstance from './axiosConfig';
 
+
 export const authService = {
     // Login - FastAPI usa OAuth2PasswordRequestForm (form-data)
     login: async (credentials) => {

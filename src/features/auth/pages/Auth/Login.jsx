@@ -6,7 +6,7 @@ import {
     Globe, TrendingUp, Activity, Award, Loader2
 } from 'lucide-react';
 import useAuthStore from '../../../../shared/store/authStore';
-import { VALIDATION_RULES, ERROR_MESSAGES, APP_INFO } from '../../../../lib/constants';
+import { VALIDATION_RULES, ERROR_MESSAGES, config } from '../../../../lib/constants/index';
 import logger from '../../../../shared/utils/logger';
 import backgroundImage from '../../../../assets/images/baskt.webp';
 import './Login.css';
@@ -438,7 +438,7 @@ const Login = () => {
                             <span>Datos protegidos con encriptación de nivel empresarial</span>
                         </div>
                         <p className="text-xs text-white/30">
-                            © {APP_INFO.YEAR} BasktscoreRD • Versión {APP_INFO.VERSION}
+                            © 2025 BasktscoreRD • Versión {config.app.version}
                         </p>
                     </div>
                 </div>

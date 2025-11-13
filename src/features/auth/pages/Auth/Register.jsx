@@ -18,7 +18,7 @@ const Basketball = ({ className, fill = 'none' }) => (
     </svg>
 );
 import useAuthStore from '../../../../shared/store/authStore';
-import { ROLE_OPTIONS, VALIDATION_RULES, ERROR_MESSAGES } from '../../../../lib/constants';
+import { ROLE_OPTIONS, VALIDATION_RULES, ERROR_MESSAGES } from '../../../../lib/constants/index';
 import { Toast } from '../../../../shared/ui/components/common';
 import logger from '../../../../shared/utils/logger';
 

@@ -1,7 +1,7 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { NAVIGATION_ITEMS } from '../../../../../lib/constants';
+import { NAVIGATION_ITEMS } from '../../../../../lib/constants/index';
 import { getIcon } from '../../../../../lib/utils/iconMap';
 
 const Breadcrumbs = ({ className = '' }) => {

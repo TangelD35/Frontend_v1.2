@@ -6,7 +6,7 @@ import {
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../../../shared/providers/ThemeContext';
 import useAuthStore from '../../../../shared/store/authStore';
-import { APP_INFO } from '../../../../lib/constants';
+import { config } from '../../../../lib/constants/index';
 import NotificationPanel from '../../components/common/feedback/NotificationPanel';
 import useNotifications from '../../../../shared/hooks/useNotifications';
 
@@ -141,7 +141,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                                 </div>
                                 <div className="hidden sm:block">
                                     <h1 className="text-lg font-black bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent">
-                                        {APP_INFO.NAME}
+                                        {config.app.name}
                                     </h1>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
                                         Plataforma analítica

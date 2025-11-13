@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flag, Activity, X } from 'lucide-react';
 import { useState } from 'react';
-import { NAVIGATION_ITEMS, SYSTEM_STATS, APP_INFO } from '../../../../lib/constants';
+import { config, NAVIGATION_ITEMS, SYSTEM_STATS } from '../../../../lib/constants/index';
 import { getIcon } from '../../../../lib/utils/iconMap';
 import { NavItem } from '../../components/common';
 
@@ -43,15 +43,15 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                                     <Flag className="w-5 h-5 text-red-600 dark:text-white/90" />
                                 </div>
                                 <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-wide text-gray-600 dark:text-white/80">
-                                    {APP_INFO.COUNTRY_FLAG}
+                                    🇩🇴
                                 </span>
                             </div>
                             <div>
                                 <h2 className="text-lg font-black text-gray-900 dark:text-white drop-shadow">
-                                    {APP_INFO.NAME}
+                                    {config.app.name}
                                 </h2>
                                 <p className="text-xs text-gray-600 dark:text-white/60">
-                                    Plataforma de análisis · v{APP_INFO.VERSION}
+                                    {config.app.description}
                                 </p>
                             </div>
                         </div>
@@ -120,10 +120,10 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                             </span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-white/60">
-                            {APP_INFO.NAME} v{APP_INFO.VERSION}
+                            {config.app.name} v{config.app.version}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
-                            © {APP_INFO.YEAR} {APP_INFO.ORGANIZATION}
+                            © 2025 Federación Dominicana de Baloncesto
                         </p>
                     </div>
                 </div>

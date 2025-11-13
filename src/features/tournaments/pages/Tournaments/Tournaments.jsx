@@ -1,5 +1,5 @@
 import { Plus, Trophy, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Filter, RefreshCw, TrendingUp, Sparkles, Target } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';

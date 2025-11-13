@@ -455,6 +455,112 @@ const Tournaments = () => {
                             <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <p className="text-gray-600 dark:text-gray-400">No se encontraron torneos</p>
                         </div>
+                    ) : isTableView ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Torneo
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Temporada
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Tipo
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Sede
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Participantes
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Estado
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                                            Acciones
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {tournaments.map((tournament) => {
+                                        const status = getTournamentStatus(tournament.start_date, tournament.end_date);
+                                        return (
+                                            <motion.tr 
+                                                key={tournament.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-lg flex items-center justify-center">
+                                                            <Trophy className="w-5 h-5 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900 dark:text-white">{tournament.name}</p>
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                                {tournament.is_international ? 'Internacional' : 'Nacional'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                                    {tournament.season}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                                    {tournament.type || 'No especificado'}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                                    {tournament.sede || 'No especificado'}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                                    {tournament.total_participants || 0} equipos
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        status === 'active' 
+                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                            : status === 'completed'
+                                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                                                    }`}>
+                                                        {status === 'active' ? 'Activo' : status === 'completed' ? 'Completado' : 'Pendiente'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => navigate(`/tournaments/${tournament.id}`)}
+                                                            className="p-2 text-gray-400 hover:text-[#CE1126] dark:hover:text-[#002D62] hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                            title="Ver detalles"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(tournament)}
+                                                            className="p-2 text-gray-400 hover:text-[#002D62] dark:hover:text-[#CE1126] hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(tournament)}
+                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                             {tournaments.map((tournament) => (
@@ -526,6 +632,67 @@ const Tournaments = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Mostrando {pagination.skip + 1} - {Math.min(pagination.skip + pagination.limit, pagination.total)} de {pagination.total} torneos
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                                <AnimatedButton
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={ChevronLeft}
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="!text-gray-600 dark:!text-gray-400 disabled:!opacity-50"
+                                >
+                                    <span className="sr-only">Anterior</span>
+                                </AnimatedButton>
+                                
+                                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                    let page;
+                                    if (totalPages <= 5) {
+                                        page = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        page = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        page = totalPages - 4 + i;
+                                    } else {
+                                        page = currentPage - 2 + i;
+                                    }
+                                    
+                                    return (
+                                        <AnimatedButton
+                                            key={page}
+                                            variant={currentPage === page ? "primary" : "ghost"}
+                                            size="sm"
+                                            onClick={() => handlePageChange(page)}
+                                            className={currentPage === page 
+                                                ? "!bg-[#CE1126] !text-white" 
+                                                : "!text-gray-600 dark:!text-gray-400 hover:!bg-gray-100 dark:hover:!bg-gray-700"
+                                            }
+                                        >
+                                            {page}
+                                        </AnimatedButton>
+                                    );
+                                })}
+                                
+                                <AnimatedButton
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={ChevronRight}
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="!text-gray-600 dark:!text-gray-400 disabled:!opacity-50"
+                                >
+                                    <span className="sr-only">Siguiente</span>
+                                </AnimatedButton>
+                            </div>
                         </div>
                     )}
                     </GlassCard>

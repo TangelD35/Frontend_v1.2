@@ -1,4 +1,4 @@
-import { Plus, Trophy, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trophy, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Filter, RefreshCw, TrendingUp, Sparkles, Target } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
@@ -11,7 +11,7 @@ const Tournaments = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTournament, setSelectedTournament] = useState(null);
     const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
-    const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
 
     // Hook para cambiar entre vista de cartas y tabla
     const { viewMode, isTableView, toggleViewMode } = useViewMode('cards', 'tournaments-view');
@@ -172,7 +172,25 @@ const Tournaments = () => {
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`inline-flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${showFilters
+                                    ? 'bg-[#CE1126] text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                    }`}
+                            >
+                                <Filter className="w-4 h-4" />
+                                Filtros
+                            </button>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                                disabled={loading}
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                Actualizar
+                            </button>
                             <button
                                 onClick={toggleViewMode}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
@@ -194,46 +212,162 @@ const Tournaments = () => {
 
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
-                                <Trophy className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
+                                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Total de Torneos</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
-                                <Users className="w-6 h-6 text-[#002D62] dark:text-[#CE1126]" />
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {totalParticipants}
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                    {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'active').length}
                                 </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Equipos Participantes</p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Activos</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                    {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'completed').length}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Completados</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
+                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#002D62] dark:text-[#CE1126]" />
+                            </div>
+                            <div>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{totalParticipants}</p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Participantes</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Search */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar torneos por nombre..."
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
-                        />
+                {/* Search and Filters */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Search */}
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar torneos por nombre..."
+                                value={filters.search || ''}
+                                onChange={(e) => updateFilters({ search: e.target.value })}
+                                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
+                            />
+                        </div>
+
+                        {/* Quick Status Filters */}
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => updateFilters({ status: 'todos' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${(filters.status || 'todos') === 'todos'
+                                    ? 'bg-[#CE1126] text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Trophy className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Todos</span>
+                                <span className="sm:hidden">Todo</span>
+                            </button>
+                            <button
+                                onClick={() => updateFilters({ status: 'active' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${filters.status === 'active'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Target className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Activos</span>
+                                <span className="sm:hidden">Activo</span>
+                            </button>
+                            <button
+                                onClick={() => updateFilters({ status: 'completed' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${filters.status === 'completed'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Completados</span>
+                                <span className="sm:hidden">Comp.</span>
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Advanced Filters */}
+                    {showFilters && (
+                        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Tipo de Torneo
+                                    </label>
+                                    <select
+                                        value={filters.type || ''}
+                                        onChange={(e) => updateFilters({ type: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
+                                    >
+                                        <option value="">Todos los tipos</option>
+                                        <option value="FIBA">FIBA</option>
+                                        <option value="Centrobasket">Centrobasket</option>
+                                        <option value="AmeriCup">AmeriCup</option>
+                                        <option value="Clasificatorias">Clasificatorias</option>
+                                        <option value="Amistoso">Amistoso</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Ordenar por
+                                    </label>
+                                    <select
+                                        value={filters.order_by || 'name'}
+                                        onChange={(e) => updateFilters({ order_by: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
+                                    >
+                                        <option value="name">Nombre</option>
+                                        <option value="start_date">Fecha de Inicio</option>
+                                        <option value="season">Temporada</option>
+                                        <option value="total_participants">Participantes</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
+                                    <button
+                                        onClick={() => updateFilters({ search: '', status: 'todos', type: '', order_by: 'name' })}
+                                        className="w-full px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 text-sm sm:text-base"
+                                    >
+                                        Limpiar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Torneos Content */}

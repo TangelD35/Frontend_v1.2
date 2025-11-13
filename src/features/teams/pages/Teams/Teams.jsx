@@ -1,4 +1,4 @@
-import { Plus, Shield, Edit, Trash2, Eye, Grid, List, Search, Users, Calendar, MapPin, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
+import { Plus, Shield, Edit, Trash2, Eye, Grid, List, Search, Users, Calendar, MapPin, ChevronLeft, ChevronRight, Building2, Filter, RefreshCw, TrendingUp, Sparkles, Target } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
@@ -11,7 +11,7 @@ const Teams = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
-    const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
     
     // Hook para cambiar entre vista de cartas y tabla
     const { viewMode, isTableView, toggleViewMode } = useViewMode('cards', 'teams-view');
@@ -59,11 +59,6 @@ const Teams = () => {
     };
 
     // Handlers
-    const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setSearchTerm(value);
-        updateFilters({ search: value });
-    };
 
     const openCreateModal = () => {
         setSelectedTeam(null);
@@ -205,7 +200,25 @@ const Teams = () => {
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`inline-flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${showFilters
+                                    ? 'bg-[#CE1126] text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                    }`}
+                            >
+                                <Filter className="w-4 h-4" />
+                                Filtros
+                            </button>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                                disabled={loading}
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                Actualizar
+                            </button>
                             <button
                                 onClick={toggleViewMode}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
@@ -227,46 +240,163 @@ const Teams = () => {
 
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
-                                <Users className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
+                                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Total de Equipos</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
-                                <MapPin className="w-6 h-6 text-[#002D62] dark:text-[#CE1126]" />
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                    {teams.filter(t => t.is_national_team).length}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Nacionales</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                    {teams.filter(t => !t.is_national_team).length}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Clubes</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
+                                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-[#002D62] dark:text-[#CE1126]" />
+                            </div>
+                            <div>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                     {new Set(teams.map(team => team.country)).size}
                                 </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Países Representados</p>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Países</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Search */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar equipos por nombre o país..."
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
-                        />
+                {/* Search and Filters */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Search */}
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar equipos por nombre o país..."
+                                value={filters.search || ''}
+                                onChange={(e) => updateFilters({ search: e.target.value })}
+                                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
+                            />
+                        </div>
+
+                        {/* Quick Type Filters */}
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => updateFilters({ type: 'todos' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${(filters.type || 'todos') === 'todos'
+                                    ? 'bg-[#CE1126] text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Shield className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Todos</span>
+                                <span className="sm:hidden">Todo</span>
+                            </button>
+                            <button
+                                onClick={() => updateFilters({ type: 'national' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${filters.type === 'national'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Target className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Nacionales</span>
+                                <span className="sm:hidden">Nac.</span>
+                            </button>
+                            <button
+                                onClick={() => updateFilters({ type: 'club' })}
+                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${filters.type === 'club'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                <Building2 className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Clubes</span>
+                                <span className="sm:hidden">Club</span>
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Advanced Filters */}
+                    {showFilters && (
+                        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        País
+                                    </label>
+                                    <select
+                                        value={filters.country || ''}
+                                        onChange={(e) => updateFilters({ country: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
+                                    >
+                                        <option value="">Todos los países</option>
+                                        <option value="DOM">República Dominicana</option>
+                                        <option value="USA">Estados Unidos</option>
+                                        <option value="ESP">España</option>
+                                        <option value="ARG">Argentina</option>
+                                        <option value="BRA">Brasil</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Ordenar por
+                                    </label>
+                                    <select
+                                        value={filters.order_by || 'name'}
+                                        onChange={(e) => updateFilters({ order_by: e.target.value })}
+                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
+                                    >
+                                        <option value="name">Nombre</option>
+                                        <option value="country">País</option>
+                                        <option value="founded_year">Año de Fundación</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
+                                    <button
+                                        onClick={() => updateFilters({ search: '', type: 'todos', country: '', order_by: 'name' })}
+                                        className="w-full px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 text-sm sm:text-base"
+                                    >
+                                        Limpiar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Teams Content */}

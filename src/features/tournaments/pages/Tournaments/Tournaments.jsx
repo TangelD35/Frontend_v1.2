@@ -29,7 +29,8 @@ const Tournaments = () => {
         updateTournament,
         deleteTournament,
         updateFilters,
-        updatePagination
+        updatePagination,
+        refetch
     } = useTournaments();
 
     // Usar el hook de validación
@@ -154,6 +155,48 @@ const Tournaments = () => {
     const currentPage = Math.floor(pagination.skip / pagination.limit) + 1;
     const totalPages = Math.ceil(pagination.total / pagination.limit);
 
+    // Función para ajustar el límite según el estado del sidebar
+    const adjustLimit = (filtersOpen) => {
+        const baseLimit = 12;
+        const newLimit = filtersOpen ? Math.max(6, baseLimit - 3) : baseLimit;
+        if (pagination.limit !== newLimit) {
+            updatePagination({ limit: newLimit, skip: 0 });
+        }
+    };
+
+    // Ajustar límite cuando cambie el estado del sidebar
+    useEffect(() => {
+        adjustLimit(showFilters);
+    }, [showFilters]);
+
+    // Auto-ocultar toast después de 3 segundos
+    useEffect(() => {
+        if (toast.isVisible) {
+            const timer = setTimeout(() => {
+                setToast(prev => ({ ...prev, isVisible: false }));
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.isVisible]);
+
+    // Función para refresh manual
+    const handleRefresh = async () => {
+        try {
+            await refetch();
+            setToast({
+                isVisible: true,
+                type: 'success',
+                message: 'Datos actualizados correctamente'
+            });
+        } catch (error) {
+            setToast({
+                isVisible: true,
+                type: 'error',
+                message: 'Error al actualizar los datos'
+            });
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/10 dark:to-indigo-900/20">
             {/* Header profesional */}
@@ -189,7 +232,7 @@ const Tournaments = () => {
                                 variant="ghost"
                                 size="sm"
                                 icon={RefreshCw}
-                                onClick={() => window.location.reload()}
+                                onClick={handleRefresh}
                                 disabled={loading}
                                 loading={loading}
                                 className="!text-gray-700 dark:!text-gray-300"

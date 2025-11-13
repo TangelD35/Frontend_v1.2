@@ -29,7 +29,8 @@ const Teams = () => {
         updateTeam,
         deleteTeam,
         updateFilters,
-        updatePagination
+        updatePagination,
+        refetch
     } = useTeams();
 
     // Usar el hook de validación
@@ -116,6 +117,48 @@ const Teams = () => {
 
     const currentPage = Math.floor(pagination.skip / pagination.limit) + 1;
     const totalPages = Math.ceil(pagination.total / pagination.limit);
+
+    // Función para ajustar el límite según el estado del sidebar
+    const adjustLimit = (filtersOpen) => {
+        const baseLimit = 12;
+        const newLimit = filtersOpen ? Math.max(6, baseLimit - 3) : baseLimit;
+        if (pagination.limit !== newLimit) {
+            updatePagination({ limit: newLimit, skip: 0 });
+        }
+    };
+
+    // Ajustar límite cuando cambie el estado del sidebar
+    useEffect(() => {
+        adjustLimit(showFilters);
+    }, [showFilters]);
+
+    // Auto-ocultar toast después de 3 segundos
+    useEffect(() => {
+        if (toast.isVisible) {
+            const timer = setTimeout(() => {
+                setToast(prev => ({ ...prev, isVisible: false }));
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.isVisible]);
+
+    // Función para refresh manual
+    const handleRefresh = async () => {
+        try {
+            await refetch();
+            setToast({
+                isVisible: true,
+                type: 'success',
+                message: 'Datos actualizados correctamente'
+            });
+        } catch (error) {
+            setToast({
+                isVisible: true,
+                type: 'error',
+                message: 'Error al actualizar los datos'
+            });
+        }
+    };
 
     // Columnas para la vista de tabla
     const columns = [
@@ -217,7 +260,7 @@ const Teams = () => {
                                 variant="ghost"
                                 size="sm"
                                 icon={RefreshCw}
-                                onClick={() => window.location.reload()}
+                                onClick={handleRefresh}
                                 disabled={loading}
                                 loading={loading}
                                 className="!text-gray-700 dark:!text-gray-300"

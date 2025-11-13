@@ -1,10 +1,12 @@
 import { Plus, Shield, Edit, Trash2, Eye, Grid, List, Search, Users, Calendar, MapPin, ChevronLeft, ChevronRight, Building2, Filter, RefreshCw, TrendingUp, Sparkles, Target } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import useViewMode from '../../../../shared/hooks/useViewMode';
 import { teamSchema } from '../../../../lib/validations/schemas';
 import { useTeams } from '../../hooks/useTeams';
+import { GlassCard, AnimatedButton, LoadingState, ErrorState } from '../../../../shared/ui/components/modern';
 
 const Teams = () => {
     const navigate = useNavigate();
@@ -201,38 +203,47 @@ const Teams = () => {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-3">
-                            <button
+                            <AnimatedButton
+                                variant={showFilters ? "danger" : "ghost"}
+                                size="sm"
+                                icon={Filter}
                                 onClick={() => setShowFilters(!showFilters)}
-                                className={`inline-flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${showFilters
-                                    ? 'bg-[#CE1126] text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                    }`}
+                                className={showFilters ? "!bg-[#CE1126]" : "!text-gray-700 dark:!text-gray-300"}
                             >
-                                <Filter className="w-4 h-4" />
                                 Filtros
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                icon={RefreshCw}
                                 onClick={() => window.location.reload()}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
                                 disabled={loading}
+                                loading={loading}
+                                className="!text-gray-700 dark:!text-gray-300"
                             >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                 Actualizar
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                icon={isTableView ? Grid : List}
                                 onClick={toggleViewMode}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                                className="!text-gray-700 dark:!text-gray-300"
                             >
-                                {isTableView ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
                                 {isTableView ? 'Cartas' : 'Tabla'}
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="primary"
+                                size="md"
+                                icon={Plus}
                                 onClick={openCreateModal}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#CE1126] hover:bg-[#B00E20] dark:bg-[#002D62] dark:hover:bg-[#001F4A] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                                className="!bg-gradient-to-r !from-[#CE1126] !to-[#002D62] hover:!shadow-xl"
                             >
-                                <Plus className="w-4 h-4" />
                                 Nuevo Equipo
-                            </button>
+                            </AnimatedButton>
                         </div>
                     </div>
                 </div>

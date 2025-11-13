@@ -1,10 +1,12 @@
 import { Plus, Trophy, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Filter, RefreshCw, TrendingUp, Sparkles, Target } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import useViewMode from '../../../../shared/hooks/useViewMode';
 import { tournamentSchema } from '../../../../lib/validations/schemas';
 import { useTournaments } from '../../hooks/useTournaments';
+import { GlassCard, AnimatedButton, LoadingState, ErrorState } from '../../../../shared/ui/components/modern';
 
 const Tournaments = () => {
     const navigate = useNavigate();
@@ -173,38 +175,47 @@ const Tournaments = () => {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-3">
-                            <button
+                            <AnimatedButton
+                                variant={showFilters ? "danger" : "ghost"}
+                                size="sm"
+                                icon={Filter}
                                 onClick={() => setShowFilters(!showFilters)}
-                                className={`inline-flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${showFilters
-                                    ? 'bg-[#CE1126] text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                    }`}
+                                className={showFilters ? "!bg-[#CE1126]" : "!text-gray-700 dark:!text-gray-300"}
                             >
-                                <Filter className="w-4 h-4" />
                                 Filtros
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                icon={RefreshCw}
                                 onClick={() => window.location.reload()}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
                                 disabled={loading}
+                                loading={loading}
+                                className="!text-gray-700 dark:!text-gray-300"
                             >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                 Actualizar
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="ghost"
+                                size="sm"
+                                icon={isTableView ? Grid : List}
                                 onClick={toggleViewMode}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                                className="!text-gray-700 dark:!text-gray-300"
                             >
-                                {isTableView ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
                                 {isTableView ? 'Cartas' : 'Tabla'}
-                            </button>
-                            <button
+                            </AnimatedButton>
+                            
+                            <AnimatedButton
+                                variant="primary"
+                                size="md"
+                                icon={Plus}
                                 onClick={openCreateModal}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#CE1126] hover:bg-[#B00E20] dark:bg-[#002D62] dark:hover:bg-[#001F4A] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                                className="!bg-gradient-to-r !from-[#CE1126] !to-[#002D62] hover:!shadow-xl"
                             >
-                                <Plus className="w-4 h-4" />
                                 Nuevo Torneo
-                            </button>
+                            </AnimatedButton>
                         </div>
                     </div>
                 </div>
@@ -213,61 +224,114 @@ const Tournaments = () => {
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
-                                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <GlassCard className="p-4 sm:p-6 hover:shadow-2xl">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 rounded-xl">
+                                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
+                                </div>
+                                <div>
+                                    <motion.p 
+                                        className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.2, type: "spring" }}
+                                    >
+                                        {pagination.total}
+                                    </motion.p>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</p>
-                            </div>
-                        </div>
-                    </div>
+                        </GlassCard>
+                    </motion.div>
 
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <GlassCard className="p-4 sm:p-6 hover:shadow-2xl">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl">
+                                    <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <motion.p 
+                                        className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.3, type: "spring" }}
+                                    >
+                                        {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'active').length}
+                                    </motion.p>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Activos</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                    {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'active').length}
-                                </p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Activos</p>
-                            </div>
-                        </div>
-                    </div>
+                        </GlassCard>
+                    </motion.div>
 
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <GlassCard className="p-4 sm:p-6 hover:shadow-2xl">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl">
+                                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <motion.p 
+                                        className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.4, type: "spring" }}
+                                    >
+                                        {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'completed').length}
+                                    </motion.p>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Completados</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                    {tournaments.filter(t => getTournamentStatus(t.start_date, t.end_date) === 'completed').length}
-                                </p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Completados</p>
-                            </div>
-                        </div>
-                    </div>
+                        </GlassCard>
+                    </motion.div>
 
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-[#002D62]/10 dark:bg-[#CE1126]/20 rounded-lg">
-                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#002D62] dark:text-[#CE1126]" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                    >
+                        <GlassCard className="p-4 sm:p-6 hover:shadow-2xl">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-gradient-to-br from-[#002D62]/20 to-[#CE1126]/20 rounded-xl">
+                                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#002D62] dark:text-[#CE1126]" />
+                                </div>
+                                <div>
+                                    <motion.p 
+                                        className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.5, type: "spring" }}
+                                    >
+                                        {totalParticipants}
+                                    </motion.p>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Participantes</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{totalParticipants}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Participantes</p>
-                            </div>
-                        </div>
-                    </div>
+                        </GlassCard>
+                    </motion.div>
                 </div>
 
                 {/* Search and Filters */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                >
+                    <GlassCard className="p-4 sm:p-6 mb-6 sm:mb-8">
                     <div className="flex flex-col lg:flex-row gap-4">
                         {/* Search */}
                         <div className="relative flex-1">
@@ -368,10 +432,16 @@ const Tournaments = () => {
                             </div>
                         </div>
                     )}
-                </div>
+                    </GlassCard>
+                </motion.div>
 
                 {/* Torneos Content */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm overflow-hidden">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                >
+                    <GlassCard className="overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CE1126] dark:border-[#002D62]"></div>
@@ -458,7 +528,8 @@ const Tournaments = () => {
                             ))}
                         </div>
                     )}
-                </div>
+                    </GlassCard>
+                </motion.div>
 
                 {/* Modal de crear/editar torneo */}
                 {isModalOpen && (

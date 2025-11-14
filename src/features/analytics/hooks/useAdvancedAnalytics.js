@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { advancedAnalyticsService } from '../../../shared/api/endpoints/advancedAnalytics';
-import { useAuthStore } from '../../../shared/store/authStore';
+import useAuthStore from '../../../shared/store/authStore';
 
 export const useAdvancedAnalytics = () => {
     const [playerAdvancedStats, setPlayerAdvancedStats] = useState([]);

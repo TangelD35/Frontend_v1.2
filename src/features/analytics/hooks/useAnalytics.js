@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { analyticsService } from '../../../shared/api/endpoints/analytics';
-import { useAuthStore } from '../../../shared/store/authStore';
+import useAuthStore from '../../../shared/store/authStore';
 
 export const useAnalytics = () => {
     const [summary, setSummary] = useState(null);

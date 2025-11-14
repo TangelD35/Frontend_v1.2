@@ -25,10 +25,10 @@ export const useGames = () => {
     // Función para obtener partidos
     const fetchGames = async (customFilters = {}) => {
         if (!user) return;
-        
+
         setLoading(true);
         setError(null);
-        
+
         try {
             const params = {
                 skip: pagination.skip,
@@ -45,11 +45,21 @@ export const useGames = () => {
             });
 
             const response = await gamesService.getAll(params);
-            
-            setGames(response.items || []);
+
+            // Soportar tanto respuesta paginada { items, total, ... }
+            // como un array simple de partidos
+            const items = Array.isArray(response)
+                ? response
+                : (response.items || []);
+
+            const total = Array.isArray(response)
+                ? response.length
+                : (response.total ?? items.length);
+
+            setGames(items);
             setPagination(prev => ({
                 ...prev,
-                total: response.total || 0
+                total
             }));
         } catch (err) {
             console.error('Error fetching games:', err);
@@ -63,7 +73,7 @@ export const useGames = () => {
     const createGame = async (gameData) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const newGame = await gamesService.create(gameData);
             await fetchGames(); // Recargar la lista
@@ -82,7 +92,7 @@ export const useGames = () => {
     const updateGame = async (id, gameData) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const updatedGame = await gamesService.update(id, gameData);
             await fetchGames(); // Recargar la lista
@@ -101,7 +111,7 @@ export const useGames = () => {
     const deleteGame = async (id) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             await gamesService.delete(id);
             await fetchGames(); // Recargar la lista
@@ -127,6 +137,18 @@ export const useGames = () => {
     };
 
     // Efecto para cargar partidos cuando cambian filtros o paginación
+    // Función para ajustar el límite dinámicamente según el estado del sidebar
+    const adjustLimit = (showFilters) => {
+        const newLimit = 4; // 4 elementos por página siempre
+        if (pagination.limit !== newLimit) {
+            setPagination(prev => ({
+                ...prev,
+                limit: newLimit,
+                skip: 0 // Resetear a la primera página
+            }));
+        }
+    };
+
     useEffect(() => {
         fetchGames();
     }, [user, pagination.skip, pagination.limit, filters]);
@@ -142,6 +164,7 @@ export const useGames = () => {
         deleteGame,
         updateFilters,
         updatePagination,
+        adjustLimit,
         refetch: fetchGames
     };
 };

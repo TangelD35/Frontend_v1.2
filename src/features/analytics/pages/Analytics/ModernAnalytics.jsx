@@ -64,11 +64,11 @@ const ModernAnalytics = () => {
         updateFilters,
         clearFilters,
         hasActiveFilters
-    } = useFilters({
-        period: '2024',
-        metric: 'all',
-        team: '',
-        tournament: ''
+    } = useFilters([], {
+        period: { defaultValue: '2024' },
+        metric: { defaultValue: 'all' },
+        team: { defaultValue: '' },
+        tournament: { defaultValue: '' }
     });
 
     // Validación de formularios

@@ -23,7 +23,7 @@ const PlayerDetail = lazy(() => import('../features/players/pages/Players/Player
 const Games = lazy(() => import('../features/games/pages/Games/Games'));
 const GameDetail = lazy(() => import('../features/games/pages/Games/GameDetail'));
 const Predictions = lazy(() => import('../features/predictions/pages/Predictions/Predictions'));
-const Analytics = lazy(() => import('../features/analytics/pages/Analytics/SimpleAnalytics'));
+const Analytics = lazy(() => import('../features/analytics/pages/Analytics/BasicAnalytics'));
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();

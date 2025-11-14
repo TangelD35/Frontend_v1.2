@@ -11,12 +11,34 @@ export const useAdvancedAnalytics = () => {
     const [error, setError] = useState(null);
     const { user } = useAuthStore();
 
+    // Obtener datos principales de advanced analytics
+    const fetchAdvancedAnalytics = useCallback(async (params = {}) => {
+        if (!user) return;
+
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await advancedAnalyticsService.getAdvancedAnalytics(params);
+            // Procesar los datos según la estructura que devuelva tu backend
+            if (data.playerStats) setPlayerAdvancedStats(data.playerStats);
+            if (data.teamRatings) setTeamRatings(data.teamRatings);
+            if (data.leagueAverages) setLeagueAverages(data.leagueAverages);
+            return data;
+        } catch (err) {
+            console.error('Error fetching advanced analytics:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
     // Obtener estadísticas avanzadas de jugador
     const fetchPlayerAdvancedStats = useCallback(async (playerId, season) => {
         if (!user || !playerId) return null;
 
         try {
             const data = await advancedAnalyticsService.getPlayerAdvancedStats(playerId, season);
+            setPlayerAdvancedStats(data);
             return data;
         } catch (err) {
             console.error('Error fetching player advanced stats:', err);
@@ -125,11 +147,10 @@ export const useAdvancedAnalytics = () => {
     // Refetch all data
     const refetch = useCallback(async (season = '2024') => {
         await Promise.all([
-            fetchTeamRatings('republica_dominicana', season),
-            fetchLeagueAverages(season),
+            fetchAdvancedAnalytics({ season }),
             fetchMetricsDocumentation()
         ]);
-    }, [fetchTeamRatings, fetchLeagueAverages, fetchMetricsDocumentation]);
+    }, [fetchAdvancedAnalytics, fetchMetricsDocumentation]);
 
     // Cargar datos iniciales
     useEffect(() => {
@@ -150,6 +171,7 @@ export const useAdvancedAnalytics = () => {
         error,
 
         // Actions
+        fetchAdvancedAnalytics,
         fetchPlayerAdvancedStats,
         fetchPlayerPER,
         fetchPlayerQuickMetrics,

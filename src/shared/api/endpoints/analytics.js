@@ -1,9 +1,15 @@
 import axiosInstance from './axiosConfig';
 
 export const analyticsService = {
+    // Obtener datos principales de analytics
+    getAnalytics: async (params = {}) => {
+        const response = await axiosInstance.get('/analytics', { params });
+        return response.data;
+    },
+
     // Obtener resumen general
     getSummary: async () => {
-        const response = await axiosInstance.get('/analytics/summary');
+        const response = await axiosInstance.get('/analytics');
         return response.data;
     },
 

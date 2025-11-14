@@ -17,10 +17,10 @@ export const useAnalytics = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await analyticsService.getSummary();
+            const data = await analyticsService.getAnalytics();
             setSummary(data);
         } catch (err) {
-            console.error('Error fetching analytics summary:', err);
+            console.error('Error fetching analytics:', err);
             setError(err);
         } finally {
             setLoading(false);

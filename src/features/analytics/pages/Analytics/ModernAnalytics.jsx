@@ -18,7 +18,7 @@ import { ModernModal } from '../../../../shared/ui/components/modern/ModernModal
 import { StatusIndicator } from '../../../../shared/ui/components/common/feedback/StatusIndicator';
 import { LoadingSpinner } from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
 import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
-import { RDScoreLogo } from '../../../../shared/ui/components/common/layout/RDScoreLogo';
+// RDScoreLogo component doesn't exist, will use icon instead
 
 const ModernAnalytics = () => {
     const navigate = useNavigate();
@@ -252,7 +252,9 @@ const ModernAnalytics = () => {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         {/* Identidad Institucional */}
                         <div className="flex items-center gap-6">
-                            <RDScoreLogo size={64} className="flex-shrink-0" />
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                <BarChart3 className="w-8 h-8 text-white" />
+                            </div>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
                                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">

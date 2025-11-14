@@ -24,17 +24,12 @@ export const useTeams = (initialFilters = {}) => {
     const { user } = useAuth();
 
     const fetchTeams = async (newFilters = {}) => {
-        console.log('🔍 useTeams - fetchTeams called', { user, newFilters });
-        
         if (!user) {
-            console.log('❌ useTeams - No user found, skipping fetch');
             return;
         }
-        
-        console.log('✅ useTeams - User found, fetching teams...', user);
         setLoading(true);
         setError(null);
-        
+
         try {
             const params = {
                 skip: pagination.skip,
@@ -50,26 +45,18 @@ export const useTeams = (initialFilters = {}) => {
                 }
             });
 
-            console.log('📡 useTeams - Making API call with params:', params);
-            
             const response = await teamsService.getAll(params);
-            console.log('📦 useTeams - API response:', response);
-            
+
             setTeams(response.items || []);
             setPagination({
                 total: response.total || 0,
                 skip: response.skip || 0,
                 limit: response.limit || 20
             });
-            
-            console.log('✅ useTeams - Teams set:', response.items?.length || 0, 'teams');
+
         } catch (err) {
-            console.error('❌ useTeams - Error fetching teams:', err);
-            console.error('❌ useTeams - Error response:', err.response);
-            console.error('❌ useTeams - Error status:', err.response?.status);
-            console.error('❌ useTeams - Error data:', err.response?.data);
-            console.error('❌ useTeams - Request URL:', err.config?.url);
-            
+            console.error('Error fetching teams:', err);
+
             setError(err.response?.data?.detail || err.response?.data?.message || err.message || 'Error al cargar los equipos');
             setTeams([]);
         } finally {

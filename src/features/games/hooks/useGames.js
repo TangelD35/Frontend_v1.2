@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { gamesService } from '../../../shared/api/endpoints/games';
 import useAuth from '../../../shared/hooks/useAuth';
 
@@ -12,9 +12,7 @@ export const useGames = () => {
         limit: 12
     });
     const [filters, setFilters] = useState({
-        search: '',
         tournament_id: '',
-        status: 'todos',
         team_id: '',
         order_by: 'game_date',
         sort: 'desc'
@@ -22,8 +20,8 @@ export const useGames = () => {
 
     const { user } = useAuth();
 
-    // Función para obtener partidos
-    const fetchGames = async (customFilters = {}) => {
+    // Función para obtener partidos con reintentos (memoizada)
+    const fetchGames = useCallback(async (customFilters = {}, retryCount = 0) => {
         if (!user) return;
 
         setLoading(true);
@@ -63,11 +61,36 @@ export const useGames = () => {
             }));
         } catch (err) {
             console.error('Error fetching games:', err);
-            setError(err.response?.data?.detail || 'Error al cargar los partidos');
+
+            // Manejar diferentes tipos de errores
+            if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+                // Error de timeout - intentar reintento
+                if (retryCount < 2) {
+                    setTimeout(() => {
+                        fetchGames(customFilters, retryCount + 1);
+                    }, 2000 * (retryCount + 1)); // Delay incremental
+                    return;
+                } else {
+                    setError('El servidor está tardando mucho en responder. Por favor, inténtalo más tarde.');
+                }
+            } else if (err.status === 429) {
+                setError('Demasiadas solicitudes. Esperando antes de reintentar...');
+                // Esperar más tiempo para rate limiting
+                setTimeout(() => {
+                    if (retryCount < 1) {
+                        fetchGames(customFilters, retryCount + 1);
+                    }
+                }, 10000); // 10 segundos de espera
+                return;
+            } else if (err.status === 0) {
+                setError('Sin conexión al servidor. Verifica tu conexión a internet.');
+            } else {
+                setError(err.response?.data?.detail || err.message || 'Error al cargar los partidos');
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, pagination.skip, pagination.limit, filters]);
 
     // Función para crear partido
     const createGame = async (gameData) => {
@@ -125,33 +148,46 @@ export const useGames = () => {
         }
     };
 
-    // Función para actualizar filtros
-    const updateFilters = (newFilters) => {
+    // Función para actualizar filtros (memoizada)
+    const updateFilters = useCallback((newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
         setPagination(prev => ({ ...prev, skip: 0 })); // Reset pagination
-    };
+    }, []);
 
-    // Función para actualizar paginación
-    const updatePagination = (newPagination) => {
+    // Función para actualizar paginación (memoizada)
+    const updatePagination = useCallback((newPagination) => {
         setPagination(prev => ({ ...prev, ...newPagination }));
-    };
+    }, []);
 
-    // Efecto para cargar partidos cuando cambian filtros o paginación
-    // Función para ajustar el límite dinámicamente según el estado del sidebar
-    const adjustLimit = (showFilters) => {
-        const newLimit = 4; // 4 elementos por página siempre
-        if (pagination.limit !== newLimit) {
-            setPagination(prev => ({
-                ...prev,
-                limit: newLimit,
-                skip: 0 // Resetear a la primera página
-            }));
-        }
-    };
+    // Función para ajustar el límite dinámicamente según el estado del sidebar (memoizada)
+    const adjustLimit = useCallback((showFilters) => {
+        const newLimit = showFilters ? 3 : 4; // 3 elementos cuando sidebar abierto, 4 cuando cerrado
+        setPagination(prev => {
+            if (prev.limit !== newLimit) {
+                return {
+                    ...prev,
+                    limit: newLimit,
+                    skip: 0 // Resetear a la primera página
+                };
+            }
+            return prev; // No cambiar si el límite es el mismo
+        });
+    }, []);
 
+    // useEffect con debounce para evitar llamadas excesivas
     useEffect(() => {
-        fetchGames();
-    }, [user, pagination.skip, pagination.limit, filters]);
+        if (!user) {
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            fetchGames();
+        }, 500); // Debounce de 500ms (aumentado)
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [fetchGames]);
 
     return {
         games,

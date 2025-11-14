@@ -384,15 +384,42 @@ const Games = () => {
         try {
             const isEditing = selectedGame !== null;
 
+            // Validar que todos los campos requeridos estén presentes
+            if (!formData.homeTeam || !formData.awayTeam || !formData.date || !formData.time || !formData.venue || !formData.tournament) {
+                showToast(
+                    'error',
+                    'Campos Requeridos',
+                    'Por favor, completa todos los campos antes de guardar el partido.'
+                );
+                return;
+            }
+
+            // Validar y preparar fecha
+            const gameDateTime = new Date(`${formData.date}T${formData.time}`);
+            if (isNaN(gameDateTime.getTime())) {
+                showToast(
+                    'error',
+                    'Fecha Inválida',
+                    'La fecha y hora proporcionadas no son válidas.'
+                );
+                return;
+            }
+
             // Preparar datos para la API
             const gameData = {
-                home_team_id: formData.homeTeam, // Esto debería ser el ID del equipo
-                away_team_id: formData.awayTeam, // Esto debería ser el ID del equipo
-                game_date: new Date(`${formData.date}T${formData.time}`).toISOString(),
+                home_team_id: formData.homeTeam,
+                away_team_id: formData.awayTeam,
+                game_date: gameDateTime.toISOString(),
                 location: formData.venue,
-                tournament_id: formData.tournament, // Esto debería ser el ID del torneo
-                status: 'scheduled' // Estado por defecto para nuevos partidos
+                tournament_id: formData.tournament,
+                status: 'scheduled'
             };
+
+            // Debug temporal: ver qué datos se están enviando
+            console.log('📤 Datos enviados al backend:', gameData);
+            console.log('📝 Datos del formulario:', formData);
+            console.log('👥 Equipos disponibles:', teams?.length || 0, teams);
+            console.log('🏆 Torneos disponibles:', tournaments?.length || 0, tournaments);
 
             // Obtener nombres para mostrar en los toasts
             const homeTeamName = teamNameById[formData.homeTeam] || formData.homeTeam;
@@ -436,10 +463,18 @@ const Games = () => {
                     'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.'
                 );
             } else if (error.status === 422) {
+                // Mostrar detalles específicos del error de validación
+                console.log('❌ Error 422 details:', error.response?.data);
+                const errorDetails = error.response?.data?.details || {};
+                const errorMessages = Object.values(errorDetails).flat();
+                const detailMessage = errorMessages.length > 0
+                    ? errorMessages.join(', ')
+                    : 'Los datos del formulario no son válidos. Verifica que todos los campos estén completos y correctos.';
+
                 showToast(
                     'error',
                     'Datos Inválidos',
-                    'Los datos del formulario no son válidos. Verifica que todos los campos estén completos y correctos.'
+                    detailMessage
                 );
             } else {
                 showToast(

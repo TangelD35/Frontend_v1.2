@@ -14,8 +14,8 @@ import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import useFilters from '../../../../shared/hooks/useFilters';
 
 // Components
-import { ModernModal } from '../../../../shared/ui/components/modern/ModernModal';
-import { StatusIndicator } from '../../../../shared/ui/components/common/feedback/StatusIndicator';
+import ModernModal from '../../../../shared/ui/components/modern/ModernModal';
+import StatusIndicator from '../../../../shared/ui/components/common/feedback/StatusIndicator';
 import LoadingSpinner from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
 import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
 // RDScoreLogo component doesn't exist, will use icon instead

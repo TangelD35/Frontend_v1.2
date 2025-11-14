@@ -10,18 +10,14 @@ import { useNavigate } from 'react-router-dom';
 // Hooks
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdvancedAnalytics } from '../../hooks/useAdvancedAnalytics';
-import { useTeams } from '../../../teams/hooks/useTeams';
-import { useTournaments } from '../../../tournaments/hooks/useTournaments';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
-import useViewMode from '../../../../shared/hooks/useViewMode';
 import useFilters from '../../../../shared/hooks/useFilters';
 
 // Components
 import { ModernModal } from '../../../../shared/ui/components/modern/ModernModal';
-import { ModernTable } from '../../../../shared/ui/components/modern/ModernTable';
 import { StatusIndicator } from '../../../../shared/ui/components/common/feedback/StatusIndicator';
 import { LoadingSpinner } from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
-import { EmptyState } from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
+import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
 import { RDScoreLogo } from '../../../../shared/ui/components/common/layout/RDScoreLogo';
 
 const ModernAnalytics = () => {
@@ -52,9 +48,7 @@ const ModernAnalytics = () => {
         refetch: refetchAdvanced
     } = useAdvancedAnalytics();
 
-    const { teams } = useTeams();
-    const { tournaments } = useTournaments();
-    const { viewMode, toggleViewMode } = useViewMode();
+    // Removed unused hooks
 
     // Estados locales
     const [selectedPeriod, setSelectedPeriod] = useState('2024');
@@ -343,8 +337,8 @@ const ModernAnalytics = () => {
                                             <stat.icon className="w-6 h-6 text-[#CE1126]" />
                                         </div>
                                         <div className={`px-2 py-1 rounded-lg text-xs font-semibold ${stat.trend === 'up'
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                             }`}>
                                             {stat.change}
                                         </div>
@@ -414,14 +408,11 @@ const ModernAnalytics = () => {
 
                         {/* Estado vacío si no hay datos */}
                         {!summary && !loading && (
-                            <EmptyState
-                                icon={BarChart3}
+                            <ErrorState
                                 title="No hay datos de analíticas disponibles"
-                                description="Los datos de analíticas se cargarán automáticamente cuando estén disponibles."
-                                action={{
-                                    label: "Actualizar datos",
-                                    onClick: handleRefresh
-                                }}
+                                message="Los datos de analíticas se cargarán automáticamente cuando estén disponibles."
+                                onRetry={handleRefresh}
+                                showRetry={true}
                             />
                         )}
                     </>
@@ -576,10 +567,10 @@ const ModernAnalytics = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 300 }}
                         className={`p-4 rounded-xl shadow-lg backdrop-blur-sm border max-w-sm ${toast.type === 'success'
-                                ? 'bg-green-50/90 border-green-200 text-green-800'
-                                : toast.type === 'error'
-                                    ? 'bg-red-50/90 border-red-200 text-red-800'
-                                    : 'bg-blue-50/90 border-blue-200 text-blue-800'
+                            ? 'bg-green-50/90 border-green-200 text-green-800'
+                            : toast.type === 'error'
+                                ? 'bg-red-50/90 border-red-200 text-red-800'
+                                : 'bg-blue-50/90 border-blue-200 text-blue-800'
                             }`}
                     >
                         <div className="flex items-start gap-3">

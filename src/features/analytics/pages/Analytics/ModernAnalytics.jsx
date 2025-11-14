@@ -78,7 +78,7 @@ const ModernAnalytics = () => {
         touched,
         handleChange,
         handleBlur,
-        validateAndSubmit,
+        handleSubmit,
         reset,
         setFieldValue
     } = useFormValidation({
@@ -489,7 +489,7 @@ const ModernAnalytics = () => {
                 title="Generar Reporte Personalizado"
                 size="lg"
             >
-                <form onSubmit={validateAndSubmit(onSubmitReport)} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmitReport)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

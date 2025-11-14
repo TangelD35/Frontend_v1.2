@@ -333,12 +333,20 @@ const Games = () => {
         // Buscar el juego original para obtener los IDs reales
         const originalGame = (games || []).find(g => g.id === game.id);
 
+        // Debug: ver qué datos se están cargando para edición
+        console.log('🔧 Editando partido:', game);
+        console.log('📋 Datos originales:', originalGame);
+        console.log('🏠 Home team ID:', originalGame?.home_team_id);
+        console.log('✈️ Away team ID:', originalGame?.away_team_id);
+        console.log('🏆 Tournament ID:', originalGame?.tournament_id);
+        console.log('📍 Location:', originalGame?.location);
+
         setSelectedGame(game);
         setFieldValue('homeTeam', originalGame?.home_team_id || '');
         setFieldValue('awayTeam', originalGame?.away_team_id || '');
         setFieldValue('date', game.date ? game.date.split('T')[0] : '');
         setFieldValue('time', game.time);
-        setFieldValue('venue', game.venue);
+        setFieldValue('venue', originalGame?.location || ''); // Usar el campo original location
         setFieldValue('tournament', originalGame?.tournament_id || '');
         setIsModalOpen(true);
     };

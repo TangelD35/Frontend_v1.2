@@ -1,15 +1,17 @@
 import axiosInstance from './axiosConfig';
 
 export const analyticsService = {
-    // Obtener datos principales de analytics
-    getAnalytics: async (params = {}) => {
-        const response = await axiosInstance.get('/analytics', { params });
+    // Obtener resumen general
+    getSummary: async () => {
+        const response = await axiosInstance.get('/analytics/summary');
         return response.data;
     },
 
-    // Obtener resumen general
-    getSummary: async () => {
-        const response = await axiosInstance.get('/analytics');
+    // Obtener overview detallado de un equipo (acepta team_id, start_year, end_year)
+    getTeamOverview: async (params = {}) => {
+        const response = await axiosInstance.get('/analytics/team/overview', {
+            params,
+        });
         return response.data;
     },
 

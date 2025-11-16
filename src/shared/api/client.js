@@ -68,9 +68,14 @@ apiClient.interceptors.response.use(
                     // Evitar redirección automática para endpoints de autenticación
                     const requestUrl = error.config?.url || '';
                     const isAuthEndpoint = ['/auth/login', '/auth/register', '/auth/me'].some(endpoint => requestUrl.includes(endpoint));
+                    const currentPath = window.location.pathname;
+                    const isAlreadyOnLogin = currentPath === '/login' || currentPath === '/';
 
-                    if (!isAuthEndpoint) {
+                    if (!isAuthEndpoint && !isAlreadyOnLogin) {
+                        logger.info('Redirecting to login due to 401 error');
                         window.location.href = '/login';
+                    } else {
+                        logger.info('Skipping redirect - already on login page or auth endpoint');
                     }
                     break;
                 case 403:

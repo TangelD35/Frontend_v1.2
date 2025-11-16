@@ -1,12 +1,6 @@
 import axiosInstance from './axiosConfig';
 
 export const advancedAnalyticsService = {
-    // Obtener datos principales de advanced analytics
-    getAdvancedAnalytics: async (params = {}) => {
-        const response = await axiosInstance.get('/advanced-analytics', { params });
-        return response.data;
-    },
-
     // Obtener estadísticas avanzadas de jugador
     getPlayerAdvancedStats: async (playerId, season) => {
         const response = await axiosInstance.get(`/advanced-analytics/player/${playerId}/advanced-stats`, {
@@ -26,14 +20,6 @@ export const advancedAnalyticsService = {
     // Obtener métricas rápidas de jugador
     getPlayerQuickMetrics: async (playerId, season) => {
         const response = await axiosInstance.get(`/advanced-analytics/player/${playerId}/quick-metrics`, {
-            params: { season }
-        });
-        return response.data;
-    },
-
-    // Obtener ratings de equipo
-    getTeamRatings: async (teamId, season) => {
-        const response = await axiosInstance.get(`/advanced-analytics/team/${teamId}/ratings`, {
             params: { season }
         });
         return response.data;

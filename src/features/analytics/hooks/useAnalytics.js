@@ -4,11 +4,33 @@ import useAuthStore from '../../../shared/store/authStore';
 
 export const useAnalytics = () => {
     const [summary, setSummary] = useState(null);
-    const [trends, setTrends] = useState([]);
-    const [comparisons, setComparisons] = useState([]);
+    const [trends, setTrends] = useState(null);
+    const [comparisons, setComparisons] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [lastTrendParams, setLastTrendParams] = useState(null);
     const { user } = useAuthStore();
+
+    const sanitizeIdsParam = useCallback((value) => {
+        if (!value) return '';
+
+        if (Array.isArray(value)) {
+            return value
+                .map((id) => (typeof id === 'string' ? id : String(id ?? '')).trim())
+                .filter(Boolean)
+                .join(',');
+        }
+
+        if (typeof value === 'string') {
+            return value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean)
+                .join(',');
+        }
+
+        return '';
+    }, []);
 
     // Obtener resumen general
     const fetchSummary = useCallback(async () => {
@@ -17,31 +39,51 @@ export const useAnalytics = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await analyticsService.getAnalytics();
+
+            const data = await analyticsService.getSummary();
             setSummary(data);
         } catch (err) {
-            console.error('Error fetching analytics:', err);
+            console.error('Error fetching analytics summary:', err);
             setError(err);
+            setSummary(null);
         } finally {
             setLoading(false);
         }
     }, [user]);
 
     // Obtener tendencias
-    const fetchTrends = useCallback(async (params = {}) => {
-        if (!user) return;
+    const fetchTrends = useCallback(async (params = null) => {
+        if (!user) return null;
+
+        const baseParams = params ?? lastTrendParams;
+        const normalizedIds = sanitizeIdsParam(baseParams?.ids);
+
+        if (!normalizedIds) {
+            if (params) {
+                console.warn('Skipping trends fetch: no valid IDs provided.');
+            }
+            return null;
+        }
+
+        const payload = {
+            type: baseParams?.type || 'team',
+            metric: baseParams?.metric || 'points_per_game',
+            ids: normalizedIds
+        };
 
         try {
             setLoading(true);
-            const data = await analyticsService.getTrends(params);
-            setTrends(data);
+            const data = await analyticsService.getTrends(payload);
+            setTrends(data ?? null);
+            setLastTrendParams(payload);
+            return data;
         } catch (err) {
             console.error('Error fetching trends:', err);
-            setError(err);
+            throw err;
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, lastTrendParams, sanitizeIdsParam]);
 
     // Obtener estadísticas por torneo
     const fetchTournamentStats = useCallback(async (tournamentId) => {
@@ -89,10 +131,11 @@ export const useAnalytics = () => {
         try {
             setLoading(true);
             const data = await analyticsService.getComparisons(type, ids);
-            setComparisons(data);
+            setComparisons(data ?? null);
+            return data;
         } catch (err) {
             console.error('Error fetching comparisons:', err);
-            setError(err);
+            throw err;
         } finally {
             setLoading(false);
         }
@@ -113,19 +156,21 @@ export const useAnalytics = () => {
 
     // Refetch all data
     const refetch = useCallback(async () => {
-        await Promise.all([
-            fetchSummary(),
-            fetchTrends()
-        ]);
-    }, [fetchSummary, fetchTrends]);
+        const tasks = [fetchSummary()];
+
+        if (lastTrendParams?.ids) {
+            tasks.push(fetchTrends(lastTrendParams));
+        }
+
+        await Promise.all(tasks);
+    }, [fetchSummary, fetchTrends, lastTrendParams]);
 
     // Cargar datos iniciales
     useEffect(() => {
         if (user) {
             fetchSummary();
-            fetchTrends();
         }
-    }, [user, fetchSummary, fetchTrends]);
+    }, [user, fetchSummary]);
 
     return {
         // Data

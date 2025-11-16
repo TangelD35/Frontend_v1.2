@@ -2,6 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { advancedAnalyticsService } from '../../../shared/api/endpoints/advancedAnalytics';
 import useAuthStore from '../../../shared/store/authStore';
 
+const DEFAULT_SEASON = '2024';
+
+const mapLeagueAveragesToTeamRatings = (averages = {}) => ([
+    {
+        metric_name: 'Promedio de puntos',
+        value: averages.avg_points ?? '—',
+        description: 'Producción ofensiva promedio de la liga'
+    },
+    {
+        metric_name: 'Promedio de asistencias',
+        value: averages.avg_assists ?? '—',
+        description: 'Creación de juego colectiva'
+    },
+    {
+        metric_name: 'Promedio de rebotes',
+        value: averages.avg_rebounds ?? '—',
+        description: 'Control del tablero'
+    }
+]);
+
 export const useAdvancedAnalytics = () => {
     const [playerAdvancedStats, setPlayerAdvancedStats] = useState([]);
     const [teamRatings, setTeamRatings] = useState([]);
@@ -10,27 +30,6 @@ export const useAdvancedAnalytics = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const { user } = useAuthStore();
-
-    // Obtener datos principales de advanced analytics
-    const fetchAdvancedAnalytics = useCallback(async (params = {}) => {
-        if (!user) return;
-
-        try {
-            setLoading(true);
-            setError(null);
-            const data = await advancedAnalyticsService.getAdvancedAnalytics(params);
-            // Procesar los datos según la estructura que devuelva tu backend
-            if (data.playerStats) setPlayerAdvancedStats(data.playerStats);
-            if (data.teamRatings) setTeamRatings(data.teamRatings);
-            if (data.leagueAverages) setLeagueAverages(data.leagueAverages);
-            return data;
-        } catch (err) {
-            console.error('Error fetching advanced analytics:', err);
-            setError(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
 
     // Obtener estadísticas avanzadas de jugador
     const fetchPlayerAdvancedStats = useCallback(async (playerId, season) => {
@@ -72,23 +71,6 @@ export const useAdvancedAnalytics = () => {
         }
     }, [user]);
 
-    // Obtener ratings de equipo
-    const fetchTeamRatings = useCallback(async (teamId, season) => {
-        if (!user) return;
-
-        try {
-            setLoading(true);
-            setError(null);
-            const data = await advancedAnalyticsService.getTeamRatings(teamId, season);
-            setTeamRatings(data);
-        } catch (err) {
-            console.error('Error fetching team ratings:', err);
-            setError(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
-
     // Calcular True Shooting %
     const calculateTrueShootingPercentage = useCallback(async (points, fga, fta) => {
         if (!user) return null;
@@ -116,16 +98,19 @@ export const useAdvancedAnalytics = () => {
     }, [user]);
 
     // Obtener promedios de liga
-    const fetchLeagueAverages = useCallback(async (season) => {
+    const fetchLeagueAverages = useCallback(async (season = DEFAULT_SEASON) => {
         if (!user) return;
 
         try {
             setLoading(true);
+            setError(null);
             const data = await advancedAnalyticsService.getLeagueAverages(season);
             setLeagueAverages(data);
+            setTeamRatings(mapLeagueAveragesToTeamRatings(data));
         } catch (err) {
             console.error('Error fetching league averages:', err);
             setError(err);
+            setTeamRatings([]);
         } finally {
             setLoading(false);
         }
@@ -145,19 +130,20 @@ export const useAdvancedAnalytics = () => {
     }, [user]);
 
     // Refetch all data
-    const refetch = useCallback(async (season = '2024') => {
+    const refetch = useCallback(async (season = DEFAULT_SEASON) => {
         await Promise.all([
-            fetchAdvancedAnalytics({ season }),
+            fetchLeagueAverages(season),
             fetchMetricsDocumentation()
         ]);
-    }, [fetchAdvancedAnalytics, fetchMetricsDocumentation]);
+    }, [fetchLeagueAverages, fetchMetricsDocumentation]);
 
     // Cargar datos iniciales
     useEffect(() => {
         if (user) {
-            refetch();
+            fetchLeagueAverages(DEFAULT_SEASON);
+            fetchMetricsDocumentation();
         }
-    }, [user, refetch]);
+    }, [user, fetchLeagueAverages, fetchMetricsDocumentation]);
 
     return {
         // Data
@@ -171,11 +157,9 @@ export const useAdvancedAnalytics = () => {
         error,
 
         // Actions
-        fetchAdvancedAnalytics,
         fetchPlayerAdvancedStats,
         fetchPlayerPER,
         fetchPlayerQuickMetrics,
-        fetchTeamRatings,
         calculateTrueShootingPercentage,
         calculateEffectiveFieldGoalPercentage,
         fetchLeagueAverages,

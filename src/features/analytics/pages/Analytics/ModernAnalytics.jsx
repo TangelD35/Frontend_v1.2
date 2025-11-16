@@ -1,595 +1,452 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    BarChart3, TrendingUp, Download, Filter, Activity, Target,
-    Calendar, Users, ChevronDown, Eye, RefreshCw, Settings,
-    Trophy, Zap, PieChart, LineChart, BarChart2, Calculator
+    BarChart3,
+    Target,
+    Users,
+    RefreshCw,
+    TrendingUp,
+    Trophy,
+    Shield
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip
+} from 'recharts';
 
-// Hooks
-import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdvancedAnalytics } from '../../hooks/useAdvancedAnalytics';
-import useFormValidation from '../../../../shared/hooks/useFormValidation';
-import useFilters from '../../../../shared/hooks/useFilters';
-
-// Components
-import ModernModal from '../../../../shared/ui/components/modern/ModernModal';
-import StatusIndicator from '../../../../shared/ui/components/common/feedback/StatusIndicator';
+import { teamsService } from '../../../../shared/api/endpoints/teams';
 import LoadingSpinner from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
 import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
-// RDScoreLogo component doesn't exist, will use icon instead
 
 const ModernAnalytics = () => {
-    const navigate = useNavigate();
-
-    // Hooks
     const {
-        summary,
-        trends,
-        comparisons,
-        loading: analyticsLoading,
-        error: analyticsError,
-        fetchSummary,
-        fetchTrends,
-        fetchComparisons,
-        createCustomReport,
-        refetch: refetchAnalytics
-    } = useAnalytics();
-
-    const {
-        teamRatings,
         leagueAverages,
-        metricsDocumentation,
+        teamTrends,
+        topPlayers,
         loading: advancedLoading,
         error: advancedError,
-        fetchTeamRatings,
-        fetchLeagueAverages,
+        fetchTeamTrends,
+        fetchTopPlayers,
         refetch: refetchAdvanced
     } = useAdvancedAnalytics();
 
-    // Removed unused hooks
+    const [trendMetric, setTrendMetric] = useState('puntos');
+    const [rdTeamId, setRdTeamId] = useState(null);
 
-    // Estados locales
-    const [selectedPeriod, setSelectedPeriod] = useState('2024');
-    const [selectedMetric, setSelectedMetric] = useState('offensive');
-    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [toasts, setToasts] = useState([]);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-    // Filtros
-    const {
-        filters,
-        updateFilters,
-        clearFilters,
-        hasActiveFilters
-    } = useFilters([], {
-        period: { defaultValue: '2024' },
-        metric: { defaultValue: 'all' },
-        team: { defaultValue: '' },
-        tournament: { defaultValue: '' }
-    });
-
-    // Validación de formularios
-    const {
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        reset,
-        setFieldValue
-    } = useFormValidation({
-        reportName: '',
-        startDate: '',
-        endDate: '',
-        metrics: [],
-        teams: [],
-        description: ''
-    }, {});
-
-    // Detectar tamaño de pantalla
+    // Cargar datos al montar el componente
     useEffect(() => {
-        const checkSidebarState = () => {
-            const isLargeScreen = window.innerWidth >= 1024;
-            setIsSidebarOpen(isLargeScreen);
+        const loadData = async () => {
+            try {
+                // Obtener todos los equipos
+                const teamsResponse = await teamsService.getAll({ limit: 50 });
+
+                if (teamsResponse?.items?.length > 0) {
+                    // Buscar equipo de República Dominicana
+                    let rdTeam = teamsResponse.items.find(team =>
+                        team.nombre?.toLowerCase().includes('dominicana') ||
+                        team.nombre?.toLowerCase().includes('república') ||
+                        team.name?.toLowerCase().includes('dominicana') ||
+                        team.name?.toLowerCase().includes('república') ||
+                        team.nombre?.toLowerCase().includes('rd') ||
+                        team.name?.toLowerCase().includes('rd')
+                    );
+
+                    // Si no encuentra por nombre, usar el primer equipo
+                    if (!rdTeam && teamsResponse.items.length > 0) {
+                        rdTeam = teamsResponse.items[0];
+                    }
+
+                    if (rdTeam) {
+                        setRdTeamId(rdTeam.id);
+
+                        // Cargar tendencias del equipo
+                        await fetchTeamTrends(rdTeam.id, 2010, 2025);
+                    }
+                }
+
+                // Cargar top jugadores
+                await fetchTopPlayers('ppg', 5, 2010, 2025);
+
+            } catch (error) {
+                console.error('Error cargando datos de analytics:', error);
+            }
         };
 
-        checkSidebarState();
-        window.addEventListener('resize', checkSidebarState);
-        return () => window.removeEventListener('resize', checkSidebarState);
-    }, []);
+        loadData();
+    }, [fetchTeamTrends, fetchTopPlayers]);
 
-    // Estadísticas principales basadas en summary
-    const mainStats = summary ? [
-        {
-            title: 'Eficiencia Ofensiva',
-            value: summary.offensive_rating || '112.4',
-            icon: TrendingUp,
-            change: '+5.2%',
-            trend: 'up',
-            description: 'Puntos por 100 posesiones'
-        },
-        {
-            title: 'Eficiencia Defensiva',
-            value: summary.defensive_rating || '98.7',
-            icon: Activity,
-            change: '-3.1%',
-            trend: 'up',
-            description: 'Puntos permitidos por 100 posesiones'
-        },
-        {
-            title: 'Ritmo de Juego',
-            value: summary.pace || '96.2',
-            icon: BarChart3,
-            change: '+2.4',
-            trend: 'up',
-            description: 'Posesiones por 40 minutos'
-        },
-        {
-            title: 'Net Rating',
-            value: summary.net_rating || '+13.7',
-            icon: Target,
-            change: '+8.5',
-            trend: 'up',
-            description: 'Diferencia ofensiva/defensiva'
-        },
-    ] : [];
-
-    // Función para mostrar toasts
-    const showToast = (type, title, message) => {
-        const id = Date.now();
-        const newToast = {
-            id,
-            type,
-            title,
-            message,
-            duration: 5000
-        };
-        setToasts(prev => [...prev, newToast]);
+    // Helper para formatear números
+    const formatNumber = (value, decimals = 0) => {
+        if (value == null || isNaN(value)) return '0';
+        return Number(value).toFixed(decimals);
     };
 
-    const removeToast = (id) => {
-        setToasts(prev => prev.filter(toast => toast.id !== id));
-    };
-
-    // Manejar actualización de datos
-    const handleRefresh = async () => {
-        try {
-            await Promise.all([
-                refetchAnalytics(),
-                refetchAdvanced()
-            ]);
-            showToast(
-                'success',
-                'Datos actualizados',
-                'La información de analíticas ha sido actualizada correctamente.'
-            );
-        } catch (error) {
-            showToast(
-                'error',
-                'Error al actualizar',
-                'No se pudieron actualizar los datos. Verifica tu conexión e inténtalo de nuevo.'
-            );
-        }
-    };
-
-    // Abrir modales
-    const openFilterModal = () => {
-        setIsFilterModalOpen(true);
-    };
-
-    const closeFilterModal = () => {
-        setIsFilterModalOpen(false);
-    };
-
-    const openReportModal = () => {
-        reset();
-        setIsReportModalOpen(true);
-    };
-
-    const closeReportModal = () => {
-        setIsReportModalOpen(false);
-        reset();
-    };
-
-    // Manejar creación de reporte personalizado
-    const onSubmitReport = async (formData) => {
-        try {
-            const reportConfig = {
-                name: formData.reportName,
-                start_date: formData.startDate,
-                end_date: formData.endDate,
-                metrics: formData.metrics,
-                teams: formData.teams,
-                description: formData.description
-            };
-
-            const report = await createCustomReport(reportConfig);
-
-            // Descargar reporte
-            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reporte-${formData.reportName.replace(/\s+/g, '-').toLowerCase()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            showToast(
-                'success',
-                'Reporte creado',
-                'El reporte personalizado ha sido generado y descargado correctamente.'
-            );
-
-            closeReportModal();
-        } catch (error) {
-            showToast(
-                'error',
-                'Error al crear reporte',
-                error.message || 'No se pudo crear el reporte personalizado.'
-            );
-        }
-    };
-
-    const loading = analyticsLoading || advancedLoading;
+    if (advancedError) {
+        return (
+            <ErrorState
+                title="No se pudieron cargar las analíticas"
+                message={advancedError?.message || 'Verifica tu sesión o intenta de nuevo.'}
+            />
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#CE1126]/5 via-white to-[#002D62]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Header Gubernamental Profesional */}
-            <div className="sticky top-0 z-50 bg-gradient-to-r from-[#CE1126] via-[#CE1126]/95 to-[#002D62] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 shadow-2xl">
-                {/* Patrón de fondo sutil */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]"></div>
-                </div>
-
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                        {/* Identidad Institucional */}
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                                <BarChart3 className="w-8 h-8 text-white" />
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-                                        Centro de Analíticas
-                                    </h1>
-                                    <div className="hidden sm:flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
-                                        <Activity className="w-4 h-4 text-white/80" />
-                                        <span className="text-xs font-semibold text-white/90 tracking-wide">AVANZADO</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 text-white/90">
-                                    <Target className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Análisis Táctico y Predictivo • República Dominicana</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Controles de Acción */}
-                        <div className="flex items-center gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleRefresh}
-                                disabled={loading}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-all duration-200 border border-white/30"
-                            >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                <span className="hidden sm:inline font-medium">Actualizar</span>
-                            </motion.button>
-
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={openFilterModal}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-all duration-200 border border-white/30"
-                            >
-                                <Filter className="w-4 h-4" />
-                                <span className="hidden sm:inline font-medium">Filtros</span>
-                                {hasActiveFilters && (
-                                    <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                                )}
-                            </motion.button>
-
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={openReportModal}
-                                className="flex items-center gap-2 px-6 py-2.5 font-bold rounded-xl shadow-xl transition-all duration-200 border bg-gradient-to-r from-white to-white/90 hover:from-white/90 hover:to-white text-[#CE1126] border-white/50"
-                            >
-                                <Download className="w-4 h-4" />
-                                Generar Reporte
-                            </motion.button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Contenido Principal */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {loading ? (
-                    <div className="flex items-center justify-center py-20">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+            <main className="max-w-7xl mx-auto px-4 pt-6 pb-10 space-y-10">
+                {advancedLoading ? (
+                    <div className="flex justify-center py-20">
                         <LoadingSpinner size="large" />
                     </div>
                 ) : (
-                    <>
-                        {/* Estadísticas Principales */}
+                    <div className="space-y-8">
+                        {/* Hero Section - República Dominicana */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+                            transition={{ duration: 0.5 }}
+                            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-6 shadow-2xl"
                         >
-                            {mainStats.map((stat, index) => (
-                                <motion.div
-                                    key={stat.title}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300"
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="p-3 bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10 rounded-xl">
-                                            <stat.icon className="w-6 h-6 text-[#CE1126]" />
+                            {/* Pattern Background */}
+                            <div className="absolute inset-0 opacity-10">
+                                <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)' }}></div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="relative">
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30">
+                                            <Shield className="w-10 h-10 text-white" />
                                         </div>
-                                        <div className={`px-2 py-1 rounded-lg text-xs font-semibold ${stat.trend === 'up'
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                            }`}>
-                                            {stat.change}
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white mb-1">República Dominicana</h2>
+                                            <p className="text-white/80 text-sm font-medium">Selección Nacional de Baloncesto</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 tracking-wide">
-                                            {stat.title}
-                                        </h3>
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                            {stat.value}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {stat.description}
-                                        </p>
+                                    <div className="text-right">
+                                        <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Período</p>
+                                        <p className="text-white text-xl font-bold">2010 - 2025</p>
                                     </div>
-                                </motion.div>
-                            ))}
+                                </div>
+
+                                {/* KPIs del último período */}
+                                {teamTrends && teamTrends.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {/* Puntos */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.1 }}
+                                            className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 rounded-lg bg-white/20">
+                                                    <Target className="w-4 h-4 text-white" />
+                                                </div>
+                                                <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Puntos</p>
+                                            </div>
+                                            <p className="text-3xl font-bold text-white mb-1">{formatNumber(teamTrends[teamTrends.length - 1].avg_points, 1)}</p>
+                                            <p className="text-white/60 text-xs">PPG • Promedio</p>
+                                        </motion.div>
+
+                                        {/* Asistencias */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.2 }}
+                                            className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 rounded-lg bg-white/20">
+                                                    <Users className="w-4 h-4 text-white" />
+                                                </div>
+                                                <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Asistencias</p>
+                                            </div>
+                                            <p className="text-3xl font-bold text-white mb-1">{formatNumber(teamTrends[teamTrends.length - 1].avg_assists, 1)}</p>
+                                            <p className="text-white/60 text-xs">APG • Promedio</p>
+                                        </motion.div>
+
+                                        {/* Rebotes */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 rounded-lg bg-white/20">
+                                                    <BarChart3 className="w-4 h-4 text-white" />
+                                                </div>
+                                                <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Rebotes</p>
+                                            </div>
+                                            <p className="text-3xl font-bold text-white mb-1">{formatNumber(teamTrends[teamTrends.length - 1].avg_rebounds, 1)}</p>
+                                            <p className="text-white/60 text-xs">RPG • Promedio</p>
+                                        </motion.div>
+
+                                        {/* % Victorias */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.4 }}
+                                            className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 rounded-lg bg-white/20">
+                                                    <Trophy className="w-4 h-4 text-white" />
+                                                </div>
+                                                <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">Victorias</p>
+                                            </div>
+                                            <p className="text-3xl font-bold text-white mb-1">
+                                                {teamTrends[teamTrends.length - 1].wins && teamTrends[teamTrends.length - 1].total_games
+                                                    ? formatNumber((teamTrends[teamTrends.length - 1].wins / teamTrends[teamTrends.length - 1].total_games) * 100, 1)
+                                                    : '0.0'
+                                                }%
+                                            </p>
+                                            <p className="text-white/60 text-xs">
+                                                {teamTrends[teamTrends.length - 1].wins || 0}W - {teamTrends[teamTrends.length - 1].losses || 0}L
+                                            </p>
+                                        </motion.div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center py-8">
+                                        <RefreshCw className="w-8 h-8 text-white/50 animate-spin mr-3" />
+                                        <p className="text-white/70">Cargando estadísticas del equipo...</p>
+                                    </div>
+                                )}
+                            </div>
                         </motion.div>
 
-                        {/* Sección de Métricas Avanzadas */}
-                        {teamRatings && teamRatings.length > 0 && (
+                        {/* Grid Principal: Evolución Temporal + Top Players */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Evolución Temporal - 2/3 del espacio */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, delay: 0.5 }}
+                                className="lg:col-span-2 p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
+                                            <TrendingUp className="w-5 h-5 text-[#CE1126]" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Evolución Temporal del Equipo</h3>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">República Dominicana 2010-2025</p>
+                                        </div>
+                                    </div>
+                                    {/* Filtros de métrica */}
+                                    <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        <button
+                                            onClick={() => setTrendMetric('puntos')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${trendMetric === 'puntos'
+                                                ? 'bg-[#CE1126] text-white shadow-lg'
+                                                : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'
+                                                }`}
+                                        >
+                                            Puntos
+                                        </button>
+                                        <button
+                                            onClick={() => setTrendMetric('asistencias')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${trendMetric === 'asistencias'
+                                                ? 'bg-[#002D62] text-white shadow-lg'
+                                                : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'
+                                                }`}
+                                        >
+                                            Asistencias
+                                        </button>
+                                        <button
+                                            onClick={() => setTrendMetric('rebotes')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${trendMetric === 'rebotes'
+                                                ? 'bg-gray-600 text-white shadow-lg'
+                                                : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'
+                                                }`}
+                                        >
+                                            Rebotes
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Gráfico de Tendencias */}
+                                {teamTrends && teamTrends.length > 0 ? (
+                                    <div style={{ width: '100%', height: '350px' }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart
+                                                data={teamTrends.map(period => ({
+                                                    periodo: period.periodo,
+                                                    puntos: period.avg_points,
+                                                    asistencias: period.avg_assists,
+                                                    rebotes: period.avg_rebounds
+                                                }))}
+                                                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" opacity={0.5} />
+                                                <XAxis
+                                                    dataKey="periodo"
+                                                    stroke="#6b7280"
+                                                    style={{ fontSize: '12px' }}
+                                                    tickLine={false}
+                                                />
+                                                <YAxis
+                                                    stroke="#6b7280"
+                                                    style={{ fontSize: '11px' }}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                        border: '1px solid #e5e7eb',
+                                                        borderRadius: '8px',
+                                                        fontSize: '12px'
+                                                    }}
+                                                />
+                                                {trendMetric === 'puntos' && (
+                                                    <Line
+                                                        type="monotone"
+                                                        dataKey="puntos"
+                                                        stroke="#CE1126"
+                                                        strokeWidth={3}
+                                                        dot={{ fill: '#CE1126', r: 5 }}
+                                                        activeDot={{ r: 7 }}
+                                                    />
+                                                )}
+                                                {trendMetric === 'asistencias' && (
+                                                    <Line
+                                                        type="monotone"
+                                                        dataKey="asistencias"
+                                                        stroke="#002D62"
+                                                        strokeWidth={3}
+                                                        dot={{ fill: '#002D62', r: 5 }}
+                                                        activeDot={{ r: 7 }}
+                                                    />
+                                                )}
+                                                {trendMetric === 'rebotes' && (
+                                                    <Line
+                                                        type="monotone"
+                                                        dataKey="rebotes"
+                                                        stroke="#6b7280"
+                                                        strokeWidth={3}
+                                                        dot={{ fill: '#6b7280', r: 5 }}
+                                                        activeDot={{ r: 7 }}
+                                                    />
+                                                )}
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center py-20">
+                                        <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mr-2" />
+                                        <p className="text-gray-500">Cargando tendencias...</p>
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            {/* Top 5 Jugadores - 1/3 del espacio */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, delay: 0.6 }}
+                                className="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                            >
+                                {/* Header */}
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Top 5 Jugadores</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Mejores del sistema</p>
+                                </div>
+
+                                {/* Lista de jugadores */}
+                                {topPlayers && topPlayers.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {topPlayers.slice(0, 5).map((player, index) => (
+                                            <div
+                                                key={player.player_id || index}
+                                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all duration-300 border border-gray-200 dark:border-gray-700"
+                                            >
+                                                <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm ${index === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    index === 1 ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                            'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                    }`}>
+                                                    {index + 1}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{player.player_name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{player.position || 'N/A'}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-bold text-[#CE1126] dark:text-[#FF5252]">{formatNumber(player.metric_value, 1)}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{player.metric_name || 'Pts'}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mb-2" />
+                                        <p className="text-sm text-gray-500">Cargando jugadores...</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </div>
+
+                        {/* Grid Secundario: Promedios de Liga */}
+                        {leagueAverages && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 mb-8"
+                                transition={{ duration: 0.5, delay: 0.7 }}
+                                className="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                             >
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl">
-                                            <Calculator className="w-5 h-5 text-purple-600" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                                Métricas Avanzadas
-                                            </h2>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Análisis estadístico profundo del rendimiento
-                                            </p>
-                                        </div>
-                                    </div>
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Promedios de Liga</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Comparativa general del sistema</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {teamRatings.map((rating, index) => (
-                                        <div
-                                            key={index}
-                                            className="p-4 bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50"
-                                        >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div>
-                                                    <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-1">
-                                                        {rating.metric_name}
-                                                    </h4>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                        {rating.description}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                                                {rating.value}
-                                            </p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Puntos */}
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/10 border border-red-200 dark:border-red-800">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Target className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Puntos Promedio</p>
                                         </div>
-                                    ))}
+                                        <p className="text-3xl font-bold text-red-600 dark:text-red-400">{formatNumber(leagueAverages.avg_points, 1)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">PPG</p>
+                                    </div>
+
+                                    {/* Asistencias */}
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10 border border-blue-200 dark:border-blue-800">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Asistencias Promedio</p>
+                                        </div>
+                                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatNumber(leagueAverages.avg_assists, 1)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">APG</p>
+                                    </div>
+
+                                    {/* Rebotes */}
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/20 dark:to-gray-600/10 border border-gray-200 dark:border-gray-700">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Rebotes Promedio</p>
+                                        </div>
+                                        <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{formatNumber(leagueAverages.avg_rebounds, 1)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">RPG</p>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
-
-                        {/* Estado vacío si no hay datos */}
-                        {!summary && !loading && (
-                            <ErrorState
-                                title="No hay datos de analíticas disponibles"
-                                message="Los datos de analíticas se cargarán automáticamente cuando estén disponibles."
-                                onRetry={handleRefresh}
-                                showRetry={true}
-                            />
-                        )}
-                    </>
+                    </div>
                 )}
-            </div>
-
-            {/* Modal de Filtros */}
-            <ModernModal
-                isOpen={isFilterModalOpen}
-                onClose={closeFilterModal}
-                title="Filtros Avanzados"
-                size="md"
-            >
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            Período de Análisis
-                        </label>
-                        <select
-                            value={filters.period}
-                            onChange={(e) => updateFilters({ period: e.target.value })}
-                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200"
-                        >
-                            <option value="2024">2024</option>
-                            <option value="2023">2023</option>
-                            <option value="2022">2022</option>
-                            <option value="all">Todos los períodos</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            Tipo de Métrica
-                        </label>
-                        <select
-                            value={filters.metric}
-                            onChange={(e) => updateFilters({ metric: e.target.value })}
-                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200"
-                        >
-                            <option value="all">Todas las métricas</option>
-                            <option value="offensive">Ofensivas</option>
-                            <option value="defensive">Defensivas</option>
-                            <option value="advanced">Avanzadas</option>
-                        </select>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={clearFilters}
-                            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all duration-200"
-                        >
-                            Limpiar Filtros
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={closeFilterModal}
-                            className="flex-1 px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] hover:from-[#a00e1e] hover:to-[#001a4d] text-white rounded-xl font-medium transition-all duration-200"
-                        >
-                            Aplicar Filtros
-                        </motion.button>
-                    </div>
-                </div>
-            </ModernModal>
-
-            {/* Modal de Reporte Personalizado */}
-            <ModernModal
-                isOpen={isReportModalOpen}
-                onClose={closeReportModal}
-                title="Generar Reporte Personalizado"
-                size="lg"
-            >
-                <form onSubmit={handleSubmit(onSubmitReport)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Nombre del Reporte *
-                            </label>
-                            <input
-                                type="text"
-                                name="reportName"
-                                value={values.reportName}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200"
-                                placeholder="Ej: Análisis Mensual Enero 2024"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Fecha de Inicio *
-                            </label>
-                            <input
-                                type="date"
-                                name="startDate"
-                                value={values.startDate}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            Descripción
-                        </label>
-                        <textarea
-                            name="description"
-                            value={values.description}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#CE1126]/50 focus:border-[#CE1126] transition-all duration-200 resize-none"
-                            placeholder="Describe el propósito y alcance del reporte..."
-                        />
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                        <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={closeReportModal}
-                            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all duration-200"
-                        >
-                            Cancelar
-                        </motion.button>
-                        <motion.button
-                            type="submit"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="flex-1 px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] hover:from-[#a00e1e] hover:to-[#001a4d] text-white rounded-xl font-medium transition-all duration-200"
-                        >
-                            Generar Reporte
-                        </motion.button>
-                    </div>
-                </form>
-            </ModernModal>
-
-            {/* Toast Notifications */}
-            <div className="fixed top-4 right-4 z-50 space-y-2">
-                {toasts.map((toast) => (
-                    <motion.div
-                        key={toast.id}
-                        initial={{ opacity: 0, x: 300 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 300 }}
-                        className={`p-4 rounded-xl shadow-lg backdrop-blur-sm border max-w-sm ${toast.type === 'success'
-                            ? 'bg-green-50/90 border-green-200 text-green-800'
-                            : toast.type === 'error'
-                                ? 'bg-red-50/90 border-red-200 text-red-800'
-                                : 'bg-blue-50/90 border-blue-200 text-blue-800'
-                            }`}
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="flex-1">
-                                <h4 className="font-semibold text-sm">{toast.title}</h4>
-                                <p className="text-sm opacity-90">{toast.message}</p>
-                            </div>
-                            <button
-                                onClick={() => removeToast(toast.id)}
-                                className="text-current opacity-50 hover:opacity-100 transition-opacity"
-                            >
-                                ×
-                            </button>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
+            </main>
         </div>
     );
 };

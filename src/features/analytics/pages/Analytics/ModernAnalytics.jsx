@@ -15,6 +15,7 @@ import {
     Eye,
     Crosshair
 } from 'lucide-react';
+import BanderaDominicana from '../../../../assets/icons/do.svg';
 import {
     ResponsiveContainer,
     LineChart,
@@ -36,7 +37,6 @@ import { teamsService } from '../../../../shared/api/endpoints/teams';
 import { analyticsService } from '../../../../shared/api/endpoints/analytics';
 import LoadingSpinner from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
 import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
-import BanderaDominicana from '../../../../assets/icons/do.svg';
 
 const ModernAnalytics = () => {
     const {
@@ -173,43 +173,190 @@ const ModernAnalytics = () => {
         return value.toFixed(1);
     };
 
-    // Cargar detalles completos de un jugador usando TODOS los endpoints
+    // Cargar detalles completos de un jugador usando TODOS los endpoints y calculando promedios históricos
     const loadPlayerDetails = async (player) => {
         try {
             setLoadingDetails(true);
             setSelectedPlayer(player);
             setShowPlayerModal(true);
 
-            const currentSeason = new Date().getFullYear().toString();
+            // Obtener stats básicas (no depende de temporada)
+            const playerStatsPromise = analyticsService.getPlayerStats(player.player_id);
 
-            // Llamadas paralelas a TODOS los endpoints de jugador
-            const [playerStats, advancedStats, perData, quickMetrics] = await Promise.allSettled([
-                // 1. GET /analytics/players/{player_id} - Stats básicas offense/defense
-                analyticsService.getPlayerStats(player.player_id),
+            // ✅ PASO 1: Obtener SOLO las temporadas donde el jugador participó (optimización)
+            let years = [];
+            try {
+                years = await analyticsService.getPlayerSeasons(player.player_id);
+            } catch (error) {
+                // Fallback: intentar con rango completo solo si falla el endpoint
+                years = Array.from({ length: 15 }, (_, i) => (2010 + i).toString());
+            }
 
-                // 2. GET /advanced-analytics/player/{player_id}/advanced-stats
-                advancedAnalyticsService.getPlayerAdvancedStats(player.player_id, currentSeason),
+            // Si no hay temporadas, no hacer más peticiones
+            if (years.length === 0) {
+                const playerStats = await playerStatsPromise;
+                setPlayerDetails({
+                    basic: player,
+                    stats: playerStats,
+                    advanced: null,
+                    per: null,
+                    quickMetrics: null,
+                    yearsAnalyzed: 0,
+                    yearRange: 'Sin datos'
+                });
+                return;
+            }
 
-                // 3. GET /advanced-analytics/player/{player_id}/per
-                advancedAnalyticsService.getPlayerPER(player.player_id, currentSeason),
+            // Helper para agregar delay entre batches (evitar throttling)
+            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-                // 4. GET /advanced-analytics/player/{player_id}/quick-metrics
-                advancedAnalyticsService.getPlayerQuickMetrics(player.player_id, currentSeason)
-            ]);
+            // Procesar en batches de 3 años para evitar sobrecarga
+            const batchSize = 3;
+            const yearlyData = [];
 
-            setPlayerDetails({
+            for (let i = 0; i < years.length; i += batchSize) {
+                const batchYears = years.slice(i, i + batchSize);
+
+                const batchPromises = batchYears.map(async (year) => {
+                    const [advancedStats, perData, quickMetrics] = await Promise.allSettled([
+                        advancedAnalyticsService.getPlayerAdvancedStats(player.player_id, year),
+                        advancedAnalyticsService.getPlayerPER(player.player_id, year),
+                        advancedAnalyticsService.getPlayerQuickMetrics(player.player_id, year)
+                    ]);
+
+                    return {
+                        year,
+                        advanced: advancedStats.status === 'fulfilled' ? advancedStats.value : null,
+                        per: perData.status === 'fulfilled' ? perData.value : null,
+                        quickMetrics: quickMetrics.status === 'fulfilled' ? quickMetrics.value : null
+                    };
+                });
+
+                const batchResults = await Promise.all(batchPromises);
+                yearlyData.push(...batchResults);
+
+                // Pequeño delay entre batches (excepto en el último)
+                if (i + batchSize < years.length) {
+                    await delay(100);
+                }
+            }
+
+            // Esperar stats básicas
+            const playerStats = await playerStatsPromise;
+
+            // Filtrar solo años con datos válidos
+            const validYears = yearlyData.filter(data =>
+                data.advanced || data.per || data.quickMetrics
+            );
+
+            // Calcular promedios de todas las temporadas
+            const aggregatedData = calculatePlayerAverages(validYears);
+
+            const details = {
                 basic: player,
-                stats: playerStats.status === 'fulfilled' ? playerStats.value : null,
-                advanced: advancedStats.status === 'fulfilled' ? advancedStats.value : null,
-                per: perData.status === 'fulfilled' ? perData.value : null,
-                quickMetrics: quickMetrics.status === 'fulfilled' ? quickMetrics.value : null
-            });
+                stats: playerStats,
+                advanced: aggregatedData.advanced,
+                per: aggregatedData.per,
+                quickMetrics: aggregatedData.quickMetrics,
+                yearsAnalyzed: validYears.length,
+                yearRange: validYears.length > 0
+                    ? `${validYears[0].year}-${validYears[validYears.length - 1].year}`
+                    : 'N/A'
+            };
+
+            setPlayerDetails(details);
 
         } catch (error) {
-            console.error('Error loading player details:', error);
+            console.error('❌ Error loading player details:', error);
         } finally {
             setLoadingDetails(false);
         }
+    };
+
+    // Función para calcular promedios de múltiples temporadas
+    const calculatePlayerAverages = (yearlyData) => {
+        if (yearlyData.length === 0) return { advanced: null, per: null, quickMetrics: null };
+
+        // Inicializar acumuladores
+        const accumulator = {
+            quickMetrics: { ts_percentage: [], efg_percentage: [], per: [], usage_rate: [] },
+            per: { per: [], season: [] },
+            advanced: {
+                shooting_efficiency: { ts_percentage: [], efg_percentage: [], fg_percentage: [] },
+                scoring: { ppg: [], scoring_efficiency: [] },
+                playmaking: { apg: [], ast_to_tov: [] }
+            }
+        };
+
+        // Acumular datos de cada año
+        yearlyData.forEach(data => {
+            if (data.quickMetrics) {
+                if (data.quickMetrics.ts_percentage) accumulator.quickMetrics.ts_percentage.push(data.quickMetrics.ts_percentage);
+                if (data.quickMetrics.efg_percentage) accumulator.quickMetrics.efg_percentage.push(data.quickMetrics.efg_percentage);
+                if (data.quickMetrics.per) accumulator.quickMetrics.per.push(data.quickMetrics.per);
+                if (data.quickMetrics.usage_rate) accumulator.quickMetrics.usage_rate.push(data.quickMetrics.usage_rate);
+            }
+
+            if (data.per && data.per.per) {
+                accumulator.per.per.push(data.per.per);
+                accumulator.per.season.push(data.year);
+            }
+
+            if (data.advanced) {
+                if (data.advanced.shooting_efficiency) {
+                    if (data.advanced.shooting_efficiency.ts_percentage)
+                        accumulator.advanced.shooting_efficiency.ts_percentage.push(data.advanced.shooting_efficiency.ts_percentage);
+                    if (data.advanced.shooting_efficiency.efg_percentage)
+                        accumulator.advanced.shooting_efficiency.efg_percentage.push(data.advanced.shooting_efficiency.efg_percentage);
+                    if (data.advanced.shooting_efficiency.fg_percentage)
+                        accumulator.advanced.shooting_efficiency.fg_percentage.push(data.advanced.shooting_efficiency.fg_percentage);
+                }
+                if (data.advanced.scoring) {
+                    if (data.advanced.scoring.ppg) accumulator.advanced.scoring.ppg.push(data.advanced.scoring.ppg);
+                    if (data.advanced.scoring.scoring_efficiency)
+                        accumulator.advanced.scoring.scoring_efficiency.push(data.advanced.scoring.scoring_efficiency);
+                }
+                if (data.advanced.playmaking) {
+                    if (data.advanced.playmaking.apg) accumulator.advanced.playmaking.apg.push(data.advanced.playmaking.apg);
+                    if (data.advanced.playmaking.ast_to_tov)
+                        accumulator.advanced.playmaking.ast_to_tov.push(data.advanced.playmaking.ast_to_tov);
+                }
+            }
+        });
+
+        // Función auxiliar para calcular promedio
+        const avg = (arr) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+
+        // Calcular promedios
+        return {
+            quickMetrics: {
+                ts_percentage: avg(accumulator.quickMetrics.ts_percentage),
+                efg_percentage: avg(accumulator.quickMetrics.efg_percentage),
+                per: avg(accumulator.quickMetrics.per),
+                usage_rate: avg(accumulator.quickMetrics.usage_rate)
+            },
+            per: {
+                per: avg(accumulator.per.per),
+                season: accumulator.per.season.length > 0
+                    ? `${accumulator.per.season[0]}-${accumulator.per.season[accumulator.per.season.length - 1]}`
+                    : 'N/A'
+            },
+            advanced: {
+                shooting_efficiency: {
+                    ts_percentage: avg(accumulator.advanced.shooting_efficiency.ts_percentage),
+                    efg_percentage: avg(accumulator.advanced.shooting_efficiency.efg_percentage),
+                    fg_percentage: avg(accumulator.advanced.shooting_efficiency.fg_percentage)
+                },
+                scoring: {
+                    ppg: avg(accumulator.advanced.scoring.ppg),
+                    scoring_efficiency: avg(accumulator.advanced.scoring.scoring_efficiency)
+                },
+                playmaking: {
+                    apg: avg(accumulator.advanced.playmaking.apg),
+                    ast_to_tov: avg(accumulator.advanced.playmaking.ast_to_tov)
+                }
+            }
+        };
     };
 
     const closePlayerModal = () => {
@@ -998,34 +1145,45 @@ const ModernAnalytics = () => {
                         {/* Pestaña Jugadores */}
                         {activeTab === 'jugadores' && (
                             <>
-                                {/* Selector de Métricas */}
+                                {/* Encabezado Compacto con Bandera */}
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.4 }}
-                                    className="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                    className="p-4 bg-gradient-to-r from-[#CE1126] via-white to-[#002D62] dark:from-[#CE1126] dark:via-gray-900 dark:to-[#002D62] rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700"
                                 >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Análisis de Jugadores</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Selección Nacional RD {playersPeriod.start}-{playersPeriod.end}</p>
+                                    <div className="flex items-center justify-between gap-4">
+                                        {/* Bandera y Título */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-lg overflow-hidden shadow-md border-2 border-white/50">
+                                                <img
+                                                    src={BanderaDominicana}
+                                                    alt="Bandera RD"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-gray-900 dark:text-white">Análisis de Jugadores</h3>
+                                                <p className="text-xs text-gray-700 dark:text-gray-300">Selección Nacional • {playersPeriod.start}-{playersPeriod.end}</p>
+                                            </div>
                                         </div>
+
                                         {/* Filtros de Período */}
                                         <div className="flex items-center gap-2">
                                             <select
                                                 value={playersPeriod.start}
                                                 onChange={(e) => setPlayersPeriod({ ...playersPeriod, start: parseInt(e.target.value) })}
-                                                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
+                                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
                                             >
                                                 {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
                                                     <option key={year} value={year}>{year}</option>
                                                 ))}
                                             </select>
-                                            <span className="text-gray-500">-</span>
+                                            <span className="text-gray-700 dark:text-gray-300 text-sm">-</span>
                                             <select
                                                 value={playersPeriod.end}
                                                 onChange={(e) => setPlayersPeriod({ ...playersPeriod, end: parseInt(e.target.value) })}
-                                                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126] focus:border-transparent"
+                                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
                                             >
                                                 {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
                                                     <option key={year} value={year}>{year}</option>
@@ -1034,27 +1192,25 @@ const ModernAnalytics = () => {
                                         </div>
                                     </div>
 
-                                    {/* Tabs de Métricas */}
-                                    <div className="flex flex-wrap gap-2">
+                                    {/* Tabs de Métricas - Compacto */}
+                                    <div className="flex flex-wrap gap-2 mt-3">
                                         {['ppg', 'apg', 'rpg', 'spg', 'bpg', 'per', 'fg_pct'].map((metric) => {
                                             const config = getMetricConfig(metric);
-                                            const Icon = config.icon;
                                             return (
                                                 <button
                                                     key={metric}
                                                     onClick={() => setSelectedPlayerMetric(metric)}
-                                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${selectedPlayerMetric === metric
-                                                        ? 'shadow-lg scale-105'
+                                                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${selectedPlayerMetric === metric
+                                                        ? 'shadow-md scale-105'
                                                         : 'hover:scale-105'
                                                         }`}
                                                     style={{
-                                                        backgroundColor: selectedPlayerMetric === metric ? config.color : 'transparent',
+                                                        backgroundColor: selectedPlayerMetric === metric ? config.color : 'white',
                                                         color: selectedPlayerMetric === metric ? 'white' : config.color,
                                                         border: `2px solid ${config.color}`
                                                     }}
                                                 >
-                                                    <Icon className="w-4 h-4" />
-                                                    <span>{config.unit}</span>
+                                                    {config.unit}
                                                 </button>
                                             );
                                         })}
@@ -1223,66 +1379,199 @@ const ModernAnalytics = () => {
                                         )}
                                     </motion.div>
                                 </div>
-
-                                {/* Estadísticas Contextuales */}
-                                {leagueAvg && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.5, delay: 0.3 }}
-                                        className="p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-3xl shadow-2xl border-2 border-gray-200 dark:border-gray-700"
-                                    >
-                                        <div className="mb-6">
-                                            <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">Contexto Estadístico</h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Promedios históricos de la liga ({playersPeriod.start}-{playersPeriod.end})</p>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {/* Puntos */}
-                                            <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border-2 border-[#CE1126]/20">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Target className="w-5 h-5 text-[#CE1126]" />
-                                                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Puntos</p>
-                                                </div>
-                                                <p className="text-3xl font-black text-gray-900 dark:text-white">{leagueAvg.avg_points?.toFixed(1) || 'N/A'}</p>
-                                                <p className="text-xs text-gray-500 mt-1">PPG promedio</p>
-                                            </div>
-
-                                            {/* Asistencias */}
-                                            <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border-2 border-[#002D62]/20">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Users className="w-5 h-5 text-[#002D62]" />
-                                                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Asistencias</p>
-                                                </div>
-                                                <p className="text-3xl font-black text-gray-900 dark:text-white">{leagueAvg.avg_assists?.toFixed(1) || 'N/A'}</p>
-                                                <p className="text-xs text-gray-500 mt-1">APG promedio</p>
-                                            </div>
-
-                                            {/* Rebotes */}
-                                            <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border-2 border-gray-500/20">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <TrendingUp className="w-5 h-5 text-gray-600" />
-                                                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Rebotes</p>
-                                                </div>
-                                                <p className="text-3xl font-black text-gray-900 dark:text-white">{leagueAvg.avg_rebounds?.toFixed(1) || 'N/A'}</p>
-                                                <p className="text-xs text-gray-500 mt-1">RPG promedio</p>
-                                            </div>
-
-                                            {/* Partidos Analizados */}
-                                            <div className="p-4 rounded-xl bg-white dark:bg-gray-800 border-2 border-blue-500/20">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Award className="w-5 h-5 text-blue-600" />
-                                                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Partidos</p>
-                                                </div>
-                                                <p className="text-3xl font-black text-gray-900 dark:text-white">{leagueAvg.total_games || 0}</p>
-                                                <p className="text-xs text-gray-500 mt-1">Analizados</p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
                             </>
                         )}
                     </div>
+                )}
+
+                {/* Modal de Detalles del Jugador */}
+                {showPlayerModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        onClick={closePlayerModal}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl"
+                        >
+                            {/* Header del Modal */}
+                            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#CE1126] to-[#002D62] p-4 rounded-t-2xl">
+                                <button
+                                    onClick={closePlayerModal}
+                                    className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                                >
+                                    <X className="w-4 h-4 text-white" />
+                                </button>
+
+                                {selectedPlayer && (
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg"
+                                            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                                        >
+                                            {selectedPlayer.player_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h2 className="text-xl font-bold text-white">{selectedPlayer.player_name}</h2>
+                                            <p className="text-white/80 text-xs">{selectedPlayer.position || 'N/A'} • {selectedPlayer.games_played || 0} partidos</p>
+                                            {playerDetails?.yearsAnalyzed > 0 && (
+                                                <p className="text-xs text-white/90 mt-1">
+                                                    {playerDetails.yearsAnalyzed} temporada{playerDetails.yearsAnalyzed !== 1 ? 's' : ''} • {playerDetails.yearRange}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Contenido del Modal */}
+                            <div className="p-4 space-y-4">
+                                {loadingDetails ? (
+                                    <div className="flex flex-col items-center justify-center py-20">
+                                        <RefreshCw className="w-12 h-12 text-gray-400 animate-spin mb-4" />
+                                        <p className="text-gray-500">Cargando información detallada...</p>
+                                    </div>
+                                ) : playerDetails ? (
+                                    <>
+                                        {/* Métricas Avanzadas */}
+                                        {playerDetails.quickMetrics && (
+                                            <div className="space-y-2">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                                                    Métricas Avanzadas
+                                                </h3>
+                                                <div className="grid grid-cols-4 gap-3">
+                                                    <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border border-[#CE1126]/30">
+                                                        <p className="text-[10px] font-bold text-[#CE1126] dark:text-red-400 uppercase mb-1">TS%</p>
+                                                        <p className="text-2xl font-black text-[#CE1126] dark:text-red-300">
+                                                            {playerDetails.quickMetrics.ts_percentage ? playerDetails.quickMetrics.ts_percentage.toFixed(1) : 'N/A'}%
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Tiro Real</p>
+                                                    </div>
+
+                                                    <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-[#002D62]/30">
+                                                        <p className="text-[10px] font-bold text-[#002D62] dark:text-blue-400 uppercase mb-1">eFG%</p>
+                                                        <p className="text-2xl font-black text-[#002D62] dark:text-blue-300">
+                                                            {playerDetails.quickMetrics.efg_percentage ? playerDetails.quickMetrics.efg_percentage.toFixed(1) : 'N/A'}%
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Tiro Efectivo</p>
+                                                    </div>
+
+                                                    <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border border-[#CE1126]/30">
+                                                        <p className="text-[10px] font-bold text-[#CE1126] dark:text-red-400 uppercase mb-1">PER</p>
+                                                        <p className="text-2xl font-black text-[#CE1126] dark:text-red-300">
+                                                            {playerDetails.quickMetrics.per ? playerDetails.quickMetrics.per.toFixed(1) : 'N/A'}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Eficiencia</p>
+                                                    </div>
+
+                                                    <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-[#002D62]/30">
+                                                        <p className="text-[10px] font-bold text-[#002D62] dark:text-blue-400 uppercase mb-1">USG%</p>
+                                                        <p className="text-2xl font-black text-[#002D62] dark:text-blue-300">
+                                                            {playerDetails.quickMetrics.usage_rate ? playerDetails.quickMetrics.usage_rate.toFixed(1) : 'N/A'}%
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Uso</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Impacto en el Juego */}
+                                        {playerDetails.stats && (
+                                            <div className="space-y-2">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                                                    Impacto en el Juego
+                                                </h3>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {/* Ofensiva */}
+                                                    {playerDetails.stats.offense && (
+                                                        <div className="rounded-lg border border-[#CE1126]/30 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10 p-3">
+                                                            <p className="text-xs font-bold text-[#CE1126] uppercase mb-2">Ofensiva</p>
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">Puntos/Juego</span>
+                                                                    <span className="text-lg font-black text-[#CE1126]">
+                                                                        {playerDetails.stats.offense.average_points?.toFixed(1) || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">Asistencias/Juego</span>
+                                                                    <span className="text-lg font-black text-[#CE1126]">
+                                                                        {playerDetails.stats.offense.playmaking?.avg_assists?.toFixed(1) || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">% Tiros Campo</span>
+                                                                    <span className="text-lg font-black text-[#CE1126]">
+                                                                        {playerDetails.stats.offense.shooting_efficiency?.fg_pct ? playerDetails.stats.offense.shooting_efficiency.fg_pct.toFixed(1) : 'N/A'}%
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Defensiva */}
+                                                    {playerDetails.stats.defense && (
+                                                        <div className="rounded-lg border border-[#002D62]/30 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 p-3">
+                                                            <p className="text-xs font-bold text-[#002D62] uppercase mb-2">Defensiva</p>
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">Robos/Juego</span>
+                                                                    <span className="text-lg font-black text-[#002D62]">
+                                                                        {playerDetails.stats.defense.defensive_metrics?.avg_steals?.toFixed(2) || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">Bloqueos/Juego</span>
+                                                                    <span className="text-lg font-black text-[#002D62]">
+                                                                        {playerDetails.stats.defense.defensive_metrics?.avg_blocks?.toFixed(2) || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs text-gray-700 dark:text-gray-300">Rebotes Def.</span>
+                                                                    <span className="text-lg font-black text-[#002D62]">
+                                                                        {playerDetails.stats.defense.defensive_metrics?.avg_defensive_rebounds?.toFixed(1) || 'N/A'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Ratio AST/TOV */}
+                                        {playerDetails.advanced?.playmaking?.ast_to_tov && (
+                                            <div className="p-3 rounded-lg bg-gradient-to-r from-[#CE1126]/10 via-white to-[#002D62]/10 dark:from-red-950/20 dark:via-gray-900 dark:to-blue-950/20 border border-gray-200 dark:border-gray-700">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">Ratio Asistencias/Pérdidas</p>
+                                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                            {playerDetails.advanced.playmaking.ast_to_tov >= 2.0 ? 'Excelente' :
+                                                                playerDetails.advanced.playmaking.ast_to_tov >= 1.5 ? 'Bueno' :
+                                                                    playerDetails.advanced.playmaking.ast_to_tov >= 1.0 ? 'Promedio' : 'Mejorable'}
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-3xl font-black bg-gradient-to-r from-[#CE1126] to-[#002D62] bg-clip-text text-transparent">
+                                                        {playerDetails.advanced.playmaking.ast_to_tov.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-center py-10">
+                                        <p className="text-gray-500">No se pudieron cargar los detalles</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </main>
         </div>

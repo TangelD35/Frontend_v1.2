@@ -33,6 +33,12 @@ export const analyticsService = {
         return response.data;
     },
 
+    // Obtener temporadas (años) en las que un jugador participó
+    getPlayerSeasons: async (playerId) => {
+        const response = await axiosInstance.get(`/analytics/players/${playerId}/seasons`);
+        return response.data;
+    },
+
     // Obtener tendencias
     getTrends: async (params = {}) => {
         const response = await axiosInstance.get('/analytics/trends', { params });

@@ -52,6 +52,48 @@ export const analyticsService = {
         const response = await axiosInstance.post('/analytics/custom-report', reportConfig);
         return response.data;
     },
+
+    // Obtener eficiencia ofensiva de equipo
+    getTeamOffensiveEfficiency: async (teamId, tournamentId = null) => {
+        const params = { team_id: teamId };
+        if (tournamentId) params.tournament_id = tournamentId;
+        const response = await axiosInstance.get('/analytics/team/offensive-efficiency', { params });
+        return response.data;
+    },
+
+    // Obtener eficiencia defensiva de equipo
+    getTeamDefensiveEfficiency: async (teamId, tournamentId = null) => {
+        const params = { team_id: teamId };
+        if (tournamentId) params.tournament_id = tournamentId;
+        const response = await axiosInstance.get('/analytics/team/defensive-efficiency', { params });
+        return response.data;
+    },
+
+    // Obtener ranking de jugadores
+    getPlayerRankings: async (metric = 'points', position = null, limit = 10) => {
+        const params = { metric, limit };
+        if (position) params.position = position;
+        const response = await axiosInstance.get('/analytics/player/ranking', { params });
+        return response.data;
+    },
+
+    // Obtener estadísticas de torneo (ruta directa)
+    getTournamentStatsById: async (tournamentId) => {
+        const response = await axiosInstance.get(`/analytics/tournament/${tournamentId}/stats`);
+        return response.data;
+    },
+
+    // Obtener métricas del modelo clasificador ML
+    getMLClassifierMetrics: async () => {
+        const response = await axiosInstance.get('/analytics/ml/metrics/classifier');
+        return response.data;
+    },
+
+    // Obtener métricas del modelo de puntos de jugador ML
+    getMLPlayerPointsMetrics: async () => {
+        const response = await axiosInstance.get('/analytics/ml/metrics/player-points');
+        return response.data;
+    },
 };
 
 export default analyticsService;

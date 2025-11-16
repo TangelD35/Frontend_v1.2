@@ -98,6 +98,23 @@ export const useAnalytics = () => {
         }
     }, [user]);
 
+    // Obtener overview detallado de un equipo
+    const fetchTeamOverview = useCallback(async (teamId, startYear, endYear) => {
+        if (!user || !teamId) return null;
+
+        try {
+            const data = await analyticsService.getTeamOverview({
+                team_id: teamId,
+                start_year: startYear,
+                end_year: endYear,
+            });
+            return data;
+        } catch (err) {
+            console.error('Error fetching team overview:', err);
+            throw err;
+        }
+    }, [user]);
+
     // Obtener estadísticas por equipo
     const fetchTeamStats = useCallback(async (teamId) => {
         if (!user || !teamId) return null;
@@ -186,6 +203,7 @@ export const useAnalytics = () => {
         fetchSummary,
         fetchTrends,
         fetchTournamentStats,
+        fetchTeamOverview,
         fetchTeamStats,
         fetchPlayerStats,
         fetchComparisons,

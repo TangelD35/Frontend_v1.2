@@ -2,23 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { advancedAnalyticsService } from '../../../shared/api/endpoints/advancedAnalytics';
 import useAuthStore from '../../../shared/store/authStore';
 
-const DEFAULT_SEASON = '2024';
+// Período histórico completo de análisis
+const DEFAULT_START_YEAR = 2010;
+const DEFAULT_END_YEAR = 2025;
 
 const mapLeagueAveragesToTeamRatings = (averages = {}) => ([
     {
         metric_name: 'Promedio de puntos',
         value: averages.avg_points ?? '—',
-        description: 'Producción ofensiva promedio de la liga'
+        description: 'Producción ofensiva promedio de la liga (2010-2025)'
     },
     {
         metric_name: 'Promedio de asistencias',
         value: averages.avg_assists ?? '—',
-        description: 'Creación de juego colectiva'
+        description: 'Creación de juego colectiva (2010-2025)'
     },
     {
         metric_name: 'Promedio de rebotes',
         value: averages.avg_rebounds ?? '—',
-        description: 'Control del tablero'
+        description: 'Control del tablero (2010-2025)'
     }
 ]);
 
@@ -26,6 +28,8 @@ export const useAdvancedAnalytics = () => {
     const [playerAdvancedStats, setPlayerAdvancedStats] = useState([]);
     const [teamRatings, setTeamRatings] = useState([]);
     const [leagueAverages, setLeagueAverages] = useState(null);
+    const [teamTrends, setTeamTrends] = useState([]);
+    const [topPlayers, setTopPlayers] = useState([]);
     const [metricsDocumentation, setMetricsDocumentation] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -97,20 +101,60 @@ export const useAdvancedAnalytics = () => {
         }
     }, [user]);
 
-    // Obtener promedios de liga
-    const fetchLeagueAverages = useCallback(async (season = DEFAULT_SEASON) => {
+    // Obtener promedios de liga (período completo 2010-2025)
+    const fetchLeagueAverages = useCallback(async (startYear = DEFAULT_START_YEAR, endYear = DEFAULT_END_YEAR) => {
         if (!user) return;
 
         try {
             setLoading(true);
             setError(null);
-            const data = await advancedAnalyticsService.getLeagueAverages(season);
+            const data = await advancedAnalyticsService.getLeagueAverages(startYear, endYear);
             setLeagueAverages(data);
             setTeamRatings(mapLeagueAveragesToTeamRatings(data));
         } catch (err) {
             console.error('Error fetching league averages:', err);
             setError(err);
             setTeamRatings([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
+    // Obtener tendencias del equipo por períodos
+    const fetchTeamTrends = useCallback(async (teamId, startYear = DEFAULT_START_YEAR, endYear = DEFAULT_END_YEAR) => {
+        if (!user || !teamId) return [];
+
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await advancedAnalyticsService.getTeamTrends(teamId, startYear, endYear);
+            setTeamTrends(data);
+            return data;
+        } catch (err) {
+            console.error('Error fetching team trends:', err);
+            setError(err);
+            setTeamTrends([]);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
+    // Obtener top jugadores por métrica
+    const fetchTopPlayers = useCallback(async (metric, limit = 5, startYear = DEFAULT_START_YEAR, endYear = DEFAULT_END_YEAR) => {
+        if (!user) return [];
+
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await advancedAnalyticsService.getTopPlayers(metric, limit, startYear, endYear);
+            setTopPlayers(data);
+            return data;
+        } catch (err) {
+            console.error('Error fetching top players:', err);
+            setError(err);
+            setTopPlayers([]);
+            return [];
         } finally {
             setLoading(false);
         }
@@ -130,17 +174,17 @@ export const useAdvancedAnalytics = () => {
     }, [user]);
 
     // Refetch all data
-    const refetch = useCallback(async (season = DEFAULT_SEASON) => {
+    const refetch = useCallback(async (startYear = DEFAULT_START_YEAR, endYear = DEFAULT_END_YEAR) => {
         await Promise.all([
-            fetchLeagueAverages(season),
+            fetchLeagueAverages(startYear, endYear),
             fetchMetricsDocumentation()
         ]);
     }, [fetchLeagueAverages, fetchMetricsDocumentation]);
 
-    // Cargar datos iniciales
+    // Cargar datos iniciales (período completo 2010-2025)
     useEffect(() => {
         if (user) {
-            fetchLeagueAverages(DEFAULT_SEASON);
+            fetchLeagueAverages(DEFAULT_START_YEAR, DEFAULT_END_YEAR);
             fetchMetricsDocumentation();
         }
     }, [user, fetchLeagueAverages, fetchMetricsDocumentation]);
@@ -150,6 +194,8 @@ export const useAdvancedAnalytics = () => {
         playerAdvancedStats,
         teamRatings,
         leagueAverages,
+        teamTrends,
+        topPlayers,
         metricsDocumentation,
 
         // States
@@ -163,6 +209,8 @@ export const useAdvancedAnalytics = () => {
         calculateTrueShootingPercentage,
         calculateEffectiveFieldGoalPercentage,
         fetchLeagueAverages,
+        fetchTeamTrends,
+        fetchTopPlayers,
         fetchMetricsDocumentation,
         refetch
     };

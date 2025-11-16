@@ -41,15 +41,44 @@ export const advancedAnalyticsService = {
         return response.data;
     },
 
-    // Obtener promedios de liga
-    getLeagueAverages: async (season) => {
-        const response = await axiosInstance.get(`/advanced-analytics/league/averages/${season}`);
+    // Obtener promedios de liga (período 2010-2025)
+    getLeagueAverages: async (startYear, endYear) => {
+        const response = await axiosInstance.get('/advanced-analytics/league/averages', {
+            params: {
+                start_year: startYear,
+                end_year: endYear
+            }
+        });
         return response.data;
     },
 
     // Obtener documentación de métricas
     getMetricsDocumentation: async () => {
         const response = await axiosInstance.get('/advanced-analytics/help/metrics');
+        return response.data;
+    },
+
+    // Obtener tendencias del equipo por períodos (2010-2025)
+    getTeamTrends: async (teamId, startYear, endYear) => {
+        const response = await axiosInstance.get(`/advanced-analytics/team/${teamId}/trends`, {
+            params: {
+                start_year: startYear,
+                end_year: endYear
+            }
+        });
+        return response.data;
+    },
+
+    // Obtener top jugadores por métrica
+    getTopPlayers: async (metric, limit, startYear, endYear) => {
+        const response = await axiosInstance.get('/advanced-analytics/top-players', {
+            params: {
+                metric,
+                limit,
+                start_year: startYear,
+                end_year: endYear
+            }
+        });
         return response.data;
     },
 };

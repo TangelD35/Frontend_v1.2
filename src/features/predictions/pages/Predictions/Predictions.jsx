@@ -1,22 +1,60 @@
-import { Target, TrendingUp, Cpu, AlertCircle, CheckCircle, Brain, Play, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
-    SectionHeader,
-    ActionButton,
-    Badge,
-    StatsGrid,
-    Chart,
-    Table,
-    Modal,
-    Select,
-    Toast
-} from '../../../../shared/ui/components/common';
+    Brain, Target, TrendingUp, Users, Activity, Zap, Shield,
+    Play, RefreshCw, CheckCircle, AlertCircle, BarChart3, Cpu
+} from 'lucide-react';
+import mlPredictionsService from '../../../../shared/api/endpoints/mlPredictions';
+import playersService from '../../../../shared/api/endpoints/players';
+import BanderaDominicana from '../../../../assets/icons/do.svg';
 
 const Predictions = () => {
-    const [selectedModel, setSelectedModel] = useState('neural');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isRunning, setIsRunning] = useState(false);
-    const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
+    // Estados principales
+    const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, game, player, team
+    const [modelsInfo, setModelsInfo] = useState(null);
+    const [loadingModels, setLoadingModels] = useState(true);
+
+    // Estados para predicción de partidos
+    const [gameData, setGameData] = useState({
+        rd_es_local: true,
+        rd_fg_pct: 45.0,
+        rival_fg_pct: 43.0,
+        rd_reb: 42.0,
+        rival_reb: 40.0,
+        rd_ast: 22.0,
+        rival_ast: 20.0
+    });
+    const [gamePrediction, setGamePrediction] = useState(null);
+    const [loadingGame, setLoadingGame] = useState(false);
+
+    // Estados para predicción de puntos de jugador
+    const [playerPointsData, setPlayerPointsData] = useState({
+        minutes_played: 32.5,
+        field_goal_percentage: 45.5,
+        free_throw_percentage: 80.0,
+        total_rebounds: 8.0,
+        assists: 5.0,
+        field_goals_made: 6.0,
+        three_point_made: 2.0
+    });
+    const [playerPointsPrediction, setPlayerPointsPrediction] = useState(null);
+    const [loadingPlayerPoints, setLoadingPlayerPoints] = useState(false);
+
+    // Estados para clustering de equipos
+    const [teamClusterData, setTeamClusterData] = useState({
+        points_per_game: 85.5,
+        field_goal_percentage: 45.0,
+        three_point_percentage: 35.0,
+        free_throw_percentage: 75.0,
+        rebounds_per_game: 42.0,
+        assists_per_game: 22.0,
+        steals_per_game: 8.0,
+        blocks_per_game: 5.0,
+        turnovers_per_game: 14.0,
+        win_percentage: 0.65
+    });
+    const [teamClusterPrediction, setTeamClusterPrediction] = useState(null);
+    const [loadingTeamCluster, setLoadingTeamCluster] = useState(false);
 
     const predictions = [
         {

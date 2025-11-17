@@ -1178,109 +1178,72 @@ const ModernAnalytics = () => {
                                 >
                                     Equipo
                                 </button>
-                                <button
-                                    onClick={() => setActiveTab('torneo')}
-                                    className={`flex-1 min-w-[110px] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${activeTab === 'torneo'
-                                        ? 'bg-[#002D62] text-white shadow-lg'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
-                                >
-                                    Torneo
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('metricas')}
-                                    className={`flex-1 min-w-[110px] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${activeTab === 'metricas'
-                                        ? 'bg-gray-700 text-white shadow-lg'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
-                                >
-                                    Métricas
-                                </button>
                             </div>
                         </motion.div>
 
                         {/* Contenido según pestaña activa */}
                         {activeTab === 'resumen' && (
                             <>
-                                {/* Hero Section - República Dominicana */}
+                                {/* Hero Section Compacto */}
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-8 shadow-2xl border border-white/10"
+                                    transition={{ duration: 0.3 }}
+                                    className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-5 shadow-lg border border-white/10 mb-4"
                                 >
-                                    {/* Animated Background Pattern */}
                                     <div className="absolute inset-0 opacity-10">
                                         <div className="absolute inset-0" style={{
                                             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)',
                                             animation: 'slide 20s linear infinite'
                                         }}></div>
                                     </div>
-                                    {/* Decorative circles */}
-                                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-                                    <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
 
-                                    {/* Content */}
                                     <div className="relative">
-                                        {/* Header */}
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-white/40 overflow-hidden">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30 overflow-hidden">
                                                     <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-2xl font-bold text-white mb-1">República Dominicana</h2>
-                                                    <p className="text-white/80 text-sm font-medium">Selección Nacional de Baloncesto</p>
+                                                    <h2 className="text-xl font-bold text-white">República Dominicana</h2>
+                                                    <p className="text-white/80 text-xs font-medium">Selección Nacional de Baloncesto</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Período</p>
-                                                <p className="text-white text-xl font-bold">2010 - 2025</p>
+                                                <p className="text-white/70 text-[10px] uppercase tracking-wider">Período</p>
+                                                <p className="text-white text-base font-bold">2010 - 2025</p>
                                             </div>
                                         </div>
 
                                         {/* KPIs del summary */}
                                         {summary ? (
-                                            <div className="flex justify-center">
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl w-full">
+                                            <div className="flex justify-center mt-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-5xl w-full">
                                                     {/* Total Torneos */}
                                                     <motion.div
-                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
-                                                        className="group relative overflow-hidden rounded-2xl"
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.05, duration: 0.3 }}
+                                                        className="group relative overflow-hidden rounded-xl"
                                                     >
-                                                        {/* Fondo con gradiente */}
                                                         <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-xl transition-all duration-300"></div>
 
-                                                        {/* Efecto hover brillante */}
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                        {/* Borde animado */}
-                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                        {/* Contenido */}
-                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                        <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                {/* Icono grande con gradiente rojo */}
-                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Trophy className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Trophy className="w-7 h-7 text-white drop-shadow-lg" />
                                                                 </div>
-
-                                                                {/* Título */}
-                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Torneos
                                                                 </p>
-
-                                                                {/* Número principal */}
-                                                                <div className="mb-2">
-                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                <div className="mb-1">
+                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.tournaments || 0}
                                                                     </p>
                                                                 </div>
-
-                                                                {/* Descripción */}
-                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                <p className="text-white/70 text-xs font-semibold group-hover:text-white/90 transition-colors">
                                                                     Registrados
                                                                 </p>
                                                             </div>
@@ -1289,42 +1252,29 @@ const ModernAnalytics = () => {
 
                                                     {/* Total Jugadores */}
                                                     <motion.div
-                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                                                        className="group relative overflow-hidden rounded-2xl"
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.1, duration: 0.3 }}
+                                                        className="group relative overflow-hidden rounded-xl"
                                                     >
-                                                        {/* Fondo con gradiente */}
                                                         <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-xl transition-all duration-300"></div>
 
-                                                        {/* Efecto hover brillante */}
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                        {/* Borde animado */}
-                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                        {/* Contenido */}
-                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                        <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                {/* Icono grande con gradiente azul */}
-                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-blue-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Users className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-blue-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Users className="w-7 h-7 text-white drop-shadow-lg" />
                                                                 </div>
-
-                                                                {/* Título */}
-                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Jugadores
                                                                 </p>
-
-                                                                {/* Número principal */}
-                                                                <div className="mb-2">
-                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                <div className="mb-1">
+                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.players || 0}
                                                                     </p>
                                                                 </div>
-
-                                                                {/* Descripción */}
-                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                <p className="text-white/70 text-xs font-semibold group-hover:text-white/90 transition-colors">
                                                                     Registrados
                                                                 </p>
                                                             </div>
@@ -1333,42 +1283,29 @@ const ModernAnalytics = () => {
 
                                                     {/* Total Partidos */}
                                                     <motion.div
-                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-                                                        className="group relative overflow-hidden rounded-2xl"
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.15, duration: 0.3 }}
+                                                        className="group relative overflow-hidden rounded-xl"
                                                     >
-                                                        {/* Fondo con gradiente */}
                                                         <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-xl transition-all duration-300"></div>
 
-                                                        {/* Efecto hover brillante */}
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                        {/* Borde animado */}
-                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                        {/* Contenido */}
-                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                        <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                {/* Icono grande con gradiente rojo */}
-                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Target className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Target className="w-7 h-7 text-white drop-shadow-lg" />
                                                                 </div>
-
-                                                                {/* Título */}
-                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Partidos
                                                                 </p>
-
-                                                                {/* Número principal */}
-                                                                <div className="mb-2">
-                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                <div className="mb-1">
+                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.games || 0}
                                                                     </p>
                                                                 </div>
-
-                                                                {/* Descripción */}
-                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                <p className="text-white/70 text-xs font-semibold group-hover:text-white/90 transition-colors">
                                                                     Jugados
                                                                 </p>
                                                             </div>
@@ -3150,10 +3087,156 @@ const ModernAnalytics = () => {
                                             </LineChart>
                                         </ResponsiveContainer>
                                     ) : (
-                                        <div className="h-80 flex items-center justify-center text-gray-500">
+                                        <div className="h-60 flex items-center justify-center text-gray-500">
                                             <p>No hay datos de tendencias disponibles</p>
                                         </div>
                                     )}
+                                </motion.div>
+
+                                {/* Grid 2 Columnas: Récords y Distribución */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                                    {/* Récords Históricos */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.25 }}
+                                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4"
+                                    >
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+                                            Récords Históricos
+                                        </h3>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/20 border-l-4 border-green-500">
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Victorias Totales</span>
+                                                <span className="text-lg font-black text-green-600">{teamData.overview?.total_wins || 0}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-to-r from-red-50 to-transparent dark:from-red-950/20 border-l-4 border-red-500">
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Derrotas Totales</span>
+                                                <span className="text-lg font-black text-red-600">{teamData.overview?.total_losses || 0}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-950/20 border-l-4 border-blue-500">
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Mejor % de Victoria</span>
+                                                <span className="text-lg font-black text-blue-600">{((teamData.overview?.win_percentage || 0) * 100).toFixed(1)}%</span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-2 rounded-lg bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-950/20 border-l-4 border-purple-500">
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Promedio de Puntos</span>
+                                                <span className="text-lg font-black text-purple-600">{(teamData.offense?.efficiency_metrics?.avg_points || 0).toFixed(1)}</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Distribución Victorias/Derrotas */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.3 }}
+                                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4"
+                                    >
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+                                            Distribución de Resultados
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {/* Barra de Victorias */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs font-bold text-green-600">Victorias</span>
+                                                    <span className="text-sm font-black text-gray-900 dark:text-white">{teamData.overview?.total_wins || 0}</span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                                    <div
+                                                        className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500"
+                                                        style={{ width: `${((teamData.overview?.win_percentage || 0) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Barra de Derrotas */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs font-bold text-red-600">Derrotas</span>
+                                                    <span className="text-sm font-black text-gray-900 dark:text-white">{teamData.overview?.total_losses || 0}</span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                                    <div
+                                                        className="bg-gradient-to-r from-red-500 to-red-600 h-3 rounded-full transition-all duration-500"
+                                                        style={{ width: `${(100 - (teamData.overview?.win_percentage || 0) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Estadísticas adicionales */}
+                                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                                <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+                                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Partidos</p>
+                                                    <p className="text-xl font-black text-gray-900 dark:text-white">{teamData.overview?.total_games || 0}</p>
+                                                </div>
+                                                <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+                                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Eficiencia</p>
+                                                    <p className="text-xl font-black text-gray-900 dark:text-white">{(teamData.overview?.momentum?.avg_efficiency || 0).toFixed(1)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+
+                                {/* Tabla Comparativa de Métricas */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3, delay: 0.35 }}
+                                    className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mt-4"
+                                >
+                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">
+                                        Métricas Clave del Equipo
+                                    </h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="border-b-2 border-gray-200 dark:border-gray-700">
+                                                    <th className="text-left py-2 px-3 font-bold text-gray-700 dark:text-gray-300 uppercase">Métrica</th>
+                                                    <th className="text-center py-2 px-3 font-bold text-[#CE1126]">Ofensiva</th>
+                                                    <th className="text-center py-2 px-3 font-bold text-[#002D62]">Defensiva</th>
+                                                    <th className="text-center py-2 px-3 font-bold text-gray-700 dark:text-gray-300">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Puntos/J</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#CE1126]">{(teamData.offense?.efficiency_metrics?.avg_points || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 text-gray-400">-</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.offense?.efficiency_metrics?.avg_points || 0).toFixed(1)}</td>
+                                                </tr>
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Asistencias/J</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#CE1126]">{(teamData.offense?.playmaking?.avg_assists || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 text-gray-400">-</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.offense?.playmaking?.avg_assists || 0).toFixed(1)}</td>
+                                                </tr>
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Rebotes/J</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#CE1126]">{(teamData.offense?.playmaking?.avg_offensive_rebounds || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#002D62]">{(teamData.defense?.defensive_actions?.avg_defensive_rebounds || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.overview?.rebounding?.avg_total_rebounds || 0).toFixed(1)}</td>
+                                                </tr>
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Robos/J</td>
+                                                    <td className="text-center py-2 px-3 text-gray-400">-</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#002D62]">{(teamData.defense?.defensive_actions?.avg_steals || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.defense?.defensive_actions?.avg_steals || 0).toFixed(1)}</td>
+                                                </tr>
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Bloqueos/J</td>
+                                                    <td className="text-center py-2 px-3 text-gray-400">-</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#002D62]">{(teamData.defense?.defensive_actions?.avg_blocks || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.defense?.defensive_actions?.avg_blocks || 0).toFixed(1)}</td>
+                                                </tr>
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 bg-gray-50 dark:bg-gray-800/30">
+                                                    <td className="py-2 px-3 font-bold text-gray-900 dark:text-white">Eficiencia</td>
+                                                    <td className="text-center py-2 px-3 font-black text-[#CE1126]">{(teamData.offense?.efficiency_metrics?.avg_efficiency || 0).toFixed(1)}</td>
+                                                    <td className="text-center py-2 px-3 text-gray-400">-</td>
+                                                    <td className="text-center py-2 px-3 font-black text-gray-900 dark:text-white">{(teamData.overview?.momentum?.avg_efficiency || 0).toFixed(1)}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </motion.div>
                             </>
                         ) : (

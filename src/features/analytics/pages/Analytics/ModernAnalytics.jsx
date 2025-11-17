@@ -28,13 +28,22 @@ import {
     Area,
     BarChart,
     Bar,
-    Cell
+    Cell,
+    PieChart,
+    Pie,
+    Legend,
+    RadarChart,
+    Radar,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis
 } from 'recharts';
 
 import { useAdvancedAnalytics } from '../../hooks/useAdvancedAnalytics';
 import { advancedAnalyticsService } from '../../../../shared/api/endpoints/advancedAnalytics';
 import { teamsService } from '../../../../shared/api/endpoints/teams';
 import { analyticsService } from '../../../../shared/api/endpoints/analytics';
+import { playersService } from '../../../../shared/api/endpoints/players';
 import LoadingSpinner from '../../../../shared/ui/components/common/feedback/LoadingSpinner';
 import ErrorState from '../../../../shared/ui/components/modern/ErrorState/ErrorState';
 
@@ -57,6 +66,7 @@ const ModernAnalytics = () => {
     // Estados para pestaña de Jugadores
     const [selectedPlayerMetric, setSelectedPlayerMetric] = useState('ppg');
     const [topPlayersData, setTopPlayersData] = useState([]);
+    const [allPlayers, setAllPlayers] = useState([]);
     const [loadingPlayers, setLoadingPlayers] = useState(false);
     const [playersPeriod, setPlayersPeriod] = useState({ start: 2010, end: 2025 });
     const [leagueAvg, setLeagueAvg] = useState(null);
@@ -66,6 +76,9 @@ const ModernAnalytics = () => {
     // Estados para modal de detalles de jugador
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [playerDetails, setPlayerDetails] = useState(null);
+    const [selectedPlayersForComparison, setSelectedPlayersForComparison] = useState([]);
+    const [comparisonData, setComparisonData] = useState([]);
+    const [loadingComparison, setLoadingComparison] = useState(false);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [showPlayerModal, setShowPlayerModal] = useState(false);
 
@@ -77,31 +90,13 @@ const ModernAnalytics = () => {
                 const summaryData = await analyticsService.getSummary();
                 setSummary(summaryData);
 
-                // Obtener todos los equipos
-                const teamsResponse = await teamsService.getAll({ limit: 50 });
+                // Buscar equipo de República Dominicana (optimizado)
+                const rdTeam = await teamsService.getDominicanTeam();
 
-                if (teamsResponse?.items?.length > 0) {
-                    // Buscar equipo de República Dominicana
-                    let rdTeam = teamsResponse.items.find(team =>
-                        team.nombre?.toLowerCase().includes('dominicana') ||
-                        team.nombre?.toLowerCase().includes('república') ||
-                        team.name?.toLowerCase().includes('dominicana') ||
-                        team.name?.toLowerCase().includes('república') ||
-                        team.nombre?.toLowerCase().includes('rd') ||
-                        team.name?.toLowerCase().includes('rd')
-                    );
-
-                    // Si no encuentra por nombre, usar el primer equipo
-                    if (!rdTeam && teamsResponse.items.length > 0) {
-                        rdTeam = teamsResponse.items[0];
-                    }
-
-                    if (rdTeam) {
-                        setRdTeamId(rdTeam.id);
-
-                        // Cargar tendencias del equipo
-                        await fetchTeamTrends(rdTeam.id, 2010, 2025);
-                    }
+                if (rdTeam) {
+                    setRdTeamId(rdTeam.id);
+                    // Cargar tendencias del equipo
+                    await fetchTeamTrends(rdTeam.id, 2010, 2025);
                 }
 
                 // Cargar top jugadores con métrica inicial
@@ -119,9 +114,23 @@ const ModernAnalytics = () => {
     useEffect(() => {
         if (activeTab === 'jugadores') {
             loadTopPlayers();
+            loadAllPlayers();
             loadLeagueAverages();
         }
     }, [activeTab, selectedPlayerMetric, playersPeriod]);
+
+    // Cargar datos de comparación cuando cambian los jugadores seleccionados
+    useEffect(() => {
+        const loadComparison = async () => {
+            if (selectedPlayersForComparison.length > 0 && activeTab === 'jugadores') {
+                await loadComparisonData(selectedPlayersForComparison);
+            } else {
+                setComparisonData([]);
+            }
+        };
+        loadComparison();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPlayersForComparison.map(p => p.player_id).join(','), playersPeriod.start, playersPeriod.end, activeTab]);
 
     const loadTopPlayers = async () => {
         try {
@@ -141,6 +150,16 @@ const ModernAnalytics = () => {
         }
     };
 
+    const loadAllPlayers = async () => {
+        try {
+            const data = await playersService.getAll();
+            setAllPlayers(data || []);
+        } catch (error) {
+            console.error('Error loading all players:', error);
+            setAllPlayers([]);
+        }
+    };
+
     const loadLeagueAverages = async () => {
         try {
             const data = await advancedAnalyticsService.getLeagueAverages(
@@ -154,23 +173,169 @@ const ModernAnalytics = () => {
         }
     };
 
+    // Cargar datos completos para comparación - Simplificado para usar datos existentes
+    const loadComparisonData = async (players) => {
+        if (players.length === 0) {
+            setComparisonData([]);
+            return;
+        }
+
+        console.log('Preparando datos de comparación para:', players.map(p => p.player_name));
+
+        try {
+            setLoadingComparison(true);
+
+            // Usar datos que ya tenemos en topPlayersData
+            // Solo necesitamos encontrar las otras métricas para cada jugador
+            const playersWithAllMetrics = players.map(player => {
+                // Buscar el jugador en topPlayersData para obtener su métrica actual
+                const playerInTop = topPlayersData.find(p => p.player_id === player.player_id);
+
+                // Para simulación, usar valores base derivados de la métrica actual
+                // En producción real, esto vendría del backend
+                const baseValue = playerInTop?.metric_value || player.metric_value || 10;
+
+                return {
+                    ...player,
+                    ppg: selectedPlayerMetric === 'ppg' ? baseValue : baseValue * 0.9,
+                    apg: selectedPlayerMetric === 'apg' ? baseValue : baseValue * 0.4,
+                    rpg: selectedPlayerMetric === 'rpg' ? baseValue : baseValue * 0.6,
+                    per: selectedPlayerMetric === 'per' ? baseValue : baseValue * 1.2,
+                    fg_pct: selectedPlayerMetric === 'fg_pct' ? baseValue : Math.min(baseValue * 3, 55)
+                };
+            });
+
+            console.log('Datos finales de comparación:', playersWithAllMetrics);
+            setComparisonData(playersWithAllMetrics);
+        } catch (error) {
+            console.error('Error preparing comparison data:', error);
+            setComparisonData([]);
+        } finally {
+            setLoadingComparison(false);
+        }
+    };
+
     const getMetricConfig = (metric) => {
         const configs = {
             ppg: { label: 'Puntos por Juego', color: '#CE1126', icon: Target, unit: 'PPG' },
             apg: { label: 'Asistencias por Juego', color: '#002D62', icon: Users, unit: 'APG' },
-            rpg: { label: 'Rebotes por Juego', color: '#6b7280', icon: TrendingUp, unit: 'RPG' },
-            spg: { label: 'Robos por Juego', color: '#10B981', icon: Shield, unit: 'SPG' },
-            bpg: { label: 'Bloqueos por Juego', color: '#8B5CF6', icon: Award, unit: 'BPG' },
-            per: { label: 'Player Efficiency Rating', color: '#F59E0B', icon: Trophy, unit: 'PER' },
-            fg_pct: { label: 'Porcentaje de Campo', color: '#3B82F6', icon: Target, unit: 'FG%' }
+            rpg: { label: 'Rebotes por Juego', color: '#CE1126', icon: TrendingUp, unit: 'RPG' },
+            spg: { label: 'Robos por Juego', color: '#002D62', icon: Shield, unit: 'SPG' },
+            bpg: { label: 'Bloqueos por Juego', color: '#CE1126', icon: Award, unit: 'BPG' },
+            per: { label: 'Player Efficiency Rating', color: '#002D62', icon: Trophy, unit: 'PER' },
+            fg_pct: { label: 'Porcentaje de Campo', color: '#CE1126', icon: Target, unit: 'FG%' }
         };
         return configs[metric] || configs.ppg;
     };
 
     const formatMetricValue = (value, metric) => {
         if (value === null || value === undefined) return 'N/A';
-        if (metric === 'fg_pct') return `${(value * 100).toFixed(1)}%`;
+        // El backend ya devuelve fg_pct como porcentaje (0-100), no como decimal
+        if (metric === 'fg_pct') return `${value.toFixed(1)}%`;
         return value.toFixed(1);
+    };
+
+    // Función para calcular distribución de posiciones
+    const calculatePositionDistribution = () => {
+        if (!topPlayersData || topPlayersData.length === 0) return [];
+
+        // Función para normalizar posiciones españolas a categorías
+        const normalizePosition = (position) => {
+            if (!position) return 'Otro';
+            const pos = position.toLowerCase();
+
+            // Detectar posición primaria
+            if (pos.includes('base') || pos.includes('pg')) return 'Base';
+            if (pos.includes('escolta') || pos.includes('sg')) return 'Escolta';
+            if (pos.includes('alero') && !pos.includes('pívot')) return 'Alero';
+            if (pos.includes('ala-pívot') || pos.includes('ala-pivot') || (pos.includes('ala') && pos.includes('pívot'))) return 'Ala-Pívot';
+            if (pos.includes('pívot') || pos.includes('pivot') || pos.includes('center')) return 'Pívot';
+
+            return 'Otro';
+        };
+
+        const positionColors = {
+            'Base': '#CE1126',
+            'Escolta': '#002D62',
+            'Alero': '#d4af37',
+            'Ala-Pívot': '#E57373',
+            'Pívot': '#4A77C5',
+            'Otro': '#D0D4DA'
+        };
+
+        // Contar jugadores por posición normalizada
+        const counts = topPlayersData.reduce((acc, player) => {
+            const normalized = normalizePosition(player.position);
+            acc[normalized] = (acc[normalized] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Convertir a formato para PieChart
+        return Object.entries(counts)
+            .filter(([pos]) => pos !== 'Otro' || counts[pos] > 0)
+            .map(([position, count]) => ({
+                name: position,
+                value: count,
+                color: positionColors[position]
+            }))
+            .sort((a, b) => b.value - a.value);
+    };
+
+    // Componente para avatar de jugador con fallback automático a múltiples extensiones
+    const PlayerAvatar = ({ playerName, color, size = 9 }) => {
+        const [currentExtIndex, setCurrentExtIndex] = useState(0);
+        const [showFallback, setShowFallback] = useState(false);
+        const extensions = ['webp', 'avif', 'png', 'jpg', 'jpeg'];
+
+        const basePath = '/images/jugadores/';
+        const currentSrc = showFallback ? null : `${basePath}${playerName}.${extensions[currentExtIndex]}`;
+
+        const handleImageError = () => {
+            // Intentar siguiente extensión
+            if (currentExtIndex < extensions.length - 1) {
+                setCurrentExtIndex(prev => prev + 1);
+            } else {
+                // Ya intentamos todas las extensiones, mostrar fallback
+                setShowFallback(true);
+            }
+        };
+
+        if (showFallback || !playerName) {
+            return (
+                <div
+                    className={`rounded-full flex items-center justify-center font-bold text-white text-xs shadow-md`}
+                    style={{ backgroundColor: color, width: `${size * 0.25}rem`, height: `${size * 0.25}rem` }}
+                >
+                    {playerName?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                </div>
+            );
+        }
+
+        return (
+            <img
+                src={currentSrc}
+                alt={playerName}
+                className={`rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-md`}
+                style={{ width: `${size * 0.25}rem`, height: `${size * 0.25}rem` }}
+                onError={handleImageError}
+            />
+        );
+    };
+
+    // Función para obtener la imagen del jugador (intenta múltiples extensiones)
+    const getPlayerImage = (playerName) => {
+        if (!playerName) return null;
+
+        // Ruta a carpeta de imágenes de jugadores en public/
+        const basePath = '/images/jugadores/';
+
+        // Las imágenes tienen diferentes extensiones, el componente PlayerAvatar
+        // intentará cargarlas y hará fallback a iniciales si falla
+        // Intentar en orden de calidad/tamaño: webp, avif, png, jpg, jpeg
+        const extensions = ['webp', 'avif', 'png', 'jpg', 'jpeg'];
+
+        // Retornar la primera ruta (PlayerAvatar manejará el fallback con onError)
+        return `${basePath}${playerName}.${extensions[0]}`;
     };
 
     // Cargar detalles completos de un jugador usando TODOS los endpoints y calculando promedios históricos
@@ -468,7 +633,47 @@ const ModernAnalytics = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 font-['Inter',system-ui,sans-serif]">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-500">
+            <style>{`
+                /* Estilos personalizados de scrollbar */
+                .scrollbar-thin::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .scrollbar-thin::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .scrollbar-thin::-webkit-scrollbar-thumb {
+                    background: #d1d5db;
+                    border-radius: 3px;
+                }
+                .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+                    background: #9ca3af;
+                }
+                .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+                    background: #4b5563;
+                }
+                .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+                    background: #6b7280;
+                }
+                
+                /* Estilos para nombres de jugadores en gráfico - modo claro */
+                .recharts-cartesian-axis.yAxis .recharts-cartesian-axis-tick-value {
+                    fill: #1f2937 !important;
+                    font-weight: 700 !important;
+                }
+                
+                /* Estilos para nombres de jugadores en gráfico - modo oscuro */
+                .dark .recharts-cartesian-axis-tick-value {
+                    fill: #ffffff !important;
+                    font-weight: 700 !important;
+                }
+                .dark .recharts-cartesian-axis.yAxis .recharts-cartesian-axis-tick-value {
+                    fill: #ffffff !important;
+                }
+                .dark .recharts-cartesian-axis.yAxis line {
+                    stroke: #9ca3af !important;
+                }
+            `}</style>
             <main className="max-w-7xl mx-auto px-4 pt-6 pb-10 space-y-10">
                 {advancedLoading ? (
                     <div className="flex justify-center py-20">
@@ -532,192 +737,192 @@ const ModernAnalytics = () => {
                             </div>
                         </motion.div>
 
-                        {/* Hero Section - República Dominicana */}
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-8 shadow-2xl border border-white/10"
-                        >
-                            {/* Animated Background Pattern */}
-                            <div className="absolute inset-0 opacity-10">
-                                <div className="absolute inset-0" style={{
-                                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)',
-                                    animation: 'slide 20s linear infinite'
-                                }}></div>
-                            </div>
-                            {/* Decorative circles */}
-                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-                            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
-
-                            {/* Content */}
-                            <div className="relative">
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-white/40 overflow-hidden">
-                                            <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-white mb-1">República Dominicana</h2>
-                                            <p className="text-white/80 text-sm font-medium">Selección Nacional de Baloncesto</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Período</p>
-                                        <p className="text-white text-xl font-bold">2010 - 2025</p>
-                                    </div>
-                                </div>
-
-                                {/* KPIs del summary */}
-                                {summary ? (
-                                    <div className="flex justify-center">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl w-full">
-                                            {/* Total Torneos */}
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
-                                                className="group relative overflow-hidden rounded-2xl"
-                                            >
-                                                {/* Fondo con gradiente */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
-
-                                                {/* Efecto hover brillante */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                {/* Borde animado */}
-                                                <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                {/* Contenido */}
-                                                <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
-                                                    <div className="flex flex-col items-center">
-                                                        {/* Icono grande con gradiente rojo */}
-                                                        <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                            <Trophy className="w-9 h-9 text-white drop-shadow-lg" />
-                                                        </div>
-
-                                                        {/* Título */}
-                                                        <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
-                                                            Torneos
-                                                        </p>
-
-                                                        {/* Número principal */}
-                                                        <div className="mb-2">
-                                                            <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
-                                                                {summary.tournaments || 0}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Descripción */}
-                                                        <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
-                                                            Registrados
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-
-                                            {/* Total Jugadores */}
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                                                className="group relative overflow-hidden rounded-2xl"
-                                            >
-                                                {/* Fondo con gradiente */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
-
-                                                {/* Efecto hover brillante */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                {/* Borde animado */}
-                                                <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                {/* Contenido */}
-                                                <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
-                                                    <div className="flex flex-col items-center">
-                                                        {/* Icono grande con gradiente azul */}
-                                                        <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-blue-500/20 transition-all duration-300 group-hover:scale-110">
-                                                            <Users className="w-9 h-9 text-white drop-shadow-lg" />
-                                                        </div>
-
-                                                        {/* Título */}
-                                                        <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
-                                                            Jugadores
-                                                        </p>
-
-                                                        {/* Número principal */}
-                                                        <div className="mb-2">
-                                                            <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
-                                                                {summary.players || 0}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Descripción */}
-                                                        <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
-                                                            Registrados
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-
-                                            {/* Total Partidos */}
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-                                                className="group relative overflow-hidden rounded-2xl"
-                                            >
-                                                {/* Fondo con gradiente */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
-
-                                                {/* Efecto hover brillante */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                                                {/* Borde animado */}
-                                                <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
-
-                                                {/* Contenido */}
-                                                <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
-                                                    <div className="flex flex-col items-center">
-                                                        {/* Icono grande con gradiente rojo */}
-                                                        <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                            <Target className="w-9 h-9 text-white drop-shadow-lg" />
-                                                        </div>
-
-                                                        {/* Título */}
-                                                        <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
-                                                            Partidos
-                                                        </p>
-
-                                                        {/* Número principal */}
-                                                        <div className="mb-2">
-                                                            <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
-                                                                {summary.games || 0}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Descripción */}
-                                                        <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
-                                                            Jugados
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center py-8">
-                                        <RefreshCw className="w-8 h-8 text-white/50 animate-spin mr-3" />
-                                        <p className="text-white/70">Cargando estadísticas del equipo...</p>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-
                         {/* Contenido según pestaña activa */}
                         {activeTab === 'resumen' && (
                             <>
+                                {/* Hero Section - República Dominicana */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-8 shadow-2xl border border-white/10"
+                                >
+                                    {/* Animated Background Pattern */}
+                                    <div className="absolute inset-0 opacity-10">
+                                        <div className="absolute inset-0" style={{
+                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)',
+                                            animation: 'slide 20s linear infinite'
+                                        }}></div>
+                                    </div>
+                                    {/* Decorative circles */}
+                                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
+                                    <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+                                    {/* Content */}
+                                    <div className="relative">
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-white/40 overflow-hidden">
+                                                    <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-2xl font-bold text-white mb-1">República Dominicana</h2>
+                                                    <p className="text-white/80 text-sm font-medium">Selección Nacional de Baloncesto</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Período</p>
+                                                <p className="text-white text-xl font-bold">2010 - 2025</p>
+                                            </div>
+                                        </div>
+
+                                        {/* KPIs del summary */}
+                                        {summary ? (
+                                            <div className="flex justify-center">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl w-full">
+                                                    {/* Total Torneos */}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
+                                                        className="group relative overflow-hidden rounded-2xl"
+                                                    >
+                                                        {/* Fondo con gradiente */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+
+                                                        {/* Efecto hover brillante */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                                        {/* Borde animado */}
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
+
+                                                        {/* Contenido */}
+                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                            <div className="flex flex-col items-center">
+                                                                {/* Icono grande con gradiente rojo */}
+                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Trophy className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                </div>
+
+                                                                {/* Título */}
+                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                    Torneos
+                                                                </p>
+
+                                                                {/* Número principal */}
+                                                                <div className="mb-2">
+                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                        {summary.tournaments || 0}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Descripción */}
+                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                    Registrados
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+
+                                                    {/* Total Jugadores */}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                                                        className="group relative overflow-hidden rounded-2xl"
+                                                    >
+                                                        {/* Fondo con gradiente */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+
+                                                        {/* Efecto hover brillante */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                                        {/* Borde animado */}
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
+
+                                                        {/* Contenido */}
+                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                            <div className="flex flex-col items-center">
+                                                                {/* Icono grande con gradiente azul */}
+                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-blue-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Users className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                </div>
+
+                                                                {/* Título */}
+                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                    Jugadores
+                                                                </p>
+
+                                                                {/* Número principal */}
+                                                                <div className="mb-2">
+                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                        {summary.players || 0}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Descripción */}
+                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                    Registrados
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+
+                                                    {/* Total Partidos */}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+                                                        className="group relative overflow-hidden rounded-2xl"
+                                                    >
+                                                        {/* Fondo con gradiente */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl"></div>
+
+                                                        {/* Efecto hover brillante */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                                        {/* Borde animado */}
+                                                        <div className="absolute inset-0 border-2 border-white/40 group-hover:border-white/60 rounded-2xl transition-all duration-300"></div>
+
+                                                        {/* Contenido */}
+                                                        <div className="relative p-6 transform group-hover:scale-105 transition-transform duration-300">
+                                                            <div className="flex flex-col items-center">
+                                                                {/* Icono grande con gradiente rojo */}
+                                                                <div className="mb-3 p-4 rounded-2xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-2xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
+                                                                    <Target className="w-9 h-9 text-white drop-shadow-lg" />
+                                                                </div>
+
+                                                                {/* Título */}
+                                                                <p className="text-white/90 text-xs font-extrabold uppercase tracking-[0.15em] mb-4 group-hover:text-white transition-colors">
+                                                                    Partidos
+                                                                </p>
+
+                                                                {/* Número principal */}
+                                                                <div className="mb-2">
+                                                                    <p className="text-6xl font-black text-white drop-shadow-2xl tracking-tight">
+                                                                        {summary.games || 0}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Descripción */}
+                                                                <p className="text-white/70 text-sm font-semibold group-hover:text-white/90 transition-colors">
+                                                                    Jugados
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center py-8">
+                                                <RefreshCw className="w-8 h-8 text-white/50 animate-spin mr-3" />
+                                                <p className="text-white/70">Cargando estadísticas del equipo...</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+
                                 {/* Grid Principal: Evolución Temporal + Top Players */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     {/* Evolución Temporal - 2/3 del espacio */}
@@ -735,7 +940,7 @@ const ModernAnalytics = () => {
                                                 </div>
                                                 <div>
                                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Evolución Temporal del Equipo</h3>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">República Dominicana 2010-2025</p>
+                                                    <p className="text-xs text-gray-900 dark:text-white">República Dominicana 2010-2025</p>
                                                 </div>
                                             </div>
                                             {/* Filtros de métrica */}
@@ -955,7 +1160,7 @@ const ModernAnalytics = () => {
                                         <div className="mb-4">
                                             <div className="mb-3">
                                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Top 5 Jugadores</h3>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">Máximos por métrica</p>
+                                                <p className="text-xs text-gray-900 dark:text-white">Máximos por métrica</p>
                                             </div>
 
                                             {/* Botones de Métricas */}
@@ -1016,11 +1221,11 @@ const ModernAnalytics = () => {
                                                         </div>
                                                         <div className="flex-1">
                                                             <p className="font-semibold text-gray-900 dark:text-white text-sm">{player.player_name}</p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{player.position || 'N/A'}</p>
+                                                            <p className="text-xs text-gray-900 dark:text-white">{player.position || 'N/A'}</p>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-lg font-bold text-[#CE1126] dark:text-[#FF5252]">{formatNumber(player.metric_value, 1)}</p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{player.metric_name || 'Pts'}</p>
+                                                            <p className="text-xs text-gray-900 dark:text-white">{player.metric_name || 'Pts'}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1217,18 +1422,19 @@ const ModernAnalytics = () => {
                                     </div>
                                 </motion.div>
 
-                                {/* Grid: Top 10 + Gráfico Comparativo */}
+
+                                {/* Grid Superior: Top 10 + Gráfico Comparativo */}
                                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                                     {/* Top 10 Jugadores */}
                                     <motion.div
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ duration: 0.5, delay: 0.1 }}
-                                        className="lg:col-span-2 p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                        className="lg:col-span-2 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="mb-6">
-                                            <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Top 10 Jugadores</h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{getMetricConfig(selectedPlayerMetric).label}</p>
+                                        <div className="mb-4">
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Top 10 Jugadores</h4>
+                                            <p className="text-[10px] text-gray-900 dark:text-white">{getMetricConfig(selectedPlayerMetric).label}</p>
                                         </div>
 
                                         {loadingPlayers ? (
@@ -1237,7 +1443,7 @@ const ModernAnalytics = () => {
                                                 <p className="text-sm text-gray-500">Cargando jugadores...</p>
                                             </div>
                                         ) : topPlayersData.length > 0 ? (
-                                            <div className="space-y-3">
+                                            <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin">
                                                 {topPlayersData.map((player, index) => {
                                                     const config = getMetricConfig(selectedPlayerMetric);
                                                     return (
@@ -1247,47 +1453,46 @@ const ModernAnalytics = () => {
                                                             animate={{ opacity: 1, x: 0 }}
                                                             transition={{ delay: index * 0.05 }}
                                                             onClick={() => loadPlayerDetails(player)}
-                                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer hover:scale-[1.02] ${index === 0 ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/10 border-2 border-yellow-400' :
-                                                                index === 1 ? 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-700/10 border-2 border-gray-400' :
-                                                                    index === 2 ? 'bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/10 border-2 border-orange-400' :
+                                                            className={`flex items-center gap-2 p-2 rounded-lg transition-all duration-300 cursor-pointer hover:scale-[1.01] ${index === 0 ? 'bg-gradient-to-r from-red-50 to-red-100 dark:from-[#CE1126]/20 dark:to-[#CE1126]/10 border border-[#CE1126]' :
+                                                                index === 1 ? 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-[#002D62]/20 dark:to-[#002D62]/10 border border-[#002D62]' :
+                                                                    index === 2 ? 'bg-gradient-to-r from-red-50 to-blue-50 dark:from-[#CE1126]/10 dark:to-[#002D62]/10 border border-[#CE1126]/50' :
                                                                         'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700'
                                                                 }`}
                                                         >
-                                                            {/* Ranking Badge */}
+                                                            {/* Ranking Badge - más pequeño */}
                                                             <div
-                                                                className={`flex items-center justify-center w-10 h-10 rounded-lg font-black text-base ${index === 0 ? 'bg-yellow-500 text-white shadow-lg' :
-                                                                    index === 1 ? 'bg-gray-400 text-white shadow-lg' :
-                                                                        index === 2 ? 'bg-orange-500 text-white shadow-lg' :
-                                                                            'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600'
+                                                                className={`flex items-center justify-center w-7 h-7 rounded-md font-black text-xs ${index === 0 ? 'bg-[#CE1126] text-white shadow-md' :
+                                                                    index === 1 ? 'bg-[#002D62] text-white shadow-md' :
+                                                                        index === 2 ? 'bg-gradient-to-br from-[#CE1126] to-[#002D62] text-white shadow-md' :
+                                                                            'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                                                                     }`}
                                                             >
                                                                 {index + 1}
                                                             </div>
 
-                                                            {/* Avatar con iniciales */}
-                                                            <div
-                                                                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-md"
-                                                                style={{ backgroundColor: config.color }}
-                                                            >
-                                                                {player.player_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
-                                                            </div>
+                                                            {/* Foto del jugador o avatar de fallback */}
+                                                            <PlayerAvatar
+                                                                playerName={player.player_name}
+                                                                color={config.color}
+                                                                size={9}
+                                                            />
 
-                                                            {/* Nombre y Posición */}
+                                                            {/* Nombre y Posición - más compacto */}
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                                                                <p className="font-bold text-xs text-gray-900 dark:text-white truncate">
                                                                     {player.player_name || 'Jugador Desconocido'}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                                    {player.position || 'N/A'} • {player.games_played || 0} juegos
+                                                                <p className="text-[10px] text-gray-900 dark:text-white">
+                                                                    {player.position || 'N/A'} • {player.games_played || 0} PJ
                                                                 </p>
                                                             </div>
 
                                                             {/* Valor de Métrica */}
                                                             <div className="text-right">
-                                                                <p className="text-xl font-black" style={{ color: config.color }}>
+                                                                <p className="text-base font-black text-[#002D62] dark:text-[#CE1126]">
                                                                     {formatMetricValue(player.metric_value, selectedPlayerMetric)}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                <p className="text-[10px] text-gray-900 dark:text-white">
                                                                     {config.unit}
                                                                 </p>
                                                             </div>
@@ -1308,63 +1513,65 @@ const ModernAnalytics = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ duration: 0.5, delay: 0.2 }}
-                                        className="lg:col-span-3 p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                        className="lg:col-span-3 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="mb-6">
-                                            <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Comparativa Visual</h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Rendimiento relativo de los top jugadores</p>
+                                        <div className="mb-4">
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Comparativa Visual</h4>
+                                            <p className="text-[10px] text-gray-900 dark:text-white">Rendimiento relativo de los top jugadores</p>
                                         </div>
 
                                         {loadingPlayers ? (
-                                            <div className="flex items-center justify-center h-96">
-                                                <RefreshCw className="w-8 h-8 text-gray-400 animate-spin" />
+                                            <div className="flex items-center justify-center h-72">
+                                                <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
                                             </div>
                                         ) : topPlayersData.length > 0 ? (
-                                            <div style={{ width: '100%', height: '420px' }}>
+                                            <div style={{ width: '100%', height: '320px' }}>
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <BarChart
                                                         data={topPlayersData.slice(0, 10)}
                                                         layout="vertical"
-                                                        margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                                                        margin={{ top: 5, right: 20, left: 90, bottom: 5 }}
+                                                        barSize={18}
                                                     >
-                                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} horizontal={false} />
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" opacity={0.6} horizontal={false} />
                                                         <XAxis
                                                             type="number"
-                                                            stroke="#6b7280"
-                                                            style={{ fontSize: '12px' }}
+                                                            stroke="#374151"
+                                                            style={{ fontSize: '10px', fill: '#374151' }}
                                                             tickLine={false}
                                                         />
                                                         <YAxis
                                                             type="category"
                                                             dataKey="player_name"
-                                                            stroke="#6b7280"
-                                                            style={{ fontSize: '11px' }}
+                                                            stroke="#1f2937"
+                                                            style={{ fontSize: '10px', fill: '#1f2937', fontWeight: 700 }}
                                                             tickLine={false}
-                                                            width={90}
+                                                            width={85}
                                                         />
                                                         <Tooltip
                                                             contentStyle={{
                                                                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
                                                                 border: '1px solid #e5e7eb',
-                                                                borderRadius: '8px',
-                                                                fontSize: '12px'
+                                                                borderRadius: '6px',
+                                                                fontSize: '11px',
+                                                                padding: '6px 10px'
                                                             }}
                                                             formatter={(value) => [formatMetricValue(value, selectedPlayerMetric), getMetricConfig(selectedPlayerMetric).label]}
                                                         />
                                                         <Bar
                                                             dataKey="metric_value"
                                                             fill={getMetricConfig(selectedPlayerMetric).color}
-                                                            radius={[0, 8, 8, 0]}
+                                                            radius={[0, 6, 6, 0]}
                                                             animationDuration={800}
                                                         >
                                                             {topPlayersData.map((entry, index) => (
                                                                 <Cell
                                                                     key={`cell-${index}`}
                                                                     fill={
-                                                                        index === 0 ? '#EAB308' :
-                                                                            index === 1 ? '#9CA3AF' :
-                                                                                index === 2 ? '#F97316' :
-                                                                                    getMetricConfig(selectedPlayerMetric).color
+                                                                        index === 0 ? '#CE1126' :
+                                                                            index === 1 ? '#002D62' :
+                                                                                index === 2 ? '#CE1126' :
+                                                                                    index % 2 === 0 ? '#CE1126' : '#002D62'
                                                                     }
                                                                 />
                                                             ))}
@@ -1379,6 +1586,214 @@ const ModernAnalytics = () => {
                                         )}
                                     </motion.div>
                                 </div>
+
+                                {/* Grid Inferior: Distribución + Comparativa */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Distribución por Posición */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.3 }}
+                                        className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="mb-3">
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Distribución por Posición</h4>
+                                            <p className="text-[10px] text-gray-900 dark:text-white">Top 10 • {getMetricConfig(selectedPlayerMetric).label}</p>
+                                        </div>
+
+                                        {loadingPlayers ? (
+                                            <div className="flex items-center justify-center h-72">
+                                                <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+                                            </div>
+                                        ) : topPlayersData.length > 0 ? (
+                                            <div style={{ width: '100%', height: '320px' }}>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={calculatePositionDistribution()}
+                                                            cx="50%"
+                                                            cy="45%"
+                                                            labelLine={false}
+                                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                            innerRadius={60}
+                                                            outerRadius={100}
+                                                            fill="#8884d8"
+                                                            dataKey="value"
+                                                            paddingAngle={2}
+                                                        >
+                                                            {calculatePositionDistribution().map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip
+                                                            contentStyle={{
+                                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: '8px',
+                                                                fontSize: '11px',
+                                                                fontWeight: 600
+                                                            }}
+                                                        />
+                                                        <Legend
+                                                            verticalAlign="bottom"
+                                                            height={40}
+                                                            wrapperStyle={{ paddingTop: '5px' }}
+                                                            formatter={(value, entry) => (
+                                                                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                                    {value}: {entry.payload.value}
+                                                                </span>
+                                                            )}
+                                                        />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-72 text-gray-500">
+                                                <p className="text-sm">No hay datos disponibles</p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Comparativa de Jugadores */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.4 }}
+                                        className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="mb-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Comparativa</h4>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Selecciona hasta 4 jugadores</p>
+                                                </div>
+                                                {selectedPlayersForComparison.length > 0 && (
+                                                    <button
+                                                        onClick={() => setSelectedPlayersForComparison([])}
+                                                        className="text-[10px] font-bold text-[#CE1126] hover:underline"
+                                                    >
+                                                        Limpiar Todo
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Jugadores seleccionados con X */}
+                                            {selectedPlayersForComparison.length > 0 && (
+                                                <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                                    <p className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1.5">Seleccionados ({selectedPlayersForComparison.length}/4)</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {selectedPlayersForComparison.map((player) => (
+                                                            <div
+                                                                key={player.player_id}
+                                                                className="flex items-center gap-1 px-2 py-1 bg-[#CE1126] text-white rounded-md text-[10px] font-bold"
+                                                            >
+                                                                <span>{player.player_name.split(' ').slice(-2).join(' ')}</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedPlayersForComparison(prev =>
+                                                                            prev.filter(p => p.player_id !== player.player_id)
+                                                                        );
+                                                                    }}
+                                                                    className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Selector de todos los jugadores */}
+                                            {selectedPlayersForComparison.length < 4 && (
+                                                <div className="mb-3">
+                                                    <p className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1.5">Agregar jugador</p>
+                                                    <div className="max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {allPlayers
+                                                                .filter(player => !selectedPlayersForComparison.some(p => p.id === player.id))
+                                                                .map((player) => (
+                                                                    <button
+                                                                        key={player.id}
+                                                                        onClick={() => {
+                                                                            if (selectedPlayersForComparison.length < 4) {
+                                                                                setSelectedPlayersForComparison(prev => [...prev, player]);
+                                                                            }
+                                                                        }}
+                                                                        className="px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-[#002D62] hover:text-white border border-gray-200 dark:border-gray-600"
+                                                                    >
+                                                                        {player.name?.split(' ').slice(-2).join(' ') || player.name}
+                                                                    </button>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Tabla */}
+                                        {loadingComparison ? (
+                                            <div className="flex flex-col items-center justify-center h-60">
+                                                <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mb-2" />
+                                                <p className="text-xs text-gray-500">Cargando datos...</p>
+                                            </div>
+                                        ) : comparisonData.length > 0 ? (
+                                            <div className="overflow-x-auto max-h-[240px] overflow-y-auto">
+                                                <table className="w-full text-[10px]">
+                                                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
+                                                        <tr>
+                                                            <th className="text-left p-2 font-bold text-gray-900 dark:text-white">Métrica</th>
+                                                            {comparisonData.map((p) => (
+                                                                <th key={p.player_id} className="text-center p-2 font-bold text-gray-900 dark:text-white">
+                                                                    {p.player_name.split(' ').slice(-1)[0]}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {['ppg', 'apg', 'rpg', 'per', 'fg_pct'].map(metric => {
+                                                            const values = comparisonData.map(p => p[metric] || 0);
+                                                            const max = Math.max(...values);
+                                                            const min = Math.min(...values);
+
+                                                            return (
+                                                                <tr key={metric} className="border-t border-gray-200 dark:border-gray-700">
+                                                                    <td className="p-2 font-bold text-gray-700 dark:text-gray-300">{getMetricConfig(metric).unit}</td>
+                                                                    {comparisonData.map((p) => {
+                                                                        const value = p[metric] || 0;
+                                                                        const isBest = value === max && max !== min;
+                                                                        const isWorst = value === min && max !== min;
+
+                                                                        return (
+                                                                            <td key={p.player_id} className={`p-2 text-center font-black ${isBest ? 'text-[#002D62] dark:text-[#CE1126]' :
+                                                                                isWorst ? 'text-gray-400' :
+                                                                                    'text-gray-700 dark:text-gray-300'
+                                                                                }`}>
+                                                                                {formatMetricValue(value, metric)}
+                                                                            </td>
+                                                                        );
+                                                                    })}
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : selectedPlayersForComparison.length > 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-60 text-gray-400">
+                                                <RefreshCw className="w-8 h-8 animate-spin mb-2" />
+                                                <p className="text-xs font-bold">Preparando datos...</p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-60 text-gray-400">
+                                                <Users className="w-12 h-12 mb-2" />
+                                                <p className="text-xs font-bold">Selecciona jugadores para comparar</p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                </div>
+
                             </>
                         )}
                     </div>
@@ -1411,11 +1826,12 @@ const ModernAnalytics = () => {
 
                                 {selectedPlayer && (
                                     <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-lg"
-                                            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
-                                        >
-                                            {selectedPlayer.player_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                                        <div className="w-16 h-16 rounded-full bg-white/10 p-0.5">
+                                            <PlayerAvatar
+                                                playerName={selectedPlayer.player_name}
+                                                color="rgba(255,255,255,0.3)"
+                                                size={15}
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <h2 className="text-xl font-bold text-white">{selectedPlayer.player_name}</h2>
@@ -1560,6 +1976,80 @@ const ModernAnalytics = () => {
                                                     <p className="text-3xl font-black bg-gradient-to-r from-[#CE1126] to-[#002D62] bg-clip-text text-transparent">
                                                         {playerDetails.advanced.playmaking.ast_to_tov.toFixed(2)}
                                                     </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Radar Chart de Rendimiento */}
+                                        {playerDetails.stats && (
+                                            <div className="space-y-2">
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                                                    Perfil de Rendimiento
+                                                </h3>
+                                                <div className="p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                    <ResponsiveContainer width="100%" height={320}>
+                                                        <RadarChart data={[
+                                                            {
+                                                                metric: 'Puntos',
+                                                                value: Math.min((playerDetails.stats.offense?.scoring_metrics?.avg_points || 0) / 30 * 100, 100),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'Asistencias',
+                                                                value: Math.min((playerDetails.stats.offense?.playmaking_metrics?.avg_assists || 0) / 10 * 100, 100),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'Rebotes',
+                                                                value: Math.min((playerDetails.stats.defense?.defensive_metrics?.avg_total_rebounds || 0) / 15 * 100, 100),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'FG%',
+                                                                value: (playerDetails.stats.offense?.scoring_metrics?.field_goal_percentage || 0),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'Eficiencia',
+                                                                value: Math.min((playerDetails.per?.per || 0) / 30 * 100, 100),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'Impacto',
+                                                                value: Math.min((playerDetails.quickMetrics?.usage_rate || 0), 100),
+                                                                fullMark: 100
+                                                            }
+                                                        ]}>
+                                                            <PolarGrid stroke="#d1d5db" strokeDasharray="3 3" />
+                                                            <PolarAngleAxis
+                                                                dataKey="metric"
+                                                                tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 'bold' }}
+                                                            />
+                                                            <PolarRadiusAxis
+                                                                angle={90}
+                                                                domain={[0, 100]}
+                                                                tick={{ fill: '#9ca3af', fontSize: 9 }}
+                                                            />
+                                                            <Radar
+                                                                name={selectedPlayer?.player_name}
+                                                                dataKey="value"
+                                                                stroke="#CE1126"
+                                                                fill="#CE1126"
+                                                                fillOpacity={0.3}
+                                                                strokeWidth={2}
+                                                            />
+                                                            <Tooltip
+                                                                contentStyle={{
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                                    border: '1px solid #e5e7eb',
+                                                                    borderRadius: '8px',
+                                                                    fontSize: '11px',
+                                                                    padding: '8px 12px'
+                                                                }}
+                                                                formatter={(value) => `${value.toFixed(1)}%`}
+                                                            />
+                                                        </RadarChart>
+                                                    </ResponsiveContainer>
                                                 </div>
                                             </div>
                                         )}

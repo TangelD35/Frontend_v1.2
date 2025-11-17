@@ -7,6 +7,38 @@ export const teamsService = {
         return response.data;
     },
 
+    // Buscar equipo por nombre (optimizado)
+    searchByName: async (name) => {
+        const response = await axiosInstance.get('/teams/', {
+            params: { search: name, limit: 1 }
+        });
+        return response.data;
+    },
+
+    // Obtener equipo de República Dominicana (método dedicado)
+    getDominicanTeam: async () => {
+        try {
+            // Intentar con nombre completo primero
+            let response = await axiosInstance.get('/teams/', {
+                params: { search: 'República Dominicana', limit: 1 }
+            });
+
+            if (response.data?.items?.length > 0) {
+                return response.data.items[0];
+            }
+
+            // Fallback: buscar por "Dominicana"
+            response = await axiosInstance.get('/teams/', {
+                params: { search: 'Dominicana', limit: 1 }
+            });
+
+            return response.data?.items?.[0] || null;
+        } catch (error) {
+            console.error('Error buscando equipo dominicano:', error);
+            return null;
+        }
+    },
+
     // Obtener un equipo por ID con estadísticas
     getById: async (id) => {
         const response = await axiosInstance.get(`/teams/${id}`);

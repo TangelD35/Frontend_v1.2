@@ -293,102 +293,147 @@ const Predictions = () => {
                                 </div>
                                 <button onClick={handlePredictPlayerPoints} disabled={loadingPlayerPoints} className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-4">
                                     {loadingPlayerPoints ? <><RefreshCw className="w-4 h-4 animate-spin" /> Prediciendo...</> : <><Play className="w-4 h-4" /> Predecir Puntos</>}
+                                </button>
                             </div>
                         </div>
+                        <div className="bg-white rounded-xl shadow-lg border p-4">
+                            <h2 className="text-lg font-bold mb-4">Resultado</h2>
+                            {playerPointsPrediction ? (
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                                    <div className="flex justify-center">
+                                        <GaugeChart
+                                            value={playerPointsPrediction.predicted_points}
+                                            max={50}
+                                            label="Puntos"
+                                            color="#CE1126"
+                                            size={180}
+                                        />
+                                    </div>
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Target className="w-5 h-5 text-orange-600" />
+                                            <p className="text-xs font-bold text-orange-700 uppercase">Predicción de Puntos</p>
+                                        </div>
+                                        <p className="text-3xl font-black text-orange-900">{playerPointsPrediction.predicted_points.toFixed(1)} puntos</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <ProgressBar
+                                            value={playerPointsPrediction.confidence_score * 100}
+                                            label="Confianza del Modelo (R²)"
+                                            color="#002D62"
+                                        />
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <CheckCircle className="w-4 h-4 text-blue-600" />
+                                            <p className="text-xs font-bold text-blue-700 uppercase">Interpretación</p>
+                                        </div>
+                                        <p className="text-sm text-blue-900">{playerPointsPrediction.interpretation}</p>
+                                    </div>
+                                    <button onClick={() => setPlayerPointsPrediction(null)} className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-lg text-sm font-semibold transition-all shadow-md">Nueva Predicción</button>
+                                </motion.div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                    <Target className="w-16 h-16 mb-3" />
+                                    <p className="text-sm text-center">Ingresa las estadísticas del jugador</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
 
-                        {/* Team Tab */}
-                        {activeTab === 'team' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white rounded-xl shadow-lg border p-4">
-                                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                        <Brain className="w-5 h-5 text-[#002D62]" />
-                                        Clustering de Equipo
-                                    </h2>
-                                    <div className="space-y-2">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {[
-                                                { key: 'points_per_game', label: 'Puntos/J' },
-                                                { key: 'field_goal_percentage', label: 'FG%' },
-                                                { key: 'three_point_percentage', label: '3P%' },
-                                                { key: 'free_throw_percentage', label: 'FT%' },
-                                                { key: 'rebounds_per_game', label: 'Rebotes/J' },
-                                                { key: 'assists_per_game', label: 'Asistencias/J' },
-                                                { key: 'steals_per_game', label: 'Robos/J' },
-                                                { key: 'blocks_per_game', label: 'Bloqueos/J' },
-                                                { key: 'turnovers_per_game', label: 'Pérdidas/J' },
-                                                { key: 'win_percentage', label: '% Victorias' }
-                                            ].map(({ key, label }) => (
-                                                <div key={key}>
-                                                    <label className="text-xs text-gray-600">{label}</label>
-                                                    <input type="number" value={teamClusterData[key]} onChange={(e) => setTeamClusterData({ ...teamClusterData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" step={key === 'win_percentage' ? '0.01' : '0.1'} />
+                {/* Team Tab */}
+                {activeTab === 'team' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-xl shadow-lg border p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                <Brain className="w-5 h-5 text-[#002D62]" />
+                                Clustering de Equipo
+                            </h2>
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { key: 'points_per_game', label: 'Puntos/J' },
+                                        { key: 'field_goal_percentage', label: 'FG%' },
+                                        { key: 'three_point_percentage', label: '3P%' },
+                                        { key: 'free_throw_percentage', label: 'FT%' },
+                                        { key: 'rebounds_per_game', label: 'Rebotes/J' },
+                                        { key: 'assists_per_game', label: 'Asistencias/J' },
+                                        { key: 'steals_per_game', label: 'Robos/J' },
+                                        { key: 'blocks_per_game', label: 'Bloqueos/J' },
+                                        { key: 'turnovers_per_game', label: 'Pérdidas/J' },
+                                        { key: 'win_percentage', label: '% Victorias' }
+                                    ].map(({ key, label }) => (
+                                        <div key={key}>
+                                            <label className="text-xs text-gray-600">{label}</label>
+                                            <input type="number" value={teamClusterData[key]} onChange={(e) => setTeamClusterData({ ...teamClusterData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" step={key === 'win_percentage' ? '0.01' : '0.1'} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={handlePredictTeamCluster} disabled={loadingTeamCluster} className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-4">
+                                    {loadingTeamCluster ? <><RefreshCw className="w-4 h-4 animate-spin" /> Clasificando...</> : <><Play className="w-4 h-4" /> Clasificar Equipo</>}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-lg border p-4">
+                            <h2 className="text-lg font-bold mb-4">Resultado</h2>
+                            {teamClusterPrediction ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200">
+                                        <p className="text-xs font-bold text-purple-700 uppercase mb-2">Cluster Asignado</p>
+                                        <p className="text-3xl font-black text-purple-900 mb-2">{teamClusterPrediction.cluster_name}</p>
+                                        <p className="text-sm text-purple-700">{teamClusterPrediction.cluster_description}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 rounded-lg bg-gray-50">
+                                            <p className="text-xs text-gray-600">Cluster ID</p>
+                                            <p className="text-xl font-black">{teamClusterPrediction.cluster_id}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-gray-50">
+                                            <p className="text-xs text-gray-600">Total Clusters</p>
+                                            <p className="text-xl font-black">{teamClusterPrediction.total_clusters}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                        <p className="text-xs font-bold text-blue-700 uppercase mb-2">Características</p>
+                                        <div className="space-y-1">
+                                            {Object.entries(teamClusterPrediction.characteristics).map(([key, value]) => (
+                                                <div key={key} className="flex justify-between text-sm">
+                                                    <span className="text-blue-700 font-semibold">{key}:</span>
+                                                    <span className="text-blue-900">{value}</span>
                                                 </div>
                                             ))}
                                         </div>
-                                        <button onClick={handlePredictTeamCluster} disabled={loadingTeamCluster} className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-4">
-                                            {loadingTeamCluster ? <><RefreshCw className="w-4 h-4 animate-spin" /> Clasificando...</> : <><Play className="w-4 h-4" /> Clasificar Equipo</>}
-                                        </button>
                                     </div>
+                                    <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                                        <p className="text-xs font-bold text-green-700">Equipos Similares</p>
+                                        <p className="text-lg font-black text-green-900">{teamClusterPrediction.similar_teams_count} equipos</p>
+                                    </div>
+                                    <button onClick={() => setTeamClusterPrediction(null)} className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Nueva Clasificación</button>
                                 </div>
-                                <div className="bg-white rounded-xl shadow-lg border p-4">
-                                    <h2 className="text-lg font-bold mb-4">Resultado</h2>
-                                    {teamClusterPrediction ? (
-                                        <div className="space-y-4">
-                                            <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200">
-                                                <p className="text-xs font-bold text-purple-700 uppercase mb-2">Cluster Asignado</p>
-                                                <p className="text-3xl font-black text-purple-900 mb-2">{teamClusterPrediction.cluster_name}</p>
-                                                <p className="text-sm text-purple-700">{teamClusterPrediction.cluster_description}</p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="p-3 rounded-lg bg-gray-50">
-                                                    <p className="text-xs text-gray-600">Cluster ID</p>
-                                                    <p className="text-xl font-black">{teamClusterPrediction.cluster_id}</p>
-                                                </div>
-                                                <div className="p-3 rounded-lg bg-gray-50">
-                                                    <p className="text-xs text-gray-600">Total Clusters</p>
-                                                    <p className="text-xl font-black">{teamClusterPrediction.total_clusters}</p>
-                                                </div>
-                                            </div>
-                                            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                                <p className="text-xs font-bold text-blue-700 uppercase mb-2">Características</p>
-                                                <div className="space-y-1">
-                                                    {Object.entries(teamClusterPrediction.characteristics).map(([key, value]) => (
-                                                        <div key={key} className="flex justify-between text-sm">
-                                                            <span className="text-blue-700 font-semibold">{key}:</span>
-                                                            <span className="text-blue-900">{value}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                                                <p className="text-xs font-bold text-green-700">Equipos Similares</p>
-                                                <p className="text-lg font-black text-green-900">{teamClusterPrediction.similar_teams_count} equipos</p>
-                                            </div>
-                                            <button onClick={() => setTeamClusterPrediction(null)} className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Nueva Clasificación</button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                            <Brain className="w-16 h-16 mb-3" />
-                                            <p className="text-sm text-center">Ingresa las estadísticas del equipo</p>
-                                        </div>
-                                    )}
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                    <Brain className="w-16 h-16 mb-3" />
+                                    <p className="text-sm text-center">Ingresa las estadísticas del equipo</p>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Footer Info */}
-                        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">Nota sobre las predicciones</h4>
-                                <p className="text-sm text-blue-700 dark:text-blue-400">
-                                    Las predicciones son estimaciones basadas en modelos de Machine Learning entrenados con datos históricos de la Selección Nacional de República Dominicana (2010-2025). Los resultados tienen fines informativos y de análisis táctico.
-                                </p>
-                            </div>
+                            )}
                         </div>
                     </div>
+                )}
+
+                {/* Footer Info */}
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">Nota sobre las predicciones</h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-400">
+                            Las predicciones son estimaciones basadas en modelos de Machine Learning entrenados con datos históricos de la Selección Nacional de República Dominicana (2010-2025). Los resultados tienen fines informativos y de análisis táctico.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-            );
+    );
 };
 
-            export default Predictions;
+export default Predictions;

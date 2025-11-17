@@ -2,7 +2,7 @@ import axiosInstance from './axiosConfig';
 
 /**
  * Servicio para endpoints de Machine Learning
- * Conecta con /api/v1/ml-predictions
+ * Conecta con /api/v1/ml
  */
 export const mlPredictionsService = {
     // ==================== INFORMACIÓN DE MODELOS ====================
@@ -12,7 +12,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Información de modelos
      */
     getModelsInfo: async () => {
-        const response = await axiosInstance.get('/ml-predictions/models/info');
+        const response = await axiosInstance.get('/ml/models/info');
         return response.data;
     },
 
@@ -31,7 +31,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Predicción de puntos
      */
     predictPlayerPoints: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/predict-player-points', data);
+        const response = await axiosInstance.post('/ml/predict-player-points', data);
         return response.data;
     },
 
@@ -52,7 +52,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Pronóstico de rendimiento
      */
     forecastPlayerPerformance: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/forecast-player-performance', data);
+        const response = await axiosInstance.post('/ml/forecast-player-performance', data);
         return response.data;
     },
 
@@ -71,7 +71,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Predicción de resultado
      */
     predictGameOutcome: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/predict-game-outcome', data);
+        const response = await axiosInstance.post('/ml/predict-game-outcome', data);
         return response.data;
     },
 
@@ -93,7 +93,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Cluster asignado
      */
     predictTeamCluster: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/predict-team-cluster', data);
+        const response = await axiosInstance.post('/ml/predict-team-cluster', data);
         return response.data;
     },
 
@@ -103,7 +103,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Análisis avanzado de cluster
      */
     advancedClustering: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/advanced-clustering', data);
+        const response = await axiosInstance.post('/ml/advanced-clustering', data);
         return response.data;
     },
 
@@ -116,7 +116,7 @@ export const mlPredictionsService = {
      * @returns {Promise<Object>} Lineup óptimo
      */
     optimizeLineup: async (data) => {
-        const response = await axiosInstance.post('/ml-predictions/optimize-lineup', data);
+        const response = await axiosInstance.post('/ml/optimize-lineup', data);
         return response.data;
     },
 };

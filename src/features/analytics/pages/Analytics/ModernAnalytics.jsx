@@ -13,8 +13,35 @@ import {
     Activity,
     Zap,
     Eye,
-    Crosshair
+    Crosshair,
+    Search
 } from 'lucide-react';
+// Componente temporal de avatar
+const PlayerAvatar = ({ playerName, size = 32, color = '#002D62' }) => {
+    const getInitials = (name) => {
+        if (!name) return '??';
+        return name
+            .split(' ')
+            .map(part => part[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    };
+
+    return (
+        <div
+            className="rounded-full flex items-center justify-center font-bold text-white"
+            style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                backgroundColor: color,
+                fontSize: `${size * 0.4}px`
+            }}
+        >
+            {getInitials(playerName)}
+        </div>
+    );
+};
 import BanderaDominicana from '../../../../assets/icons/do.svg';
 import {
     ResponsiveContainer,
@@ -81,6 +108,30 @@ const ModernAnalytics = () => {
     const [loadingComparison, setLoadingComparison] = useState(false);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [showPlayerModal, setShowPlayerModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [performanceSearchTerm, setPerformanceSearchTerm] = useState('');
+    const [selectedPlayerForRadar, setSelectedPlayerForRadar] = useState(null);
+
+    // Filtrar jugadores basado en el término de búsqueda
+    const filteredPlayers = allPlayers.filter(player => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            (player.player_name?.toLowerCase().includes(searchLower)) ||
+            (player.team?.toLowerCase().includes(searchLower)) ||
+            (player.position?.toLowerCase().includes(searchLower))
+        );
+    }).filter(player => !selectedPlayersForComparison.some(p => p.player_id === player.player_id));
+
+    const performanceFilteredPlayers = allPlayers.filter(player => {
+        if (!performanceSearchTerm) return false;
+        const searchLower = performanceSearchTerm.toLowerCase();
+        return (
+            (player.player_name?.toLowerCase().includes(searchLower)) ||
+            (player.team?.toLowerCase().includes(searchLower)) ||
+            (player.position?.toLowerCase().includes(searchLower))
+        );
+    });
 
     // Cargar datos al montar el componente
     useEffect(() => {
@@ -132,6 +183,152 @@ const ModernAnalytics = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedPlayersForComparison.map(p => p.player_id).join(','), playersPeriod.start, playersPeriod.end, activeTab]);
 
+    // Load comparison data with real stats
+    const loadComparisonData = async (players) => {
+        try {
+            setLoadingComparison(true);
+
+            // Get detailed stats for each selected player
+            const comparisonStats = await Promise.all(
+                players.map(async (player) => {
+                    try {
+                        const stats = await analyticsService.getPlayerStats(player.player_id);
+                        const seasons = await analyticsService.getPlayerSeasons(player.player_id);
+
+                        // El endpoint /analytics/players/{id} devuelve { offense, defense }
+                        const offense = stats?.offense || {};
+                        const defense = stats?.defense || {};
+                        const shooting = offense.shooting_efficiency || {};
+                        const playmaking = offense.playmaking || {};
+                        const defensiveMetrics = defense.defensive_metrics || {};
+
+                        // Promedios ofensivos/defensivos ya vienen calculados por partido
+                        const ppg = typeof offense.average_points === 'number' ? offense.average_points : 0;
+                        const apg = typeof playmaking.avg_assists === 'number' ? playmaking.avg_assists : 0;
+                        const offReb = typeof playmaking.avg_offensive_rebounds === 'number' ? playmaking.avg_offensive_rebounds : 0;
+                        const defReb = typeof defensiveMetrics.avg_defensive_rebounds === 'number' ? defensiveMetrics.avg_defensive_rebounds : 0;
+                        const rpg = offReb + defReb;
+                        const spg = typeof defensiveMetrics.avg_steals === 'number' ? defensiveMetrics.avg_steals : 0;
+                        const bpg = typeof defensiveMetrics.avg_blocks === 'number' ? defensiveMetrics.avg_blocks : 0;
+
+                        let fgPctRaw = typeof shooting.fg_pct === 'number' ? shooting.fg_pct : 0;
+                        let threePctRaw = typeof shooting['3p_pct'] === 'number' ? shooting['3p_pct'] : 0;
+                        let ftPctRaw = typeof shooting.ft_pct === 'number' ? shooting.ft_pct : 0;
+
+                        // Normalizar porcentajes: si vienen como 0-1, convertir a 0-100; si ya vienen 0-100, mantener
+                        if (fgPctRaw > 0 && fgPctRaw <= 1.5) fgPctRaw *= 100;
+                        if (threePctRaw > 0 && threePctRaw <= 1.5) threePctRaw *= 100;
+                        if (ftPctRaw > 0 && ftPctRaw <= 1.5) ftPctRaw *= 100;
+
+                        // Guardamos porcentajes en rango 0-100; formatMetricValue añade el símbolo
+                        const careerAverages = {
+                            ppg: ppg.toFixed(1),
+                            rpg: rpg.toFixed(1),
+                            apg: apg.toFixed(1),
+                            spg: spg.toFixed(1),
+                            bpg: bpg.toFixed(1),
+                            fg_pct: fgPctRaw.toFixed(1),
+                            three_pct: threePctRaw.toFixed(1),
+                            ft_pct: ftPctRaw.toFixed(1),
+                            // Por ahora no tenemos un total de partidos agregados desde este endpoint
+                            games_played: 0,
+                            seasons: seasons.length || 0,
+                            last_season: seasons[seasons.length - 1] || 'N/A'
+                        };
+
+                        return {
+                            ...player,
+                            ...careerAverages,
+                            stats,
+                            seasons
+                        };
+                    } catch (error) {
+                        console.error(`Error loading comparison data for player ${player.player_id}:`, error);
+                        return {
+                            ...player,
+                            ppg: '0.0',
+                            rpg: '0.0',
+                            apg: '0.0',
+                            spg: '0.0',
+                            bpg: '0.0',
+                            fg_pct: '0.0',
+                            three_pct: '0.0',
+                            ft_pct: '0.0',
+                            games_played: 0,
+                            seasons: 0,
+                            last_season: 'N/A'
+                        };
+                    }
+                })
+            );
+
+            setComparisonData(comparisonStats);
+        } catch (error) {
+            console.error('Error loading comparison data:', error);
+            setComparisonData([]);
+        } finally {
+            setLoadingComparison(false);
+        }
+    };
+
+    const loadRadarPlayerMetrics = async (player) => {
+        try {
+            const stats = await analyticsService.getPlayerStats(player.player_id);
+            const seasons = await analyticsService.getPlayerSeasons(player.player_id);
+
+            const offense = stats?.offense || {};
+            const defense = stats?.defense || {};
+            const shooting = offense.shooting_efficiency || {};
+            const playmaking = offense.playmaking || {};
+            const defensiveMetrics = defense.defensive_metrics || {};
+
+            // Valores desde stats por temporada
+            let ppg = typeof offense.average_points === 'number' ? offense.average_points : NaN;
+            let apg = typeof playmaking.avg_assists === 'number' ? playmaking.avg_assists : NaN;
+            const offReb = typeof playmaking.avg_offensive_rebounds === 'number' ? playmaking.avg_offensive_rebounds : NaN;
+            const defReb = typeof defensiveMetrics.avg_defensive_rebounds === 'number' ? defensiveMetrics.avg_defensive_rebounds : NaN;
+            let rpg = !isNaN(offReb) && !isNaN(defReb) ? offReb + defReb : NaN;
+            let spg = typeof defensiveMetrics.avg_steals === 'number' ? defensiveMetrics.avg_steals : NaN;
+            let bpg = typeof defensiveMetrics.avg_blocks === 'number' ? defensiveMetrics.avg_blocks : NaN;
+
+            let fgPctRaw = typeof shooting.fg_pct === 'number' ? shooting.fg_pct : NaN;
+            if (!isNaN(fgPctRaw) && fgPctRaw > 0 && fgPctRaw <= 1.5) fgPctRaw *= 100;
+
+            // Fallback a métricas ya calculadas en player (mismas que usas en Top 10 / Comparativa)
+            const fallbackPPG = Number(player.ppg) || 0;
+            const fallbackAPG = Number(player.apg) || 0;
+            const fallbackRPG = Number(player.rpg) || 0;
+            const fallbackSPG = Number(player.spg) || 0;
+            const fallbackBPG = Number(player.bpg) || 0;
+            const fallbackFG = Number(player.fg_pct) || 0;
+            const fallbackPER = Number(player.per) || 0;
+
+            ppg = !isNaN(ppg) && ppg > 0 ? ppg : fallbackPPG;
+            apg = !isNaN(apg) && apg > 0 ? apg : fallbackAPG;
+            rpg = !isNaN(rpg) && rpg > 0 ? rpg : fallbackRPG;
+            spg = !isNaN(spg) && spg >= 0 ? spg : fallbackSPG;
+            bpg = !isNaN(bpg) && bpg >= 0 ? bpg : fallbackBPG;
+            fgPctRaw = !isNaN(fgPctRaw) && fgPctRaw > 0 ? fgPctRaw : fallbackFG;
+            const per = fallbackPER;
+
+            return {
+                ...player,
+                ppg,
+                apg,
+                rpg,
+                spg,
+                bpg,
+                fg_pct: fgPctRaw,
+                per,
+                games_played: stats?.games_played || player.games_played || 0,
+                seasons: seasons?.length || player.seasons || 0
+            };
+        } catch (error) {
+            console.error('Error loading radar metrics for player', player.player_id, error);
+            return player;
+        }
+    };
+
     const loadTopPlayers = async () => {
         try {
             setLoadingPlayers(true);
@@ -152,11 +349,134 @@ const ModernAnalytics = () => {
 
     const loadAllPlayers = async () => {
         try {
-            const data = await playersService.getAll();
-            setAllPlayers(data || []);
+            setLoadingPlayers(true);
+            console.log('Cargando jugadores...');
+            const response = await playersService.getAll({
+                limit: 500,
+                order_by: 'full_name',
+                sort: 'asc'
+            });
+            console.log('Respuesta de la API /players:', response);
+
+            // Asegurarse de que response es un array o tiene propiedad items
+            const players = Array.isArray(response) ? response : (response?.items || []);
+            console.log('Jugadores obtenidos desde /players:', players);
+
+            // Mapear los jugadores para asegurar que tengan la estructura correcta
+            const mappedPlayers = players.map(player => ({
+                player_id: player.id || player.player_id,
+                player_name: player.full_name || player.player_name || player.name,
+                position: player.position || 'N/A',
+                team: player.team || 'N/A',
+                ppg: player.ppg || 0,
+                apg: player.apg || 0,
+                rpg: player.rpg || 0,
+                spg: player.spg || 0,
+                bpg: player.bpg || 0,
+                fg_pct: player.fg_pct || 0,
+                three_pct: player.three_pct || 0,
+                ft_pct: player.ft_pct || 0,
+                per: player.per || 0
+            }));
+
+            console.log('Jugadores mapeados para comparación:', mappedPlayers);
+            setAllPlayers(mappedPlayers);
+
+            // Cargar automáticamente los primeros 4 jugadores para la comparación
+            if (mappedPlayers.length > 0) {
+                setSelectedPlayersForComparison(prev => {
+                    // Solo actualizar si no hay jugadores seleccionados
+                    return prev.length === 0 ? mappedPlayers.slice(0, 4) : prev;
+                });
+            }
         } catch (error) {
-            console.error('Error loading all players:', error);
+            console.error('Error cargando jugadores:', error);
             setAllPlayers([]);
+        } finally {
+            setLoadingPlayers(false);
+        }
+    };
+
+    const togglePlayerForComparison = (player) => {
+        setSelectedPlayersForComparison(prev => {
+            const alreadySelected = prev.some(p => p.player_id === player.player_id);
+
+            if (alreadySelected) {
+                return prev.filter(p => p.player_id !== player.player_id);
+            }
+
+            if (prev.length >= 4) {
+                console.warn('Máximo de 4 jugadores para comparación alcanzado.');
+                return prev;
+            }
+
+            return [...prev, player];
+        });
+    };
+
+    // Helper function to load player data with retry logic
+    const loadPlayerWithRetry = async (player, maxRetries = 2) => {
+        let retries = 0;
+
+        while (retries <= maxRetries) {
+            try {
+                const [stats, seasons] = await Promise.all([
+                    analyticsService.getPlayerStats(player.id || player.player_id),
+                    analyticsService.getPlayerSeasons(player.id || player.player_id)
+                ]);
+
+                // Calculate career averages if we have stats
+                let careerAverages = {};
+                if (stats && typeof stats === 'object') {
+                    const totalGames = stats.games_played || 1; // Avoid division by zero
+                    careerAverages = {
+                        ppg: (stats.points / totalGames).toFixed(1),
+                        rpg: (stats.rebounds / totalGames).toFixed(1),
+                        apg: (stats.assists / totalGames).toFixed(1),
+                        spg: ((stats.steals || 0) / totalGames).toFixed(1),
+                        bpg: ((stats.blocks || 0) / totalGames).toFixed(1),
+                        fg_pct: stats.fg_pct ? (stats.fg_pct * 100).toFixed(1) : '0.0',
+                        three_pct: stats.three_pct ? (stats.three_pct * 100).toFixed(1) : '0.0',
+                        ft_pct: stats.ft_pct ? (stats.ft_pct * 100).toFixed(1) : '0.0',
+                        games_played: stats.games_played || 0,
+                        seasons: seasons?.length || 0,
+                        last_season: seasons?.[seasons.length - 1] || 'N/A'
+                    };
+                }
+
+                return {
+                    ...player,
+                    player_id: player.id || player.player_id,
+                    player_name: player.full_name || player.player_name || player.name,
+                    position: player.position || 'N/A',
+                    stats: stats || {},
+                    careerAverages,
+                    years_played: seasons?.length || 0,
+                    last_season: seasons?.[seasons.length - 1] || 'N/A'
+                };
+            } catch (error) {
+                retries++;
+                console.warn(`Attempt ${retries} failed for player ${player.id || player.player_id}:`, error);
+
+                if (retries > maxRetries) {
+                    console.error(`Max retries (${maxRetries}) exceeded for player ${player.id || player.player_id}`);
+                    return {
+                        ...player,
+                        player_id: player.id || player.player_id,
+                        player_name: player.full_name || player.player_name || player.name,
+                        position: player.position || 'N/A',
+                        stats: {},
+                        careerAverages: {},
+                        years_played: 0,
+                        last_season: 'N/A',
+                        error: 'Error loading player data'
+                    };
+                }
+
+                // Exponential backoff
+                const delay = 1000 * Math.pow(2, retries);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
         }
     };
 
@@ -173,47 +493,6 @@ const ModernAnalytics = () => {
         }
     };
 
-    // Cargar datos completos para comparación - Simplificado para usar datos existentes
-    const loadComparisonData = async (players) => {
-        if (players.length === 0) {
-            setComparisonData([]);
-            return;
-        }
-
-        console.log('Preparando datos de comparación para:', players.map(p => p.player_name));
-
-        try {
-            setLoadingComparison(true);
-
-            // Usar datos que ya tenemos en topPlayersData
-            // Solo necesitamos encontrar las otras métricas para cada jugador
-            const playersWithAllMetrics = players.map(player => {
-                // Buscar el jugador en topPlayersData para obtener su métrica actual
-                const playerInTop = topPlayersData.find(p => p.player_id === player.player_id);
-
-                // Para simulación, usar valores base derivados de la métrica actual
-                // En producción real, esto vendría del backend
-                const baseValue = playerInTop?.metric_value || player.metric_value || 10;
-
-                return {
-                    ...player,
-                    ppg: selectedPlayerMetric === 'ppg' ? baseValue : baseValue * 0.9,
-                    apg: selectedPlayerMetric === 'apg' ? baseValue : baseValue * 0.4,
-                    rpg: selectedPlayerMetric === 'rpg' ? baseValue : baseValue * 0.6,
-                    per: selectedPlayerMetric === 'per' ? baseValue : baseValue * 1.2,
-                    fg_pct: selectedPlayerMetric === 'fg_pct' ? baseValue : Math.min(baseValue * 3, 55)
-                };
-            });
-
-            console.log('Datos finales de comparación:', playersWithAllMetrics);
-            setComparisonData(playersWithAllMetrics);
-        } catch (error) {
-            console.error('Error preparing comparison data:', error);
-            setComparisonData([]);
-        } finally {
-            setLoadingComparison(false);
-        }
-    };
 
     const getMetricConfig = (metric) => {
         const configs = {
@@ -223,16 +502,54 @@ const ModernAnalytics = () => {
             spg: { label: 'Robos por Juego', color: '#002D62', icon: Shield, unit: 'SPG' },
             bpg: { label: 'Bloqueos por Juego', color: '#CE1126', icon: Award, unit: 'BPG' },
             per: { label: 'Player Efficiency Rating', color: '#002D62', icon: Trophy, unit: 'PER' },
-            fg_pct: { label: 'Porcentaje de Campo', color: '#CE1126', icon: Target, unit: 'FG%' }
+            fg_pct: { label: 'Porcentaje de Campo', color: '#CE1126', icon: Target, unit: 'FG%' },
+            three_pct: { label: 'Porcentaje de Triples', color: '#002D62', icon: Target, unit: '3P%' },
+            ft_pct: { label: 'Porcentaje de Tiros Libres', color: '#CE1126', icon: Target, unit: 'FT%' },
+            games_played: { label: 'Partidos Jugados', color: '#002D62', icon: Activity, unit: 'PJ' },
+            seasons: { label: 'Temporadas Analizadas', color: '#CE1126', icon: TrendingUp, unit: 'TEMP' },
+            last_season: { label: 'Última Temporada', color: '#002D62', icon: Eye, unit: '' }
         };
         return configs[metric] || configs.ppg;
     };
 
     const formatMetricValue = (value, metric) => {
-        if (value === null || value === undefined) return 'N/A';
-        // El backend ya devuelve fg_pct como porcentaje (0-100), no como decimal
-        if (metric === 'fg_pct') return `${value.toFixed(1)}%`;
-        return value.toFixed(1);
+        // Manejar valores nulos, indefinidos o strings vacíos
+        if (value === null || value === undefined || value === '') {
+            return 'N/A';
+        }
+
+        // Para last_season, devolver el valor tal cual
+        if (metric === 'last_season') {
+            return typeof value === 'string' ? value : String(value);
+        }
+
+        // Si el valor ya es un string que termina en %, devolverlo tal cual
+        if (typeof value === 'string' && value.endsWith('%')) {
+            return value;
+        }
+
+        // Convertir a número si es un string que puede convertirse
+        const numValue = typeof value === 'string' ? parseFloat(value) : Number(value);
+
+        // Si no es un número válido después de la conversión
+        if (isNaN(numValue)) {
+            return 'N/A'; // Devolver N/A si no se puede convertir a número
+        }
+
+        // Manejo especial para porcentajes
+        const percentageMetrics = ['fg_pct', 'three_pct', 'ft_pct'];
+        if (percentageMetrics.includes(metric)) {
+            return `${numValue.toFixed(1)}%`;
+        }
+
+        // Métricas que deben mostrarse como enteros
+        const integerMetrics = ['games_played', 'seasons'];
+        if (integerMetrics.includes(metric)) {
+            return numValue.toFixed(0);
+        }
+
+        // Para otros valores numéricos, formatear con 1 decimal
+        return numValue.toFixed(1);
     };
 
     // Función para calcular distribución de posiciones
@@ -348,7 +665,7 @@ const ModernAnalytics = () => {
             // Obtener stats básicas (no depende de temporada)
             const playerStatsPromise = analyticsService.getPlayerStats(player.player_id);
 
-            // ✅ PASO 1: Obtener SOLO las temporadas donde el jugador participó (optimización)
+            // PASO 1: Obtener SOLO las temporadas donde el jugador participó (optimización)
             let years = [];
             try {
                 years = await analyticsService.getPlayerSeasons(player.player_id);
@@ -400,7 +717,9 @@ const ModernAnalytics = () => {
                 const batchResults = await Promise.all(batchPromises);
                 yearlyData.push(...batchResults);
 
-                // Pequeño delay entre batches (excepto en el último)
+                // Update UI with current progress
+
+                // Add delay between batches if not the last batch
                 if (i + batchSize < years.length) {
                     await delay(100);
                 }
@@ -521,6 +840,98 @@ const ModernAnalytics = () => {
                     ast_to_tov: avg(accumulator.advanced.playmaking.ast_to_tov)
                 }
             }
+        };
+    };
+
+    const getRadarSource = () => {
+        let source = null;
+
+        if (selectedPlayerForRadar) {
+            // Datos provenientes de /players (allPlayers) ya calculados para todos los jugadores
+            source = {
+                name: selectedPlayerForRadar.player_name,
+                ppg: Number(selectedPlayerForRadar.ppg) || 0,
+                apg: Number(selectedPlayerForRadar.apg) || 0,
+                rpg: Number(selectedPlayerForRadar.rpg) || 0,
+                spg: Number(selectedPlayerForRadar.spg) || 0,
+                bpg: Number(selectedPlayerForRadar.bpg) || 0,
+                per: Number(selectedPlayerForRadar.per) || 0,
+                fg_pct: Number(selectedPlayerForRadar.fg_pct) || 0
+            };
+        } else if (playerDetails) {
+            // Fallback: usar los mismos cálculos agregados que servimos en Top 10 / comparativa
+            const adv = playerDetails.advanced || {};
+            const scoring = adv.scoring || {};
+            const playmaking = adv.playmaking || {};
+            const shootingAdv = adv.shooting_efficiency || {};
+            const defenseMetrics = playerDetails.stats?.defense?.defensive_metrics || {};
+            const offense = playerDetails.stats?.offense || {};
+
+            source = {
+                name: playerDetails.basic?.player_name || selectedPlayer?.player_name,
+                ppg: Number(scoring.ppg) || Number(offense.average_points) || 0,
+                apg: Number(playmaking.apg) || Number(offense.playmaking?.avg_assists) || 0,
+                rpg: Number(defenseMetrics.avg_total_rebounds) || 0,
+                spg: Number(defenseMetrics.avg_steals) || 0,
+                bpg: Number(defenseMetrics.avg_blocks) || 0,
+                per: Number(playerDetails.quickMetrics?.per || playerDetails.per?.per) || 0,
+                fg_pct: Number(shootingAdv.fg_percentage || offense.shooting_efficiency?.fg_pct) || 0
+            };
+        }
+
+        return source;
+    };
+
+    const getRadarPerformanceData = () => {
+        const source = getRadarSource();
+        if (!source) return [];
+
+        return [
+            {
+                metric: 'PTS',
+                value: Math.min((source.ppg / 30) * 100, 100),
+                fullMark: 100
+            },
+            {
+                metric: 'AST',
+                value: Math.min((source.apg / 10) * 100, 100),
+                fullMark: 100
+            },
+            {
+                metric: 'REB',
+                value: Math.min((source.rpg / 15) * 100, 100),
+                fullMark: 100
+            },
+            {
+                metric: 'ROB',
+                value: Math.min((source.spg / 3) * 100, 100),
+                fullMark: 100
+            },
+            {
+                metric: 'BLO',
+                value: Math.min((source.bpg / 3) * 100, 100),
+                fullMark: 100
+            },
+            {
+                metric: 'FG%',
+                value: Math.min(source.fg_pct, 100),
+                fullMark: 100
+            }
+        ];
+    };
+
+    const getRadarRawMetrics = () => {
+        const source = getRadarSource();
+        if (!source) return null;
+
+        return {
+            ppg: source.ppg,
+            apg: source.apg,
+            rpg: source.rpg,
+            spg: source.spg,
+            bpg: source.bpg,
+            fg_pct: source.fg_pct,
+            per: source.per
         };
     };
 
@@ -1224,7 +1635,7 @@ const ModernAnalytics = () => {
                                                             <p className="text-xs text-gray-900 dark:text-white">{player.position || 'N/A'}</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-lg font-bold text-[#CE1126] dark:text-[#FF5252]">{formatNumber(player.metric_value, 1)}</p>
+                                                            <p className="text-lg font-black text-[#002D62] dark:text-[#FF5252]">{formatNumber(player.metric_value, 1)}</p>
                                                             <p className="text-xs text-gray-900 dark:text-white">{player.metric_name || 'Pts'}</p>
                                                         </div>
                                                     </div>
@@ -1350,75 +1761,78 @@ const ModernAnalytics = () => {
                         {/* Pestaña Jugadores */}
                         {activeTab === 'jugadores' && (
                             <>
-                                {/* Encabezado Compacto con Bandera */}
+                                {/* Encabezado Jugadores - gradiente dominicano con centro blanco */}
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.4 }}
-                                    className="p-4 bg-gradient-to-r from-[#CE1126] via-white to-[#002D62] dark:from-[#CE1126] dark:via-gray-900 dark:to-[#002D62] rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700"
+                                    className="rounded-2xl shadow-xl bg-gradient-to-r from-[#CE1126] via-white to-[#002D62] p-[1px]"
                                 >
-                                    <div className="flex items-center justify-between gap-4">
-                                        {/* Bandera y Título */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-lg overflow-hidden shadow-md border-2 border-white/50">
-                                                <img
-                                                    src={BanderaDominicana}
-                                                    alt="Bandera RD"
-                                                    className="w-full h-full object-cover"
-                                                />
+                                    <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl border border-white/60 dark:border-gray-700">
+                                        <div className="flex items-center justify-between gap-4">
+                                            {/* Lado izquierdo: bandera + título */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-[#CE1126]/70 overflow-hidden">
+                                                    <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-black text-gray-900 dark:text-white">Análisis de Jugadores</h3>
+                                                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                        Selección Nacional • {playersPeriod.start}-{playersPeriod.end}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-lg font-black text-gray-900 dark:text-white">Análisis de Jugadores</h3>
-                                                <p className="text-xs text-gray-700 dark:text-gray-300">Selección Nacional • {playersPeriod.start}-{playersPeriod.end}</p>
-                                            </div>
-                                        </div>
 
-                                        {/* Filtros de Período */}
-                                        <div className="flex items-center gap-2">
-                                            <select
-                                                value={playersPeriod.start}
-                                                onChange={(e) => setPlayersPeriod({ ...playersPeriod, start: parseInt(e.target.value) })}
-                                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
-                                            >
-                                                {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
-                                                    <option key={year} value={year}>{year}</option>
-                                                ))}
-                                            </select>
-                                            <span className="text-gray-700 dark:text-gray-300 text-sm">-</span>
-                                            <select
-                                                value={playersPeriod.end}
-                                                onChange={(e) => setPlayersPeriod({ ...playersPeriod, end: parseInt(e.target.value) })}
-                                                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
-                                            >
-                                                {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
-                                                    <option key={year} value={year}>{year}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Tabs de Métricas - Compacto */}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {['ppg', 'apg', 'rpg', 'spg', 'bpg', 'per', 'fg_pct'].map((metric) => {
-                                            const config = getMetricConfig(metric);
-                                            return (
-                                                <button
-                                                    key={metric}
-                                                    onClick={() => setSelectedPlayerMetric(metric)}
-                                                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${selectedPlayerMetric === metric
-                                                        ? 'shadow-md scale-105'
-                                                        : 'hover:scale-105'
-                                                        }`}
-                                                    style={{
-                                                        backgroundColor: selectedPlayerMetric === metric ? config.color : 'white',
-                                                        color: selectedPlayerMetric === metric ? 'white' : config.color,
-                                                        border: `2px solid ${config.color}`
-                                                    }}
+                                            {/* Lado derecho: filtros de período */}
+                                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase mr-1">Período</span>
+                                                <select
+                                                    value={playersPeriod.start}
+                                                    onChange={(e) => setPlayersPeriod({ ...playersPeriod, start: parseInt(e.target.value) })}
+                                                    className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
                                                 >
-                                                    {config.unit}
-                                                </button>
-                                            );
-                                        })}
+                                                    {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
+                                                        <option key={year} value={year}>{year}</option>
+                                                    ))}
+                                                </select>
+                                                <span className="text-gray-700 dark:text-gray-300 text-sm">-</span>
+                                                <select
+                                                    value={playersPeriod.end}
+                                                    onChange={(e) => setPlayersPeriod({ ...playersPeriod, end: parseInt(e.target.value) })}
+                                                    className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126]"
+                                                >
+                                                    {Array.from({ length: 16 }, (_, i) => 2010 + i).map(year => (
+                                                        <option key={year} value={year}>{year}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Tabs de Métricas - compacto, rojo/azul */}
+                                        <div className="flex flex-wrap gap-2 mt-3 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                                            {['ppg', 'apg', 'rpg', 'spg', 'bpg', 'per', 'fg_pct'].map((metric) => {
+                                                const config = getMetricConfig(metric);
+                                                const isActive = selectedPlayerMetric === metric;
+                                                return (
+                                                    <button
+                                                        key={metric}
+                                                        onClick={() => setSelectedPlayerMetric(metric)}
+                                                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${isActive
+                                                            ? 'shadow-lg scale-105'
+                                                            : 'hover:scale-105'}
+                                                        ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                                                        style={{
+                                                            background: isActive
+                                                                ? `linear-gradient(135deg, ${config.color}, ${config.color === '#CE1126' ? '#8B0D1A' : '#002D62'})`
+                                                                : 'transparent',
+                                                            border: `1px solid ${config.color}`
+                                                        }}
+                                                    >
+                                                        {config.unit}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </motion.div>
 
@@ -1432,7 +1846,7 @@ const ModernAnalytics = () => {
                                         transition={{ duration: 0.5, delay: 0.1 }}
                                         className="lg:col-span-2 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="mb-4">
+                                        <div className="mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                                             <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Top 10 Jugadores</h4>
                                             <p className="text-[10px] text-gray-900 dark:text-white">{getMetricConfig(selectedPlayerMetric).label}</p>
                                         </div>
@@ -1515,7 +1929,7 @@ const ModernAnalytics = () => {
                                         transition={{ duration: 0.5, delay: 0.2 }}
                                         className="lg:col-span-3 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="mb-4">
+                                        <div className="mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
                                             <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Comparativa Visual</h4>
                                             <p className="text-[10px] text-gray-900 dark:text-white">Rendimiento relativo de los top jugadores</p>
                                         </div>
@@ -1589,67 +2003,231 @@ const ModernAnalytics = () => {
 
                                 {/* Grid Inferior: Distribución + Comparativa */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Distribución por Posición */}
                                     <motion.div
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ duration: 0.5, delay: 0.3 }}
-                                        className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
+                                        className="space-y-4"
                                     >
-                                        <div className="mb-3">
-                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Distribución por Posición</h4>
-                                            <p className="text-[10px] text-gray-900 dark:text-white">Top 10 • {getMetricConfig(selectedPlayerMetric).label}</p>
-                                        </div>
-
                                         {loadingPlayers ? (
-                                            <div className="flex items-center justify-center h-72">
-                                                <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+                                            <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-[260px]">
+                                                <div className="flex flex-col items-center">
+                                                    <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mb-2" />
+                                                    <p className="text-xs text-gray-500">Cargando distribución por posición...</p>
+                                                </div>
                                             </div>
                                         ) : topPlayersData.length > 0 ? (
-                                            <div style={{ width: '100%', height: '320px' }}>
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={calculatePositionDistribution()}
-                                                            cx="50%"
-                                                            cy="45%"
-                                                            labelLine={false}
-                                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                            innerRadius={60}
-                                                            outerRadius={100}
-                                                            fill="#8884d8"
-                                                            dataKey="value"
-                                                            paddingAngle={2}
-                                                        >
-                                                            {calculatePositionDistribution().map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip
-                                                            contentStyle={{
-                                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                                border: '1px solid #e5e7eb',
-                                                                borderRadius: '8px',
-                                                                fontSize: '11px',
-                                                                fontWeight: 600
-                                                            }}
-                                                        />
-                                                        <Legend
-                                                            verticalAlign="bottom"
-                                                            height={40}
-                                                            wrapperStyle={{ paddingTop: '5px' }}
-                                                            formatter={(value, entry) => (
-                                                                <span className="text-xs font-bold text-gray-900 dark:text-white">
-                                                                    {value}: {entry.payload.value}
-                                                                </span>
+                                            <>
+                                                {/* Card: Distribución por Posición (Donut) */}
+                                                <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col">
+                                                    <div className="mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                                                        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Distribución por Posición</h4>
+                                                        <p className="text-[10px] font-semibold text-gray-900 dark:text-white">Top 10 • {getMetricConfig(selectedPlayerMetric).label}</p>
+                                                    </div>
+
+                                                    <div style={{ width: '100%', height: '220px' }}>
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie
+                                                                    data={calculatePositionDistribution()}
+                                                                    cx="50%"
+                                                                    cy="52%"
+                                                                    labelLine={false}
+                                                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                                    innerRadius={55}
+                                                                    outerRadius={85}
+                                                                    fill="#8884d8"
+                                                                    dataKey="value"
+                                                                    paddingAngle={2}
+                                                                >
+                                                                    {calculatePositionDistribution().map((entry, index) => (
+                                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip
+                                                                    contentStyle={{
+                                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                                        border: '1px solid #e5e7eb',
+                                                                        borderRadius: '8px',
+                                                                        fontSize: '11px',
+                                                                        padding: '6px 10px'
+                                                                    }}
+                                                                />
+                                                                <Legend
+                                                                    verticalAlign="bottom"
+                                                                    align="center"
+                                                                    iconType="circle"
+                                                                    wrapperStyle={{ paddingTop: 8 }}
+                                                                    formatter={(value, entry) => (
+                                                                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                                            {value}: {entry.payload.value}
+                                                                        </span>
+                                                                    )}
+                                                                />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                </div>
+
+                                                {/* Card: Perfil de Rendimiento (Radar) */}
+                                                <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col">
+                                                    <div className="mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+                                                        <div>
+                                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Perfil de Rendimiento</h4>
+                                                            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                                Resumen ofensivo y defensivo del jugador seleccionado
+                                                            </p>
+                                                        </div>
+                                                        <div className="relative w-40 sm:w-56">
+                                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                <Search className="h-4 w-4 text-gray-400" />
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                className="block w-full pl-9 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#002D62] focus:border-transparent"
+                                                                placeholder="Buscar jugador..."
+                                                                value={performanceSearchTerm}
+                                                                onChange={(e) => {
+                                                                    setPerformanceSearchTerm(e.target.value);
+                                                                    if (e.target.value === '') {
+                                                                        setSelectedPlayerForRadar(null);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            {performanceSearchTerm && performanceFilteredPlayers.length > 0 && (
+                                                                <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto">
+                                                                    <ul className="py-1 text-xs">
+                                                                        {performanceFilteredPlayers.map(player => (
+                                                                            <li key={player.player_id}>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={async () => {
+                                                                                        const enriched = await loadRadarPlayerMetrics(player);
+                                                                                        setSelectedPlayerForRadar(enriched);
+                                                                                        setPerformanceSearchTerm(enriched.player_name);
+                                                                                    }}
+                                                                                    className="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                                >
+                                                                                    <span className="truncate">{player.player_name}</span>
+                                                                                    <span className="ml-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                                                                        {player.position || 'N/A'}
+                                                                                    </span>
+                                                                                </button>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
                                                             )}
-                                                        />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {getRadarPerformanceData().length > 0 ? (
+                                                        <>
+                                                            <div style={{ width: '100%', height: '220px' }}>
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <RadarChart data={getRadarPerformanceData()}>
+                                                                        <PolarGrid stroke="#d1d5db" strokeDasharray="3 3" />
+                                                                        <PolarAngleAxis
+                                                                            dataKey="metric"
+                                                                            tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 'bold' }}
+                                                                        />
+                                                                        <PolarRadiusAxis
+                                                                            domain={[0, 100]}
+                                                                            tick={{ fill: '#9ca3af', fontSize: 9 }}
+                                                                            tickCount={5}
+                                                                        />
+                                                                        <Radar
+                                                                            name={selectedPlayerForRadar?.player_name || selectedPlayer?.player_name || 'Jugador'}
+                                                                            dataKey="value"
+                                                                            stroke="#CE1126"
+                                                                            fill="#CE1126"
+                                                                            fillOpacity={0.3}
+                                                                            strokeWidth={2}
+                                                                            dot={{ r: 5, fill: '#CE1126', stroke: '#fff', strokeWidth: 2 }}
+                                                                        />
+                                                                        <Tooltip
+                                                                            contentStyle={{
+                                                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                                                border: '1px solid #e5e7eb',
+                                                                                borderRadius: '8px',
+                                                                                fontSize: '11px',
+                                                                                padding: '8px 12px'
+                                                                            }}
+                                                                            formatter={(value, name) => [`${value.toFixed(1)}%`, name]}
+                                                                        />
+                                                                    </RadarChart>
+                                                                </ResponsiveContainer>
+                                                            </div>
+
+                                                            {(() => {
+                                                                const raw = getRadarRawMetrics();
+                                                                if (!raw) return null;
+                                                                return (
+                                                                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px]">
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                PPG
+                                                                            </span>
+                                                                            <span className="font-bold text-[#CE1126]">
+                                                                                {formatNumber(raw.ppg, 1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                APG
+                                                                            </span>
+                                                                            <span className="font-bold text-[#CE1126]">
+                                                                                {formatNumber(raw.apg, 1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                RPG
+                                                                            </span>
+                                                                            <span className="font-bold text-[#002D62]">
+                                                                                {formatNumber(raw.rpg, 1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                SPG
+                                                                            </span>
+                                                                            <span className="font-bold text-[#002D62]">
+                                                                                {formatNumber(raw.spg, 1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                BPG
+                                                                            </span>
+                                                                            <span className="font-bold text-[#002D62]">
+                                                                                {formatNumber(raw.bpg, 1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 rounded-md px-2 py-1">
+                                                                            <span className="font-semibold text-gray-600 dark:text-gray-300 uppercase">
+                                                                                FG%
+                                                                            </span>
+                                                                            <span className="font-bold text-[#CE1126]">
+                                                                                {`${formatNumber(raw.fg_pct, 1)}%`}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </>
+                                                    ) : (
+                                                        <div className="h-[220px] flex items-center justify-center">
+                                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center px-4">
+                                                                Escribe el nombre de un jugador o selecciona uno del Top 10 para ver su perfil de rendimiento.
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
                                         ) : (
-                                            <div className="flex items-center justify-center h-72 text-gray-500">
-                                                <p className="text-sm">No hay datos disponibles</p>
+                                            <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-[260px]">
+                                                <p className="text-sm text-gray-500">No hay datos disponibles</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -1661,7 +2239,7 @@ const ModernAnalytics = () => {
                                         transition={{ duration: 0.5, delay: 0.4 }}
                                         className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="mb-3">
+                                        <div className="mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
                                                     <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Comparativa</h4>
@@ -1704,81 +2282,208 @@ const ModernAnalytics = () => {
                                                 </div>
                                             )}
 
-                                            {/* Selector de todos los jugadores */}
-                                            {selectedPlayersForComparison.length < 4 && (
-                                                <div className="mb-3">
-                                                    <p className="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase mb-1.5">Agregar jugador</p>
-                                                    <div className="max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {allPlayers
-                                                                .filter(player => !selectedPlayersForComparison.some(p => p.id === player.id))
-                                                                .map((player) => (
-                                                                    <button
-                                                                        key={player.id}
-                                                                        onClick={() => {
-                                                                            if (selectedPlayersForComparison.length < 4) {
-                                                                                setSelectedPlayersForComparison(prev => [...prev, player]);
-                                                                            }
-                                                                        }}
-                                                                        className="px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-[#002D62] hover:text-white border border-gray-200 dark:border-gray-600"
-                                                                    >
-                                                                        {player.name?.split(' ').slice(-2).join(' ') || player.name}
-                                                                    </button>
-                                                                ))
-                                                            }
+                                            {/* Selector de jugadores */}
+                                            <div className="mb-4">
+                                                <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Seleccionar jugadores para comparar (Máx. 4)</p>
+
+                                                {/* Lista de jugadores disponibles */}
+                                                {selectedPlayersForComparison.length < 4 && (
+                                                    <div className="relative">
+                                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                            <Search className="h-4 w-4 text-gray-400" />
                                                         </div>
+                                                        <input
+                                                            type="text"
+                                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#002D62] focus:border-transparent"
+                                                            placeholder="Buscar jugador..."
+                                                            value={searchTerm}
+                                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                                        />
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+
+                                                {/* Lista de jugadores filtrados */}
+                                                {selectedPlayersForComparison.length < 4 && searchTerm.trim() !== '' && (
+                                                    <div className="mt-2 max-h-48 overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+                                                        {filteredPlayers.length > 0 ? (
+                                                            <ul className="py-1">
+                                                                {filteredPlayers.map(player => (
+                                                                    <li key={player.player_id}>
+                                                                        <button
+                                                                            onClick={() => togglePlayerForComparison(player)}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                                                                        >
+                                                                            <span className="truncate">
+                                                                                {player.player_name}
+                                                                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                                                                    {(() => {
+                                                                                        const team = player.team || '';
+                                                                                        const position = player.position || '';
+                                                                                        const cleanTeam = (team === 'N/A' || team === 'N/A.' ? '' : team).trim();
+
+                                                                                        if (cleanTeam && position) return `${cleanTeam} • ${position}`;
+                                                                                        if (position) return position;
+                                                                                        if (cleanTeam) return cleanTeam;
+                                                                                        return '';
+                                                                                    })()}
+                                                                                </span>
+                                                                            </span>
+                                                                        </button>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : (
+                                                            <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                                No se encontraron jugadores
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Tabla */}
+                                        {/* Tabla de comparación */}
                                         {loadingComparison ? (
                                             <div className="flex flex-col items-center justify-center h-60">
                                                 <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mb-2" />
-                                                <p className="text-xs text-gray-500">Cargando datos...</p>
+                                                <p className="text-xs text-gray-500">Cargando datos de comparación...</p>
                                             </div>
                                         ) : comparisonData.length > 0 ? (
-                                            <div className="overflow-x-auto max-h-[240px] overflow-y-auto">
-                                                <table className="w-full text-[10px]">
-                                                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
-                                                        <tr>
-                                                            <th className="text-left p-2 font-bold text-gray-900 dark:text-white">Métrica</th>
-                                                            {comparisonData.map((p) => (
-                                                                <th key={p.player_id} className="text-center p-2 font-bold text-gray-900 dark:text-white">
-                                                                    {p.player_name.split(' ').slice(-1)[0]}
+                                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                                                <div className="overflow-x-auto">
+                                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                                        <thead className="bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62]">
+                                                            <tr>
+                                                                <th className="px-4 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wide">
+                                                                    Métrica
                                                                 </th>
-                                                            ))}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {['ppg', 'apg', 'rpg', 'per', 'fg_pct'].map(metric => {
-                                                            const values = comparisonData.map(p => p[metric] || 0);
-                                                            const max = Math.max(...values);
-                                                            const min = Math.min(...values);
+                                                                {comparisonData.map((player) => (
+                                                                    <th
+                                                                        key={player.player_id}
+                                                                        className="px-4 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wide"
+                                                                    >
+                                                                        <div className="flex flex-col items-center text-center">
+                                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/90 to-white/70 p-0.5 mb-1 flex items-center justify-center">
+                                                                                <PlayerAvatar
+                                                                                    playerName={player.player_name}
+                                                                                    size={9}
+                                                                                    color="#002D62"
+                                                                                />
+                                                                            </div>
+                                                                            <span className="text-xs font-semibold text-white">
+                                                                                {player.player_name.split(' ').slice(-2).join(' ')}
+                                                                            </span>
+                                                                            <span className="text-[10px] text-white/80">
+                                                                                {player.position || 'N/A'}
+                                                                            </span>
+                                                                            {(() => {
+                                                                                const games = Number(player.games_played);
+                                                                                const seasons = Number(player.seasons);
+                                                                                const hasGames = !isNaN(games) && games > 0;
+                                                                                const hasSeasons = !isNaN(seasons) && seasons > 0;
 
-                                                            return (
-                                                                <tr key={metric} className="border-t border-gray-200 dark:border-gray-700">
-                                                                    <td className="p-2 font-bold text-gray-700 dark:text-gray-300">{getMetricConfig(metric).unit}</td>
-                                                                    {comparisonData.map((p) => {
-                                                                        const value = p[metric] || 0;
-                                                                        const isBest = value === max && max !== min;
-                                                                        const isWorst = value === min && max !== min;
+                                                                                if (!hasGames && !hasSeasons) return null;
 
-                                                                        return (
-                                                                            <td key={p.player_id} className={`p-2 text-center font-black ${isBest ? 'text-[#002D62] dark:text-[#CE1126]' :
-                                                                                isWorst ? 'text-gray-400' :
-                                                                                    'text-gray-700 dark:text-gray-300'
-                                                                                }`}>
-                                                                                {formatMetricValue(value, metric)}
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                                                                const parts = [];
+                                                                                if (hasGames) parts.push(`${games} PJ`);
+                                                                                if (hasSeasons) parts.push(`${seasons} TEMP`);
+
+                                                                                return (
+                                                                                    <span className="text-[9px] text-white/70 mt-0.5">
+                                                                                        {parts.join(' • ')}
+                                                                                    </span>
+                                                                                );
+                                                                            })()}
+                                                                        </div>
+                                                                    </th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                                            {[
+                                                                { key: 'ppg', label: 'PTS/J' },
+                                                                { key: 'rpg', label: 'REB/J' },
+                                                                { key: 'apg', label: 'AST/J' },
+                                                                { key: 'spg', label: 'ROB/J' },
+                                                                { key: 'bpg', label: 'BLO/J' },
+                                                                { key: 'fg_pct', label: 'FG%' },
+                                                                { key: 'three_pct', label: '3P%' },
+                                                                { key: 'ft_pct', label: 'FT%' },
+                                                                { key: 'last_season', label: 'ÚLT. TEMP.' }
+                                                            ].map(({ key, label }) => {
+
+                                                                // Métricas que se tratan como numéricas para calcular mejor/peor
+                                                                const numericMetrics = ['ppg', 'rpg', 'apg', 'spg', 'bpg', 'fg_pct', 'three_pct', 'ft_pct'];
+                                                                const offensiveMetrics = ['ppg', 'apg', 'fg_pct', 'three_pct', 'ft_pct'];
+                                                                const defensiveMetrics = ['rpg', 'spg', 'bpg'];
+
+                                                                let max = null;
+                                                                let min = null;
+
+                                                                if (numericMetrics.includes(key)) {
+                                                                    const numericValues = comparisonData.map(p => {
+                                                                        const raw = p[key];
+                                                                        const parsed = typeof raw === 'string' ? parseFloat(raw) : Number(raw);
+                                                                        return isNaN(parsed) ? 0 : parsed;
+                                                                    });
+
+                                                                    if (numericValues.length > 0) {
+                                                                        max = Math.max(...numericValues);
+                                                                        min = Math.min(...numericValues);
+                                                                    }
+                                                                }
+
+                                                                return (
+                                                                    <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                                            <div className="flex items-center">
+                                                                                <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                                                                                    {label}
+                                                                                </span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {comparisonData.map((player) => {
+                                                                            const rawValue = player[key];
+
+                                                                            let isBest = false;
+                                                                            let isWorst = false;
+
+                                                                            if (numericMetrics.includes(key) && max !== null && min !== null) {
+                                                                                const parsed = typeof rawValue === 'string' ? parseFloat(rawValue) : Number(rawValue);
+                                                                                const valueNum = isNaN(parsed) ? 0 : parsed;
+                                                                                isBest = valueNum === max && max !== min;
+                                                                                isWorst = valueNum === min && max !== min && comparisonData.length > 1;
+                                                                            }
+
+                                                                            let textClass = 'text-gray-700 dark:text-gray-300';
+
+                                                                            if (offensiveMetrics.includes(key)) {
+                                                                                textClass = 'text-[#CE1126] dark:text-red-300';
+                                                                            } else if (defensiveMetrics.includes(key)) {
+                                                                                textClass = 'text-[#002D62] dark:text-blue-300';
+                                                                            }
+
+                                                                            if (isWorst) {
+                                                                                textClass = 'text-gray-400';
+                                                                            }
+
+                                                                            const fontClass = isBest ? 'font-bold' : '';
+
+                                                                            return (
+                                                                                <td
+                                                                                    key={`${player.player_id}-${key}`}
+                                                                                    className={`px-4 py-3 whitespace-nowrap text-sm text-center ${textClass} ${fontClass}`}
+                                                                                >
+                                                                                    {formatMetricValue(rawValue, key)}
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         ) : selectedPlayersForComparison.length > 0 ? (
                                             <div className="flex flex-col items-center justify-center h-60 text-gray-400">
@@ -1990,33 +2695,43 @@ const ModernAnalytics = () => {
                                                     <ResponsiveContainer width="100%" height={320}>
                                                         <RadarChart data={[
                                                             {
-                                                                metric: 'Puntos',
-                                                                value: Math.min((playerDetails.stats.offense?.scoring_metrics?.avg_points || 0) / 30 * 100, 100),
+                                                                metric: 'PTS',
+                                                                value: Math.min((playerDetails.stats.offense?.average_points || 0) / 30 * 100, 100),
                                                                 fullMark: 100
                                                             },
                                                             {
-                                                                metric: 'Asistencias',
-                                                                value: Math.min((playerDetails.stats.offense?.playmaking_metrics?.avg_assists || 0) / 10 * 100, 100),
+                                                                metric: 'AST',
+                                                                value: Math.min((playerDetails.stats.offense?.playmaking?.avg_assists || 0) / 10 * 100, 100),
                                                                 fullMark: 100
                                                             },
                                                             {
-                                                                metric: 'Rebotes',
+                                                                metric: 'REB',
                                                                 value: Math.min((playerDetails.stats.defense?.defensive_metrics?.avg_total_rebounds || 0) / 15 * 100, 100),
                                                                 fullMark: 100
                                                             },
                                                             {
                                                                 metric: 'FG%',
-                                                                value: (playerDetails.stats.offense?.scoring_metrics?.field_goal_percentage || 0),
+                                                                value: (playerDetails.stats.offense?.shooting_efficiency?.fg_pct || 0),
                                                                 fullMark: 100
                                                             },
                                                             {
-                                                                metric: 'Eficiencia',
-                                                                value: Math.min((playerDetails.per?.per || 0) / 30 * 100, 100),
+                                                                metric: 'ROB',
+                                                                value: Math.min((playerDetails.stats.defense?.defensive_metrics?.avg_steals || 0) / 3 * 100, 100),
                                                                 fullMark: 100
                                                             },
                                                             {
-                                                                metric: 'Impacto',
-                                                                value: Math.min((playerDetails.quickMetrics?.usage_rate || 0), 100),
+                                                                metric: 'BLO',
+                                                                value: Math.min((playerDetails.stats.defense?.defensive_metrics?.avg_blocks || 0) / 3 * 100, 100),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'TS%',
+                                                                value: (playerDetails.quickMetrics?.ts_percentage || 0),
+                                                                fullMark: 100
+                                                            },
+                                                            {
+                                                                metric: 'PER',
+                                                                value: Math.min((playerDetails.quickMetrics?.per || 0) / 30 * 100, 100),
                                                                 fullMark: 100
                                                             }
                                                         ]}>
@@ -2035,8 +2750,9 @@ const ModernAnalytics = () => {
                                                                 dataKey="value"
                                                                 stroke="#CE1126"
                                                                 fill="#CE1126"
-                                                                fillOpacity={0.3}
-                                                                strokeWidth={2}
+                                                                fillOpacity={0.4}
+                                                                strokeWidth={3}
+                                                                dot={{ r: 4, fill: '#CE1126', stroke: '#991b1b', strokeWidth: 2 }}
                                                             />
                                                             <Tooltip
                                                                 contentStyle={{

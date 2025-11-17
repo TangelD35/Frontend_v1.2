@@ -112,6 +112,12 @@ const ModernAnalytics = () => {
     const [performanceSearchTerm, setPerformanceSearchTerm] = useState('');
     const [selectedPlayerForRadar, setSelectedPlayerForRadar] = useState(null);
 
+    // Estados para pestaña de Equipos
+    const [teamData, setTeamData] = useState(null);
+    const [loadingTeam, setLoadingTeam] = useState(false);
+    const [teamMetric, setTeamMetric] = useState('points_per_game');
+    const [teamTrendsData, setTeamTrendsData] = useState(null);
+
     // Filtrar jugadores basado en el término de búsqueda
     const filteredPlayers = allPlayers.filter(player => {
         if (!searchTerm) return true;
@@ -182,6 +188,15 @@ const ModernAnalytics = () => {
         loadComparison();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedPlayersForComparison.map(p => p.player_id).join(','), playersPeriod.start, playersPeriod.end, activeTab]);
+
+    // Cargar datos del equipo cuando se activa la pestaña
+    useEffect(() => {
+        if (activeTab === 'equipo' && rdTeamId) {
+            loadTeamData();
+            loadTeamTrends();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, rdTeamId, teamMetric]);
 
     // Load comparison data with real stats
     const loadComparisonData = async (players) => {
@@ -493,6 +508,50 @@ const ModernAnalytics = () => {
         }
     };
 
+    // Funciones para pestaña de Equipos
+    const loadTeamData = async () => {
+        if (!rdTeamId) return;
+
+        setLoadingTeam(true);
+        try {
+            const data = await analyticsService.getTeamStats(rdTeamId, 2010, 2025);
+            console.log('Datos del equipo cargados:', data);
+            setTeamData(data);
+        } catch (error) {
+            console.error('Error loading team data:', error);
+            setTeamData(null);
+        } finally {
+            setLoadingTeam(false);
+        }
+    };
+
+    const loadTeamTrends = async () => {
+        if (!rdTeamId) return;
+
+        try {
+            const response = await analyticsService.getTrends('team', teamMetric, rdTeamId);
+            console.log('Tendencias del equipo:', response);
+            if (response.trends && response.trends.length > 0) {
+                setTeamTrendsData(response.trends[0]);
+            }
+        } catch (error) {
+            console.error('Error loading team trends:', error);
+            setTeamTrendsData(null);
+        }
+    };
+
+    const getTeamMetricLabel = (metric) => {
+        const labels = {
+            'points_per_game': 'Puntos por Juego',
+            'assists_per_game': 'Asistencias por Juego',
+            'rebounds_per_game': 'Rebotes por Juego',
+            'efficiency': 'Eficiencia',
+            'wins': 'Victorias',
+            'field_goals_percentage': 'Porcentaje de Campo',
+            'three_point_percentage': 'Porcentaje de Triples'
+        };
+        return labels[metric] || metric;
+    };
 
     const getMetricConfig = (metric) => {
         const configs = {
@@ -2778,6 +2837,380 @@ const ModernAnalytics = () => {
                             </div>
                         </motion.div>
                     </motion.div>
+                )}
+
+                {/* Pestaña Equipos */}
+                {activeTab === 'equipo' && (
+                    <>
+                        {loadingTeam ? (
+                            <div className="flex items-center justify-center py-20">
+                                <LoadingSpinner size="lg" />
+                            </div>
+                        ) : teamData ? (
+                            <>
+                                {/* Hero Section - República Dominicana */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-8 mb-6 shadow-2xl"
+                                >
+                                    {/* Patrón de fondo animado */}
+                                    <div className="absolute inset-0 opacity-10">
+                                        <div className="absolute inset-0" style={{
+                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px)',
+                                            animation: 'slide 20s linear infinite'
+                                        }} />
+                                    </div>
+
+                                    {/* Círculos decorativos */}
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+                                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+
+                                    <div className="relative z-10 flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-20 h-20 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/40 overflow-hidden flex items-center justify-center shadow-xl">
+                                                <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-4xl font-black text-white mb-1 drop-shadow-lg">
+                                                    REPÚBLICA DOMINICANA
+                                                </h2>
+                                                <p className="text-white/90 text-sm font-semibold">
+                                                    Selección Nacional de Baloncesto
+                                                </p>
+                                                <p className="text-white/70 text-xs font-medium mt-1">
+                                                    Período: {teamData.overview?.period || '2010-2025'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* KPIs Principales */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                    {/* Partidos */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.1 }}
+                                        className="group relative bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/40 hover:border-white/60 transition-all duration-300 hover:scale-105 shadow-xl overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <Activity className="w-9 h-9 text-gray-700 group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700 mb-2">
+                                                Partidos
+                                            </p>
+                                            <p className="text-6xl font-black text-gray-900 drop-shadow-2xl tracking-tight">
+                                                {teamData.overview?.total_games || 0}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Victorias */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.2 }}
+                                        className="group relative bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/40 hover:border-white/60 transition-all duration-300 hover:scale-105 shadow-xl overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <Trophy className="w-9 h-9 text-[#CE1126] group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-[#CE1126] mb-2">
+                                                Victorias
+                                            </p>
+                                            <p className="text-6xl font-black text-gray-900 drop-shadow-2xl tracking-tight">
+                                                {teamData.overview?.total_wins || 0}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Porcentaje de Victorias */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.3 }}
+                                        className="group relative bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/40 hover:border-white/60 transition-all duration-300 hover:scale-105 shadow-xl overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <Target className="w-9 h-9 text-[#002D62] group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-[#002D62] mb-2">
+                                                % Ganado
+                                            </p>
+                                            <p className="text-6xl font-black text-gray-900 drop-shadow-2xl tracking-tight">
+                                                {((teamData.overview?.win_percentage || 0) * 100).toFixed(1)}%
+                                            </p>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Plus/Minus Promedio */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: 0.4 }}
+                                        className="group relative bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/40 hover:border-white/60 transition-all duration-300 hover:scale-105 shadow-xl overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <TrendingUp className="w-9 h-9 text-gray-700 group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700 mb-2">
+                                                +/- Prom
+                                            </p>
+                                            <p className="text-6xl font-black text-gray-900 drop-shadow-2xl tracking-tight">
+                                                {teamData.overview?.momentum?.avg_plus_minus >= 0 ? '+' : ''}
+                                                {(teamData.overview?.momentum?.avg_plus_minus || 0).toFixed(1)}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                </div>
+
+                                {/* Grid 2 Columnas: Ofensiva y Defensiva */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                    {/* Análisis Ofensivo */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.2 }}
+                                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                    >
+                                        <div className="bg-[#CE1126] px-4 py-3">
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                <Zap className="w-4 h-4" />
+                                                Análisis Ofensivo
+                                            </h3>
+                                        </div>
+                                        <div className="p-6 space-y-4">
+                                            {/* Anotación */}
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Anotación</p>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                                                        <p className="text-2xl font-black text-[#CE1126]">
+                                                            {(teamData.offense?.efficiency_metrics?.avg_points || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">PTS/J</p>
+                                                    </div>
+                                                    <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                                                        <p className="text-2xl font-black text-[#CE1126]">
+                                                            {(teamData.offense?.playmaking?.avg_assists || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">AST/J</p>
+                                                    </div>
+                                                    <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                                                        <p className="text-2xl font-black text-[#CE1126]">
+                                                            {(teamData.offense?.playmaking?.avg_offensive_rebounds || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">REB-O</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Porcentajes de Tiro */}
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Porcentajes de Tiro</p>
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+                                                        <p className="text-lg font-black text-gray-900 dark:text-white">
+                                                            {(teamData.offense?.efficiency_metrics?.shooting_efficiency?.fg_pct || 0).toFixed(1)}%
+                                                        </p>
+                                                        <p className="text-[9px] font-bold text-gray-500 uppercase">FG%</p>
+                                                    </div>
+                                                    <div className="flex-1 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+                                                        <p className="text-lg font-black text-gray-900 dark:text-white">
+                                                            {(teamData.offense?.efficiency_metrics?.shooting_efficiency?.['3p_pct'] || 0).toFixed(1)}%
+                                                        </p>
+                                                        <p className="text-[9px] font-bold text-gray-500 uppercase">3P%</p>
+                                                    </div>
+                                                    <div className="flex-1 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+                                                        <p className="text-lg font-black text-gray-900 dark:text-white">
+                                                            {(teamData.offense?.efficiency_metrics?.shooting_efficiency?.ft_pct || 0).toFixed(1)}%
+                                                        </p>
+                                                        <p className="text-[9px] font-bold text-gray-500 uppercase">FT%</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Eficiencia Ofensiva */}
+                                            <div className="p-4 rounded-lg bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10 border border-red-200 dark:border-red-800">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-2">Eficiencia Ofensiva</p>
+                                                <p className="text-4xl font-black text-[#CE1126]">
+                                                    {(teamData.offense?.efficiency_metrics?.avg_efficiency || 0).toFixed(1)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Análisis Defensivo */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.3 }}
+                                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                    >
+                                        <div className="bg-[#002D62] px-4 py-3">
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                <Shield className="w-4 h-4" />
+                                                Análisis Defensivo
+                                            </h3>
+                                        </div>
+                                        <div className="p-6 space-y-4">
+                                            {/* Acciones Defensivas */}
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Acciones Defensivas</p>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-2xl font-black text-[#002D62]">
+                                                            {(teamData.defense?.defensive_actions?.avg_defensive_rebounds || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">REB-D</p>
+                                                    </div>
+                                                    <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-2xl font-black text-[#002D62]">
+                                                            {(teamData.defense?.defensive_actions?.avg_steals || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">ROB/J</p>
+                                                    </div>
+                                                    <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-2xl font-black text-[#002D62]">
+                                                            {(teamData.defense?.defensive_actions?.avg_blocks || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">BLO/J</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Control del Juego */}
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Control del Juego</p>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-2xl font-black text-[#002D62] text-center">
+                                                            {(teamData.defense?.control?.avg_turnovers || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase text-center">Pérdidas/J</p>
+                                                    </div>
+                                                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-2xl font-black text-[#002D62] text-center">
+                                                            {teamData.defense?.control?.avg_plus_minus >= 0 ? '+' : ''}
+                                                            {(teamData.defense?.control?.avg_plus_minus || 0).toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase text-center">+/-</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Rebotes Totales */}
+                                            <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-800">
+                                                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-2">Rebotes Totales</p>
+                                                <p className="text-4xl font-black text-[#002D62]">
+                                                    {(teamData.overview?.rebounding?.avg_total_rebounds || 0).toFixed(1)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+
+                                {/* Gráfico de Tendencias */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.4 }}
+                                    className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                                >
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
+                                                <BarChart3 className="w-5 h-5 text-[#CE1126]" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                                    Tendencias por Temporada
+                                                </h3>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {getTeamMetricLabel(teamMetric)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector de Métrica */}
+                                        <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                                            {['points_per_game', 'assists_per_game', 'rebounds_per_game', 'efficiency'].map((metric) => (
+                                                <button
+                                                    key={metric}
+                                                    onClick={() => setTeamMetric(metric)}
+                                                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${teamMetric === metric
+                                                        ? 'bg-[#CE1126] text-white shadow-lg'
+                                                        : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'
+                                                        }`}
+                                                >
+                                                    {metric === 'points_per_game' ? 'Puntos' :
+                                                        metric === 'assists_per_game' ? 'Asistencias' :
+                                                            metric === 'rebounds_per_game' ? 'Rebotes' : 'Eficiencia'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Gráfico */}
+                                    {teamTrendsData && teamTrendsData.seasons && teamTrendsData.seasons.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height={320}>
+                                            <LineChart data={teamTrendsData.seasons.map((season, idx) => ({
+                                                season,
+                                                value: teamTrendsData.values[idx]
+                                            }))}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                                <XAxis
+                                                    dataKey="season"
+                                                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                    stroke="#9ca3af"
+                                                />
+                                                <YAxis
+                                                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                    stroke="#9ca3af"
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                        border: '1px solid #e5e7eb',
+                                                        borderRadius: '8px',
+                                                        fontSize: '12px'
+                                                    }}
+                                                    formatter={(value) => [value.toFixed(2), getTeamMetricLabel(teamMetric)]}
+                                                />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="value"
+                                                    stroke="#CE1126"
+                                                    strokeWidth={3}
+                                                    dot={{ r: 5, fill: '#CE1126', stroke: '#fff', strokeWidth: 2 }}
+                                                    activeDot={{ r: 7 }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-80 flex items-center justify-center text-gray-500">
+                                            <p>No hay datos de tendencias disponibles</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </>
+                        ) : (
+                            <div className="text-center py-20">
+                                <p className="text-gray-500 dark:text-gray-400">No se pudieron cargar los datos del equipo</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
         </div>

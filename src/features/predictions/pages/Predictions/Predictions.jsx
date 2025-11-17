@@ -35,7 +35,112 @@ const Predictions = () => {
     const [teamClusterPrediction, setTeamClusterPrediction] = useState(null);
     const [loadingTeamCluster, setLoadingTeamCluster] = useState(false);
 
-    useEffect(() => { loadModelsInfo(); }, []);
+    // Estados para validaciones
+    const [validationErrors, setValidationErrors] = useState({});
+
+    // Estados para historial
+    const [predictionHistory, setPredictionHistory] = useState([]);
+
+    useEffect(() => {
+        loadModelsInfo();
+        loadHistoryFromStorage();
+    }, []);
+
+    // Cargar historial desde localStorage
+    const loadHistoryFromStorage = () => {
+        try {
+            const saved = localStorage.getItem('predictions_history');
+            if (saved) {
+                setPredictionHistory(JSON.parse(saved));
+            }
+        } catch (error) {
+            console.error('Error loading history:', error);
+        }
+    };
+
+    // Guardar predicción en historial
+    const saveToHistory = (type, data, result) => {
+        const entry = {
+            id: Date.now(),
+            type,
+            timestamp: new Date().toISOString(),
+            data,
+            result
+        };
+        const newHistory = [entry, ...predictionHistory].slice(0, 50); // Máximo 50 entradas
+        setPredictionHistory(newHistory);
+        localStorage.setItem('predictions_history', JSON.stringify(newHistory));
+    };
+
+    // Limpiar historial
+    const clearHistory = () => {
+        setPredictionHistory([]);
+        localStorage.removeItem('predictions_history');
+    };
+
+    // Exportar resultados
+    const exportResults = (format = 'json') => {
+        if (format === 'json') {
+            const dataStr = JSON.stringify(predictionHistory, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `predicciones_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        } else if (format === 'csv') {
+            const headers = ['Fecha', 'Tipo', 'Resultado'];
+            const rows = predictionHistory.map(h => [
+                new Date(h.timestamp).toLocaleString('es-DO'),
+                h.type === 'game' ? 'Partido' : h.type === 'player' ? 'Jugador' : 'Equipo',
+                JSON.stringify(h.result)
+            ]);
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            const dataBlob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `predicciones_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+    };
+
+    // Validaciones avanzadas
+    const validateGameData = () => {
+        const errors = {};
+        if (gameData.rd_fg_pct < 0 || gameData.rd_fg_pct > 100) errors.rd_fg_pct = 'FG% debe estar entre 0 y 100';
+        if (gameData.rival_fg_pct < 0 || gameData.rival_fg_pct > 100) errors.rival_fg_pct = 'FG% debe estar entre 0 y 100';
+        if (gameData.rd_reb < 0 || gameData.rd_reb > 80) errors.rd_reb = 'Rebotes deben estar entre 0 y 80';
+        if (gameData.rival_reb < 0 || gameData.rival_reb > 80) errors.rival_reb = 'Rebotes deben estar entre 0 y 80';
+        if (gameData.rd_ast < 0 || gameData.rd_ast > 50) errors.rd_ast = 'Asistencias deben estar entre 0 y 50';
+        if (gameData.rival_ast < 0 || gameData.rival_ast > 50) errors.rival_ast = 'Asistencias deben estar entre 0 y 50';
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const validatePlayerData = () => {
+        const errors = {};
+        if (playerPointsData.minutes_played < 0 || playerPointsData.minutes_played > 48) errors.minutes_played = 'Minutos deben estar entre 0 y 48';
+        if (playerPointsData.field_goal_percentage < 0 || playerPointsData.field_goal_percentage > 100) errors.field_goal_percentage = 'FG% debe estar entre 0 y 100';
+        if (playerPointsData.free_throw_percentage < 0 || playerPointsData.free_throw_percentage > 100) errors.free_throw_percentage = 'FT% debe estar entre 0 y 100';
+        if (playerPointsData.total_rebounds < 0 || playerPointsData.total_rebounds > 30) errors.total_rebounds = 'Rebotes deben estar entre 0 y 30';
+        if (playerPointsData.assists < 0 || playerPointsData.assists > 20) errors.assists = 'Asistencias deben estar entre 0 y 20';
+        if (playerPointsData.field_goals_made < 0 || playerPointsData.field_goals_made > 30) errors.field_goals_made = 'FG anotados deben estar entre 0 y 30';
+        if (playerPointsData.three_point_made < 0 || playerPointsData.three_point_made > 15) errors.three_point_made = '3P anotados deben estar entre 0 y 15';
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const validateTeamData = () => {
+        const errors = {};
+        if (teamClusterData.points_per_game < 0 || teamClusterData.points_per_game > 150) errors.points_per_game = 'Puntos/J deben estar entre 0 y 150';
+        if (teamClusterData.field_goal_percentage < 0 || teamClusterData.field_goal_percentage > 100) errors.field_goal_percentage = 'FG% debe estar entre 0 y 100';
+        if (teamClusterData.three_point_percentage < 0 || teamClusterData.three_point_percentage > 100) errors.three_point_percentage = '3P% debe estar entre 0 y 100';
+        if (teamClusterData.free_throw_percentage < 0 || teamClusterData.free_throw_percentage > 100) errors.free_throw_percentage = 'FT% debe estar entre 0 y 100';
+        if (teamClusterData.win_percentage < 0 || teamClusterData.win_percentage > 1) errors.win_percentage = '% Victorias debe estar entre 0 y 1';
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const loadModelsInfo = async () => {
         try {
@@ -50,10 +155,15 @@ const Predictions = () => {
     };
 
     const handlePredictGame = async () => {
+        if (!validateGameData()) {
+            alert('Por favor corrige los errores en el formulario');
+            return;
+        }
         try {
             setLoadingGame(true);
             const result = await mlPredictionsService.predictGameOutcome(gameData);
             setGamePrediction(result);
+            saveToHistory('game', gameData, result);
         } catch (error) {
             alert('Error al predecir el resultado');
         } finally {
@@ -62,10 +172,15 @@ const Predictions = () => {
     };
 
     const handlePredictPlayerPoints = async () => {
+        if (!validatePlayerData()) {
+            alert('Por favor corrige los errores en el formulario');
+            return;
+        }
         try {
             setLoadingPlayerPoints(true);
             const result = await mlPredictionsService.predictPlayerPoints(playerPointsData);
             setPlayerPointsPrediction(result);
+            saveToHistory('player', playerPointsData, result);
         } catch (error) {
             alert('Error al predecir puntos');
         } finally {
@@ -74,10 +189,15 @@ const Predictions = () => {
     };
 
     const handlePredictTeamCluster = async () => {
+        if (!validateTeamData()) {
+            alert('Por favor corrige los errores en el formulario');
+            return;
+        }
         try {
             setLoadingTeamCluster(true);
             const result = await mlPredictionsService.predictTeamCluster(teamClusterData);
             setTeamClusterPrediction(result);
+            saveToHistory('team', teamClusterData, result);
         } catch (error) {
             alert('Error al clasificar equipo');
         } finally {

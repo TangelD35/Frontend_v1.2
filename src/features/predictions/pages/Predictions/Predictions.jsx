@@ -10,6 +10,8 @@ import BanderaDominicana from '../../../../assets/icons/do.svg';
 import GaugeChart from '../../components/GaugeChart';
 import ProgressBar from '../../components/ProgressBar';
 
+const [availablePlayers, setAvailablePlayers] = useState([]);
+const [loadingPlayers, setLoadingPlayers] = useState(false);
 const Predictions = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [modelsInfo, setModelsInfo] = useState(null);
@@ -60,9 +62,10 @@ const Predictions = () => {
     const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {
-        loadModelsInfo();
-        loadHistoryFromStorage();
-    }, []);
+        if (activeTab === 'lineup') {
+            loadAvailablePlayers();
+        }
+    }, [activeTab]);
 
     // Cargar historial desde localStorage
     const loadHistoryFromStorage = () => {
@@ -250,6 +253,18 @@ const Predictions = () => {
             const result = await mlPredictionsService.optimizeLineup(lineupData);
             setLineupOptimization(result);
             saveToHistory('lineup', lineupData, result);
+            const loadAvailablePlayers = async () => {
+                try {
+                    setLoadingPlayers(true);
+                    // Importar playersService al inicio del archivo
+                    const response = await playersService.getPlayers({ page: 1, limit: 100 });
+                    setAvailablePlayers(response.data || []);
+                } catch (error) {
+                    console.error('Error loading players:', error);
+                } finally {
+                    setLoadingPlayers(false);
+                }
+            };
         } catch (error) {
             alert('Error al optimizar lineup');
         } finally {
@@ -386,8 +401,8 @@ const Predictions = () => {
                                             { key: 'rd_ast', label: 'Asistencias' }
                                         ].map(({ key, label }) => (
                                             <div key={key}>
-                                                <label className="text-[10px] text-gray-600">{label}</label>
-                                                <input type="number" value={gameData[key]} onChange={(e) => setGameData({ ...gameData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" />
+                                                <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
+                                                <input type="number" value={gameData[key]} onChange={(e) => setGameData({ ...gameData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
                                             </div>
                                         ))}
                                     </div>
@@ -401,8 +416,8 @@ const Predictions = () => {
                                             { key: 'rival_ast', label: 'Asistencias' }
                                         ].map(({ key, label }) => (
                                             <div key={key}>
-                                                <label className="text-[10px] text-gray-600">{label}</label>
-                                                <input type="number" value={gameData[key]} onChange={(e) => setGameData({ ...gameData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" />
+                                                <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
+                                                <input type="number" value={gameData[key]} onChange={(e) => setGameData({ ...gameData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
                                             </div>
                                         ))}
                                     </div>
@@ -485,8 +500,8 @@ const Predictions = () => {
                                         { key: 'three_point_made', label: '3P Anotados' }
                                     ].map(({ key, label }) => (
                                         <div key={key}>
-                                            <label className="text-xs text-gray-600">{label}</label>
-                                            <input type="number" value={playerPointsData[key]} onChange={(e) => setPlayerPointsData({ ...playerPointsData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" />
+                                            <label className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
+                                            <input type="number" value={playerPointsData[key]} onChange={(e) => setPlayerPointsData({ ...playerPointsData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
                                         </div>
                                     ))}
                                 </div>
@@ -562,8 +577,8 @@ const Predictions = () => {
                                         { key: 'blocks_per_game', label: 'Bloqueos/J' }
                                     ].map(({ key, label }) => (
                                         <div key={key}>
-                                            <label className="text-xs text-gray-600">{label}</label>
-                                            <input type="number" value={teamClusterData[key]} onChange={(e) => setTeamClusterData({ ...teamClusterData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md" step={key === 'win_percentage' ? '0.01' : '0.1'} />
+                                            <label className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
+                                            <input type="number" value={teamClusterData[key]} onChange={(e) => setTeamClusterData({ ...teamClusterData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" step={key === 'win_percentage' ? '0.01' : '0.1'} />
                                         </div>
                                     ))}
                                 </div>

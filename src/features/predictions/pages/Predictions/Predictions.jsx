@@ -107,7 +107,11 @@ const Predictions = () => {
             const headers = ['Fecha', 'Tipo', 'Resultado'];
             const rows = predictionHistory.map(h => [
                 new Date(h.timestamp).toLocaleString('es-DO'),
-                h.type === 'game' ? 'Partido' : h.type === 'player' ? 'Jugador' : 'Equipo',
+                h.type === 'game' ? 'Partido' :
+                    h.type === 'player' ? 'Puntos' :
+                        h.type === 'team' ? 'Clustering' :
+                            h.type === 'forecast' ? 'Pronóstico' :
+                                h.type === 'lineup' ? 'Lineup' : 'Otro',
                 JSON.stringify(h.result)
             ]);
             const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -180,9 +184,9 @@ const Predictions = () => {
             setGamePrediction(result);
             saveToHistory('game', gameData, result);
         } catch (error) {
-            alert('Error al predecir el resultado');
-        } finally {
-            setLoadingGame(false);
+            console.error('Error completo:', error);
+            console.error('Respuesta:', error.response?.data);
+            alert(`Error al predecir el resultado: ${error.response?.data?.detail || error.message}`);
         }
     };
 
@@ -214,9 +218,10 @@ const Predictions = () => {
             setTeamClusterPrediction(result);
             saveToHistory('team', teamClusterData, result);
         } catch (error) {
-            alert('Error al clasificar equipo');
-        } finally {
-            setLoadingTeamCluster(false);
+            console.error('Error completo:', error);
+            console.error('Datos enviados:', teamClusterData);
+            console.error('Respuesta:', error.response?.data);
+            alert(`Error al clasificar equipo: ${error.response?.data?.detail || error.message}`);
         }
     };
 
@@ -290,12 +295,29 @@ const Predictions = () => {
 
                 {/* Tabs */}
                 <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 mb-4">
-                    <div className="flex gap-2">
-                        {['dashboard', 'game', 'player', 'team'].map((tab, i) => (
-                            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${activeTab === tab ? (i % 2 === 0 ? 'bg-[#CE1126] text-white shadow-lg' : 'bg-[#002D62] text-white shadow-lg') : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                                {tab === 'dashboard' ? 'Panel' : tab === 'game' ? 'Partidos' : tab === 'player' ? 'Jugadores' : 'Equipos'}
-                            </button>
-                        ))}
+                    <div className="flex gap-2 flex-wrap">
+                        {['dashboard', 'game', 'player', 'team', 'forecast', 'lineup'].map((tab, i) => {
+                            const labels = {
+                                dashboard: 'Panel',
+                                game: 'Partidos',
+                                player: 'Puntos',
+                                team: 'Clustering',
+                                forecast: 'Pronóstico',
+                                lineup: 'Lineups'
+                            };
+                            return (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`min-w-[100px] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all ${activeTab === tab
+                                        ? (i % 2 === 0 ? 'bg-[#CE1126] text-white shadow-lg' : 'bg-[#002D62] text-white shadow-lg')
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                >
+                                    {labels[tab]}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -596,6 +618,209 @@ const Predictions = () => {
                     </div>
                 )}
 
+                {/* Forecast Tab - Pronóstico de Rendimiento */}
+                {activeTab === 'forecast' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-[#CE1126]" />
+                                Pronóstico de Rendimiento
+                            </h2>
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { key: 'edad', label: 'Edad', min: 15, max: 50 },
+                                        { key: 'mpg', label: 'Minutos/J', min: 0, max: 48 },
+                                        { key: 'efficiency', label: 'Eficiencia', min: 0, max: 50 },
+                                        { key: 'rpg', label: 'Rebotes/J', min: 0, max: 20 },
+                                        { key: 'apg', label: 'Asistencias/J', min: 0, max: 15 },
+                                        { key: 'hist_ppg', label: 'Puntos/J Hist.', min: 0, max: 40 },
+                                        { key: 'hist_efficiency', label: 'Efic. Hist.', min: 0, max: 50 },
+                                        { key: 'num_torneos', label: 'Torneos', min: 0, max: 30 },
+                                        { key: 'experiencia', label: 'Partidos', min: 0, max: 500 }
+                                    ].map(({ key, label, min, max }) => (
+                                        <div key={key}>
+                                            <label className="text-xs text-gray-600 dark:text-gray-400">{label}</label>
+                                            <input
+                                                type="number"
+                                                value={playerForecastData[key]}
+                                                onChange={(e) => setPlayerForecastData({ ...playerForecastData, [key]: parseFloat(e.target.value) || 0 })}
+                                                className="w-full px-2 py-1 text-sm border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                                min={min}
+                                                max={max}
+                                                step="0.1"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={handleForecastPlayerPerformance}
+                                    disabled={loadingPlayerForecast}
+                                    className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                                >
+                                    {loadingPlayerForecast ? (
+                                        <>
+                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                            Pronosticando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Play className="w-4 h-4" />
+                                            Pronosticar Rendimiento
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4">Pronóstico</h2>
+                            {playerForecast ? (
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-2 border-purple-300 dark:border-purple-700 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="w-5 h-5 text-purple-600" />
+                                            <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase">Proyección Futura</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-purple-900 dark:text-purple-100">
+                                            {playerForecast.forecasted_performance ?
+                                                `${playerForecast.forecasted_performance.toFixed(1)} pts/juego` :
+                                                'Rendimiento proyectado'}
+                                        </p>
+                                    </div>
+                                    {playerForecast.trend && (
+                                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Tendencia</p>
+                                            <p className="text-sm text-blue-900 dark:text-blue-100">{playerForecast.trend}</p>
+                                        </div>
+                                    )}
+                                    {playerForecast.interpretation && (
+                                        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                                            <p className="text-xs font-bold text-green-700 dark:text-green-300 uppercase mb-1">Análisis</p>
+                                            <p className="text-sm text-green-900 dark:text-green-100">{playerForecast.interpretation}</p>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => setPlayerForecast(null)}
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
+                                    >
+                                        Nuevo Pronóstico
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                    <TrendingUp className="w-16 h-16 mb-3" />
+                                    <p className="text-sm text-center">Ingresa los datos del jugador para pronosticar su rendimiento futuro</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Lineup Tab - Optimización de Lineups */}
+                {activeTab === 'lineup' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                <Users className="w-5 h-5 text-[#002D62]" />
+                                Optimización de Lineup
+                            </h2>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 block">
+                                        IDs de Jugadores Disponibles
+                                    </label>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        Ingresa los IDs de los jugadores separados por comas
+                                    </p>
+                                    <textarea
+                                        value={lineupData.available_players.join(', ')}
+                                        onChange={(e) => {
+                                            const ids = e.target.value.split(',').map(id => id.trim()).filter(id => id);
+                                            setLineupData({ available_players: ids });
+                                        }}
+                                        className="w-full px-3 py-2 text-sm border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white h-32 resize-none"
+                                        placeholder="ej: player-id-1, player-id-2, player-id-3..."
+                                    />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {lineupData.available_players.length} jugadores ingresados
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleOptimizeLineup}
+                                    disabled={loadingLineup || lineupData.available_players.length === 0}
+                                    className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {loadingLineup ? (
+                                        <>
+                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                            Optimizando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Play className="w-4 h-4" />
+                                            Optimizar Lineup
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4">Lineup Óptimo</h2>
+                            {lineupOptimization ? (
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-300 dark:border-green-700 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Award className="w-5 h-5 text-green-600" />
+                                            <p className="text-xs font-bold text-green-700 dark:text-green-300 uppercase">Mejor Lineup</p>
+                                        </div>
+                                        {lineupOptimization.optimal_lineup && lineupOptimization.optimal_lineup.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {lineupOptimization.optimal_lineup.map((playerId, index) => (
+                                                    <div key={index} className="flex items-center gap-2 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                                        <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center">
+                                                            {index + 1}
+                                                        </span>
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                            {playerId}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">No se encontró lineup óptimo</p>
+                                        )}
+                                    </div>
+                                    {lineupOptimization.justification && (
+                                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Justificación</p>
+                                            <p className="text-sm text-blue-900 dark:text-blue-100">{lineupOptimization.justification}</p>
+                                        </div>
+                                    )}
+                                    {lineupOptimization.expected_performance && (
+                                        <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
+                                            <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase mb-1">Rendimiento Esperado</p>
+                                            <p className="text-lg font-black text-purple-900 dark:text-purple-100">
+                                                {lineupOptimization.expected_performance.toFixed(1)} pts
+                                            </p>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => setLineupOptimization(null)}
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
+                                    >
+                                        Nueva Optimización
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                    <Users className="w-16 h-16 mb-3" />
+                                    <p className="text-sm text-center">Ingresa los IDs de jugadores disponibles para optimizar el lineup</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer Info */}
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -689,8 +914,14 @@ const Predictions = () => {
                                                             {entry.type === 'game' && <Activity className="w-5 h-5 text-[#CE1126]" />}
                                                             {entry.type === 'player' && <Users className="w-5 h-5 text-[#002D62]" />}
                                                             {entry.type === 'team' && <Brain className="w-5 h-5 text-purple-600" />}
+                                                            {entry.type === 'forecast' && <TrendingUp className="w-5 h-5 text-indigo-600" />}
+                                                            {entry.type === 'lineup' && <Award className="w-5 h-5 text-green-600" />}
                                                             <span className="font-bold text-sm">
-                                                                {entry.type === 'game' ? 'Predicción de Partido' : entry.type === 'player' ? 'Predicción de Puntos' : 'Clustering de Equipo'}
+                                                                {entry.type === 'game' ? 'Predicción de Partido' :
+                                                                    entry.type === 'player' ? 'Predicción de Puntos' :
+                                                                        entry.type === 'team' ? 'Clustering de Equipo' :
+                                                                            entry.type === 'forecast' ? 'Pronóstico de Rendimiento' :
+                                                                                entry.type === 'lineup' ? 'Optimización de Lineup' : 'Predicción'}
                                                             </span>
                                                         </div>
                                                         <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -716,6 +947,17 @@ const Predictions = () => {
                                                         {entry.type === 'team' && entry.result && (
                                                             <p className="font-semibold text-purple-700 dark:text-purple-400">
                                                                 Cluster: {entry.result.cluster_name}
+                                                            </p>
+                                                        )}
+
+                                                        {entry.type === 'forecast' && entry.result && (
+                                                            <p className="font-semibold text-indigo-700 dark:text-indigo-400">
+                                                                Rendimiento proyectado: {entry.result.forecasted_performance?.toFixed(1)} pts
+                                                            </p>
+                                                        )}
+                                                        {entry.type === 'lineup' && entry.result && (
+                                                            <p className="font-semibold text-green-700 dark:text-green-400">
+                                                                Lineup óptimo: {entry.result.optimal_lineup?.length || 0} jugadores
                                                             </p>
                                                         )}
                                                     </div>

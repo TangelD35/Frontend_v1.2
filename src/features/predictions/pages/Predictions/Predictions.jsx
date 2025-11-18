@@ -36,6 +36,19 @@ const Predictions = () => {
     const [teamClusterPrediction, setTeamClusterPrediction] = useState(null);
     const [loadingTeamCluster, setLoadingTeamCluster] = useState(false);
 
+    // Estados para Pronóstico de Rendimiento
+    const [playerForecastData, setPlayerForecastData] = useState({
+        edad: 25, mpg: 32.0, efficiency: 18.5, rpg: 8.0, apg: 5.0,
+        hist_ppg: 16.5, hist_efficiency: 17.2, num_torneos: 8, experiencia: 120
+    });
+    const [playerForecast, setPlayerForecast] = useState(null);
+    const [loadingPlayerForecast, setLoadingPlayerForecast] = useState(false);
+
+    // Estados para Optimización de Lineups
+    const [lineupData, setLineupData] = useState({ available_players: [] });
+    const [lineupOptimization, setLineupOptimization] = useState(null);
+    const [loadingLineup, setLoadingLineup] = useState(false);
+
     // Estados para validaciones
     const [validationErrors, setValidationErrors] = useState({});
 
@@ -204,6 +217,36 @@ const Predictions = () => {
             alert('Error al clasificar equipo');
         } finally {
             setLoadingTeamCluster(false);
+        }
+    };
+
+    const handleForecastPlayerPerformance = async () => {
+        try {
+            setLoadingPlayerForecast(true);
+            const result = await mlPredictionsService.forecastPlayerPerformance(playerForecastData);
+            setPlayerForecast(result);
+            saveToHistory('forecast', playerForecastData, result);
+        } catch (error) {
+            alert('Error al pronosticar rendimiento');
+        } finally {
+            setLoadingPlayerForecast(false);
+        }
+    };
+
+    const handleOptimizeLineup = async () => {
+        if (!lineupData.available_players || lineupData.available_players.length === 0) {
+            alert('Por favor ingresa los IDs de jugadores disponibles');
+            return;
+        }
+        try {
+            setLoadingLineup(true);
+            const result = await mlPredictionsService.optimizeLineup(lineupData);
+            setLineupOptimization(result);
+            saveToHistory('lineup', lineupData, result);
+        } catch (error) {
+            alert('Error al optimizar lineup');
+        } finally {
+            setLoadingLineup(false);
         }
     };
 

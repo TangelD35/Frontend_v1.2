@@ -31,7 +31,7 @@ const Predictions = () => {
     const [teamClusterData, setTeamClusterData] = useState({
         points_per_game: 85.5, field_goal_percentage: 45.0, three_point_percentage: 35.0,
         free_throw_percentage: 75.0, rebounds_per_game: 42.0, assists_per_game: 22.0,
-        steals_per_game: 8.0, blocks_per_game: 5.0, turnovers_per_game: 14.0, win_percentage: 0.65
+        steals_per_game: 8.0, blocks_per_game: 5.0
     });
     const [teamClusterPrediction, setTeamClusterPrediction] = useState(null);
     const [loadingTeamCluster, setLoadingTeamCluster] = useState(false);
@@ -156,7 +156,6 @@ const Predictions = () => {
         if (teamClusterData.field_goal_percentage < 0 || teamClusterData.field_goal_percentage > 100) errors.field_goal_percentage = 'FG% debe estar entre 0 y 100';
         if (teamClusterData.three_point_percentage < 0 || teamClusterData.three_point_percentage > 100) errors.three_point_percentage = '3P% debe estar entre 0 y 100';
         if (teamClusterData.free_throw_percentage < 0 || teamClusterData.free_throw_percentage > 100) errors.free_throw_percentage = 'FT% debe estar entre 0 y 100';
-        if (teamClusterData.win_percentage < 0 || teamClusterData.win_percentage > 1) errors.win_percentage = '% Victorias debe estar entre 0 y 1';
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -557,9 +556,7 @@ const Predictions = () => {
                                         { key: 'rebounds_per_game', label: 'Rebotes/J' },
                                         { key: 'assists_per_game', label: 'Asistencias/J' },
                                         { key: 'steals_per_game', label: 'Robos/J' },
-                                        { key: 'blocks_per_game', label: 'Bloqueos/J' },
-                                        { key: 'turnovers_per_game', label: 'Pérdidas/J' },
-                                        { key: 'win_percentage', label: '% Victorias' }
+                                        { key: 'blocks_per_game', label: 'Bloqueos/J' }
                                     ].map(({ key, label }) => (
                                         <div key={key}>
                                             <label className="text-xs text-gray-600">{label}</label>
@@ -576,10 +573,12 @@ const Predictions = () => {
                             <h2 className="text-lg font-bold mb-4">Resultado</h2>
                             {teamClusterPrediction ? (
                                 <div className="space-y-4">
-                                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200">
-                                        <p className="text-xs font-bold text-purple-700 uppercase mb-2">Cluster Asignado</p>
-                                        <p className="text-3xl font-black text-purple-900 mb-2">{teamClusterPrediction.cluster_name}</p>
-                                        <p className="text-sm text-purple-700">{teamClusterPrediction.cluster_description}</p>
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-300 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="w-5 h-5 text-purple-600" />
+                                            <p className="text-xs font-bold text-purple-700 uppercase">Cluster Asignado</p>
+                                        </div>
+                                        <p className="text-3xl font-black text-purple-900">{teamClusterPrediction.cluster_name}</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="p-3 rounded-lg bg-gray-50">
@@ -592,7 +591,7 @@ const Predictions = () => {
                                         </div>
                                     </div>
                                     <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                        <p className="text-xs font-bold text-blue-700 uppercase mb-2">Características</p>
+                                        <p className="text-xs font-bold text-blue-700 uppercase mb-1">Características</p>
                                         <div className="space-y-1">
                                             {Object.entries(teamClusterPrediction.characteristics).map(([key, value]) => (
                                                 <div key={key} className="flex justify-between text-sm">
@@ -640,12 +639,12 @@ const Predictions = () => {
                                         { key: 'experiencia', label: 'Partidos', min: 0, max: 500 }
                                     ].map(({ key, label, min, max }) => (
                                         <div key={key}>
-                                            <label className="text-xs text-gray-600 dark:text-gray-400">{label}</label>
+                                            <label className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
                                             <input
                                                 type="number"
                                                 value={playerForecastData[key]}
                                                 onChange={(e) => setPlayerForecastData({ ...playerForecastData, [key]: parseFloat(e.target.value) || 0 })}
-                                                className="w-full px-2 py-1 text-sm border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                                className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                                                 min={min}
                                                 max={max}
                                                 step="0.1"
@@ -684,7 +683,7 @@ const Predictions = () => {
                                         <p className="text-2xl font-black text-purple-900 dark:text-purple-100">
                                             {playerForecast.forecasted_performance ?
                                                 `${playerForecast.forecasted_performance.toFixed(1)} pts/juego` :
-                                                'Rendimiento proyectado'}
+                                                'Calculando...'}
                                         </p>
                                     </div>
                                     {playerForecast.trend && (

@@ -5,6 +5,7 @@ import {
     History, Download, FileJson, FileText, Trash2, X
 } from 'lucide-react';
 import mlPredictionsService from '../../../../shared/api/endpoints/mlPredictions';
+import playersService from '../../../../shared/api/endpoints/players';
 import BanderaDominicana from '../../../../assets/icons/do.svg';
 import GaugeChart from '../../components/GaugeChart';
 import ProgressBar from '../../components/ProgressBar';
@@ -48,6 +49,8 @@ const Predictions = () => {
     const [lineupData, setLineupData] = useState({ available_players: [] });
     const [lineupOptimization, setLineupOptimization] = useState(null);
     const [loadingLineup, setLoadingLineup] = useState(false);
+    const [availablePlayers, setAvailablePlayers] = useState([]);
+    const [loadingPlayers, setLoadingPlayers] = useState(false);
 
     // Estados para validaciones
     const [validationErrors, setValidationErrors] = useState({});

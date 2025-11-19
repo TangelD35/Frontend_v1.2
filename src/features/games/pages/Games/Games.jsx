@@ -18,26 +18,80 @@ import {
     X,
     CheckCircle,
     AlertCircle,
-    ChevronDown
+    ChevronDown,
+    Grid,
+    List,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
-import useViewMode from '../../../../shared/hooks/useViewMode';
 import useFilters from '../../../../shared/hooks/useFilters';
 import { gameSchema } from '../../../../lib/validations/schemas';
 import { useGames } from '../../hooks/useGames';
 import { useTeams } from '../../../teams/hooks/useTeams';
 import { useTournaments } from '../../../tournaments/hooks/useTournaments';
+import { gamesService } from '../../../../shared/api/endpoints/games';
+import { advancedAnalyticsService } from '../../../../shared/api/endpoints/advancedAnalytics';
 import { GlassCard, AnimatedButton, LoadingState, ErrorState, ModernModal, ToastContainer } from '../../../../shared/ui/components/modern';
 
 import {
     Table,
     Input,
     Select,
-    StatusIndicator
+    StatusIndicator,
+    PageHeader
 } from '../../../../shared/ui/components/common';
+
+// Importar banderas SVG - América
+import BanderaUSA from '../../../../assets/icons/us.svg';
+import BanderaCanada from '../../../../assets/icons/ca.svg';
+import BanderaMexico from '../../../../assets/icons/mx.svg';
+import BanderaDominicana from '../../../../assets/icons/do.svg';
+import BanderaPuertoRico from '../../../../assets/icons/pr.svg';
+import BanderaCuba from '../../../../assets/icons/cu.svg';
+import BanderaPanama from '../../../../assets/icons/pa.svg';
+import BanderaCostaRica from '../../../../assets/icons/cr.svg';
+import BanderaArgentina from '../../../../assets/icons/ar.svg';
+import BanderaBrasil from '../../../../assets/icons/br.svg';
+import BanderaChile from '../../../../assets/icons/cl.svg';
+import BanderaColombia from '../../../../assets/icons/co.svg';
+import BanderaVenezuela from '../../../../assets/icons/ve.svg';
+import BanderaUruguay from '../../../../assets/icons/uy.svg';
+import BanderaParaguay from '../../../../assets/icons/py.svg';
+import BanderaPeru from '../../../../assets/icons/pe.svg';
+import BanderaEcuador from '../../../../assets/icons/ec.svg';
+import BanderaNicaragua from '../../../../assets/icons/ni.svg';
+import BanderaJamaica from '../../../../assets/icons/jm.svg';
+import BanderaBahamas from '../../../../assets/icons/bs.svg';
+import BanderaIslasVirgenes from '../../../../assets/icons/vi.svg';
+import BanderaIslasVirgenesBritanicas from '../../../../assets/icons/vg.svg';
+
+// Importar banderas SVG - Europa
+import BanderaAlemania from '../../../../assets/icons/de.svg';
+import BanderaFrancia from '../../../../assets/icons/fr.svg';
+import BanderaItalia from '../../../../assets/icons/it.svg';
+import BanderaEslovenia from '../../../../assets/icons/si.svg';
+import BanderaSerbia from '../../../../assets/icons/rs.svg';
+import BanderaLituania from '../../../../assets/icons/lt.svg';
+import BanderaTurquia from '../../../../assets/icons/tr.svg';
+import BanderaFinlandia from '../../../../assets/icons/fi.svg';
+import BanderaUcrania from '../../../../assets/icons/ua.svg';
+import BanderaMacedonia from '../../../../assets/icons/mk.svg';
+import BanderaRusia from '../../../../assets/icons/ru.svg';
+
+// Importar banderas SVG - Asia y Oceanía
+import BanderaFilipinas from '../../../../assets/icons/ph.svg';
+import BanderaAustralia from '../../../../assets/icons/au.svg';
+import BanderaNuevaZelanda from '../../../../assets/icons/nz.svg';
+import BanderaCoreaDelSur from '../../../../assets/icons/kr.svg';
+import BanderaJordan from '../../../../assets/icons/jo.svg';
+
+// Importar banderas SVG - África
+import BanderaAngola from '../../../../assets/icons/ao.svg';
+import BanderaNigeria from '../../../../assets/icons/ng.svg';
 
 // Componente de Logo RDscore
 const RDScoreLogo = ({ size = 48, className = "" }) => (
@@ -93,6 +147,70 @@ const SportsStat = ({ icon: Icon, value, label, trend, color = "blue", delay = 0
     </motion.div>
 );
 
+// Función para obtener la bandera SVG del país
+const getCountryFlag = (countryName) => {
+    if (!countryName) return BanderaDominicana;
+
+    // Mapeo directo de nombres de países a banderas
+    const flagMap = {
+        // América del Norte
+        'ESTADOS UNIDOS': BanderaUSA, 'USA': BanderaUSA, 'US': BanderaUSA, 'UNITED STATES': BanderaUSA,
+        'CANADÁ': BanderaCanada, 'CANADA': BanderaCanada, 'CAN': BanderaCanada,
+        'MÉXICO': BanderaMexico, 'MEXICO': BanderaMexico, 'MEX': BanderaMexico,
+
+        // América Central y Caribe
+        'REPÚBLICA DOMINICANA': BanderaDominicana, 'REPUBLICA DOMINICANA': BanderaDominicana, 'DOMINICAN REPUBLIC': BanderaDominicana, 'DOM': BanderaDominicana,
+        'PUERTO RICO': BanderaPuertoRico, 'PUR': BanderaPuertoRico,
+        'CUBA': BanderaCuba, 'CUB': BanderaCuba,
+        'PANAMÁ': BanderaPanama, 'PANAMA': BanderaPanama, 'PAN': BanderaPanama,
+        'COSTA RICA': BanderaCostaRica, 'CRC': BanderaCostaRica,
+        'NICARAGUA': BanderaNicaragua, 'NIC': BanderaNicaragua, 'NCA': BanderaNicaragua,
+        'JAMAICA': BanderaJamaica, 'JAM': BanderaJamaica,
+        'BAHAMAS': BanderaBahamas, 'BAH': BanderaBahamas,
+        'ISLAS VÍRGENES': BanderaIslasVirgenes, 'ISLAS VIRGENES': BanderaIslasVirgenes, 'VIRGIN ISLANDS': BanderaIslasVirgenes, 'VIR': BanderaIslasVirgenes,
+        'ISLAS VÍRGENES BRITÁNICAS': BanderaIslasVirgenesBritanicas, 'ISLAS VIRGENES BRITANICAS': BanderaIslasVirgenesBritanicas, 'BRITISH VIRGIN ISLANDS': BanderaIslasVirgenesBritanicas, 'VGB': BanderaIslasVirgenesBritanicas,
+
+        // América del Sur
+        'ARGENTINA': BanderaArgentina, 'ARG': BanderaArgentina,
+        'BRASIL': BanderaBrasil, 'BRAZIL': BanderaBrasil, 'BRA': BanderaBrasil,
+        'CHILE': BanderaChile, 'CHI': BanderaChile,
+        'COLOMBIA': BanderaColombia, 'COL': BanderaColombia,
+        'VENEZUELA': BanderaVenezuela, 'VEN': BanderaVenezuela,
+        'URUGUAY': BanderaUruguay, 'URU': BanderaUruguay,
+        'PARAGUAY': BanderaParaguay, 'PAR': BanderaParaguay,
+        'PERÚ': BanderaPeru, 'PERU': BanderaPeru, 'PER': BanderaPeru,
+        'ECUADOR': BanderaEcuador, 'ECU': BanderaEcuador,
+
+        // Europa
+        'ALEMANIA': BanderaAlemania, 'GERMANY': BanderaAlemania, 'GER': BanderaAlemania,
+        'FRANCIA': BanderaFrancia, 'FRANCE': BanderaFrancia, 'FRA': BanderaFrancia,
+        'ITALIA': BanderaItalia, 'ITALY': BanderaItalia, 'ITA': BanderaItalia,
+        'ESLOVENIA': BanderaEslovenia, 'SLOVENIA': BanderaEslovenia, 'SLO': BanderaEslovenia,
+        'SERBIA': BanderaSerbia, 'SRB': BanderaSerbia,
+        'LITUANIA': BanderaLituania, 'LITHUANIA': BanderaLituania, 'LTU': BanderaLituania,
+        'TURQUÍA': BanderaTurquia, 'TURQUIA': BanderaTurquia, 'TURKEY': BanderaTurquia, 'TUR': BanderaTurquia,
+        'FINLANDIA': BanderaFinlandia, 'FINLAND': BanderaFinlandia, 'FIN': BanderaFinlandia,
+        'UCRANIA': BanderaUcrania, 'UKRAINE': BanderaUcrania, 'UKR': BanderaUcrania,
+        'MACEDONIA DEL NORTE': BanderaMacedonia, 'MACEDONIA': BanderaMacedonia, 'NORTH MACEDONIA': BanderaMacedonia, 'MKD': BanderaMacedonia,
+        'RUSIA': BanderaRusia, 'RUSSIA': BanderaRusia, 'RUS': BanderaRusia,
+
+        // Asia y Oceanía
+        'FILIPINAS': BanderaFilipinas, 'PHILIPPINES': BanderaFilipinas, 'PHI': BanderaFilipinas,
+        'AUSTRALIA': BanderaAustralia, 'AUS': BanderaAustralia,
+        'NUEVA ZELANDA': BanderaNuevaZelanda, 'NEW ZEALAND': BanderaNuevaZelanda, 'NZL': BanderaNuevaZelanda,
+        'COREA DEL SUR': BanderaCoreaDelSur, 'SOUTH KOREA': BanderaCoreaDelSur, 'KOR': BanderaCoreaDelSur,
+        'JORDAN': BanderaJordan, 'JOR': BanderaJordan,
+
+        // África
+        'ANGOLA': BanderaAngola, 'ANG': BanderaAngola, 'AGO': BanderaAngola,
+        'NIGERIA': BanderaNigeria, 'NGR': BanderaNigeria, 'NGA': BanderaNigeria
+    };
+
+    // Buscar en el mapa con el nombre en mayúsculas
+    const upperName = countryName.toUpperCase().trim();
+    return flagMap[upperName] || BanderaDominicana;
+};
+
 const Games = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,6 +223,17 @@ const Games = () => {
     const { games, loading, error, pagination, filters, createGame, updateGame, deleteGame, updateFilters, updatePagination, adjustLimit, refetch } = useGames();
     const { teams } = useTeams({ limit: 200 });
     const { tournaments } = useTournaments();
+
+    // Estado para almacenar TODOS los partidos (sin paginación) para estadísticas
+    const [allGames, setAllGames] = useState([]);
+
+    // Estado para estadísticas del equipo desde analytics
+    const [teamStats, setTeamStats] = useState({
+        victories: 0,
+        losses: 0,
+        winRate: 0,
+        totalGames: 0
+    });
 
     // Usar el hook de validación
     const {
@@ -161,8 +290,8 @@ const Games = () => {
             id: game.id,
             homeTeam: homeName,
             awayTeam: awayName,
-            homeLogo: '🏀',
-            awayLogo: '🏀',
+            homeFlag: getCountryFlag(homeName),
+            awayFlag: getCountryFlag(awayName),
             homeScore: game.home_score,
             awayScore: game.away_score,
             date: dateObj ? dateObj.toISOString() : null,
@@ -174,6 +303,87 @@ const Games = () => {
             status: game.status || 'unknown', // Mostrar 'unknown' si el estado es null/undefined
         };
     });
+
+    // Cargar estadísticas del equipo República Dominicana desde analytics
+    useEffect(() => {
+        const fetchTeamStats = async () => {
+            try {
+                // Obtener el ID del equipo República Dominicana
+                const rdTeam = (teams || []).find(t =>
+                    t.name?.toLowerCase().includes('dominicana') ||
+                    t.id === 'republica_dominicana'
+                );
+
+                if (!rdTeam) {
+                    console.warn('⚠️ No se encontró el equipo República Dominicana');
+                    return;
+                }
+
+                // Obtener tendencias del equipo (2010-2025)
+                const trends = await advancedAnalyticsService.getTeamTrends(rdTeam.id, 2010, 2025);
+
+                // Sumar todas las victorias y derrotas de todos los períodos
+                let totalVictories = 0;
+                let totalLosses = 0;
+                let totalGames = 0;
+
+                if (trends && Array.isArray(trends)) {
+                    trends.forEach(period => {
+                        // El backend devuelve 'wins' y 'losses' directamente
+                        totalVictories += period.wins || 0;
+                        totalLosses += period.losses || 0;
+                        // El backend devuelve 'games' en lugar de 'total_games'
+                        totalGames += period.games || 0;
+                    });
+                }
+
+                const winRate = totalGames > 0 ? Math.round((totalVictories / totalGames) * 100) : 0;
+
+                setTeamStats({
+                    victories: totalVictories,
+                    losses: totalLosses,
+                    winRate: winRate,
+                    totalGames: totalGames
+                });
+
+                // Verificar discrepancia entre partidos del analytics vs base de datos
+                console.log('📊 ESTADÍSTICAS DEL EQUIPO:');
+                console.log('  - Total partidos (analytics):', totalGames);
+                console.log('  - Victorias:', totalVictories);
+                console.log('  - Derrotas:', totalLosses);
+                console.log('  - Win Rate:', winRate + '%');
+                console.log('  - Períodos analizados:', trends.length);
+                console.log('  - Suma V+D:', totalVictories + totalLosses);
+                if (totalGames !== (totalVictories + totalLosses)) {
+                    console.warn('⚠️ DISCREPANCIA: Total partidos (' + totalGames + ') no coincide con V+D (' + (totalVictories + totalLosses) + ')');
+                }
+
+            } catch (err) {
+                console.error('❌ Error al cargar estadísticas del equipo:', err);
+            }
+        };
+
+        if (teams && teams.length > 0) {
+            fetchTeamStats();
+        }
+    }, [teams]); // Recargar cuando se carguen los equipos
+
+    // Cargar TODOS los partidos para estadísticas (sin paginación)
+    useEffect(() => {
+        const fetchAllGames = async () => {
+            try {
+                // Solicitar todos los partidos con un límite alto
+                const response = await gamesService.getAll({ limit: 1000, skip: 0 });
+                const allGamesData = Array.isArray(response) ? response : (response?.items || []);
+                setAllGames(allGamesData);
+                console.log('📊 Total de partidos en base de datos:', allGamesData.length);
+            } catch (err) {
+                console.error('Error al cargar todos los partidos:', err);
+            }
+        };
+
+        fetchAllGames();
+    }, [filters]); // Recargar cuando cambien los filtros
 
     // Detectar tamaño de pantalla para ajustar sidebar
     useEffect(() => {
@@ -187,13 +397,54 @@ const Games = () => {
         return () => window.removeEventListener('resize', checkSidebarState);
     }, []);
 
-    // Estadísticas
-    const completedGames = mappedGames.filter(g => g.status === 'completed');
-    const victories = completedGames.filter(g =>
-        (g.homeTeam === 'República Dominicana' && g.homeScore > g.awayScore) ||
-        (g.awayTeam === 'República Dominicana' && g.awayScore > g.homeScore)
-    ).length;
-    const upcomingGames = mappedGames.filter(g => g.status === 'scheduled').length;
+    // Mapear TODOS los partidos para estadísticas
+    const allMappedGames = (allGames || []).map((game) => {
+        const homeName = teamNameById[game.home_team_id] || 'Equipo local';
+        const awayName = teamNameById[game.away_team_id] || 'Equipo visitante';
+
+        return {
+            id: game.id,
+            homeTeam: homeName,
+            awayTeam: awayName,
+            homeScore: game.home_score,
+            awayScore: game.away_score,
+            status: game.status || 'unknown',
+        };
+    });
+
+    // Detectar países sin bandera (usando bandera dominicana como placeholder) - SOLO UNA VEZ
+    useEffect(() => {
+        if (allGames.length > 0) {
+            const countriesWithoutFlag = new Set();
+
+            allGames.forEach(game => {
+                const homeName = teamNameById[game.home_team_id] || 'Equipo local';
+                const awayName = teamNameById[game.away_team_id] || 'Equipo visitante';
+
+                const homeFlag = getCountryFlag(homeName);
+                const awayFlag = getCountryFlag(awayName);
+
+                // Si la bandera es la dominicana pero el equipo NO es República Dominicana
+                if (homeFlag === BanderaDominicana && !homeName.toLowerCase().includes('dominicana')) {
+                    countriesWithoutFlag.add(homeName);
+                }
+                if (awayFlag === BanderaDominicana && !awayName.toLowerCase().includes('dominicana')) {
+                    countriesWithoutFlag.add(awayName);
+                }
+            });
+
+            if (countriesWithoutFlag.size > 0) {
+                console.log('🚩 PAÍSES SIN BANDERA (total: ' + countriesWithoutFlag.size + '):');
+                const sortedCountries = Array.from(countriesWithoutFlag).sort();
+                sortedCountries.forEach(country => {
+                    console.log('  ❌', country);
+                });
+            }
+        }
+    }, [allGames.length]); // Solo ejecutar cuando cambie la cantidad de partidos
+
+    // Contar partidos programados desde todos los partidos
+    const upcomingGames = allMappedGames.filter(g => g.status === 'scheduled' || g.status === 'programado').length;
 
     // Configuración de columnas
     const columns = [
@@ -202,25 +453,51 @@ const Games = () => {
             label: 'Encuentro',
             sortable: false,
             render: (_, row) => (
-                <div className="flex items-center gap-3">
-                    <div className="text-center">
-                        <div className="text-2xl mb-1">{row.homeLogo}</div>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white tracking-wide">{row.homeTeam}</p>
+                <div className="flex items-start gap-4 py-3">
+                    {/* Equipo Local */}
+                    <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <img
+                            src={row.homeFlag}
+                            alt={row.homeTeam}
+                            className="w-14 h-14 object-cover rounded-lg shadow-lg mb-3 border-2 border-gray-200 dark:border-gray-700"
+                        />
+                        <p className="text-sm font-bold text-gray-900 dark:text-white tracking-wide leading-tight">{row.homeTeam}</p>
                     </div>
-                    <div className="text-center px-4">
-                        {row.status === 'completed' ? (
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{row.homeScore}</span>
-                                <span className="text-gray-500 font-medium">-</span>
-                                <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{row.awayScore}</span>
+
+                    {/* Marcador o VS */}
+                    <div className="flex flex-col items-center justify-center px-6 pt-2">
+                        {(row.status === 'completed' || row.status === 'finalizado') ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{row.homeScore}</span>
+                                <span className="text-gray-400 font-bold text-xl">-</span>
+                                <span className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{row.awayScore}</span>
                             </div>
                         ) : (
-                            <span className="text-lg text-gray-500 font-bold tracking-wider">VS</span>
+                            <div className="text-3xl font-black tracking-tight leading-none">
+                                <span
+                                    className="text-[#002D62]"
+                                    style={{ color: '#002D62' }}
+                                >
+                                    V
+                                </span>
+                                <span
+                                    className="text-[#CE1126]"
+                                    style={{ color: '#CE1126' }}
+                                >
+                                    S
+                                </span>
+                            </div>
                         )}
                     </div>
-                    <div className="text-center">
-                        <div className="text-2xl mb-1">{row.awayLogo}</div>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white tracking-wide">{row.awayTeam}</p>
+
+                    {/* Equipo Visitante */}
+                    <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <img
+                            src={row.awayFlag}
+                            alt={row.awayTeam}
+                            className="w-14 h-14 object-cover rounded-lg shadow-lg mb-3 border-2 border-gray-200 dark:border-gray-700"
+                        />
+                        <p className="text-sm font-bold text-gray-900 dark:text-white tracking-wide leading-tight">{row.awayTeam}</p>
                     </div>
                 </div>
             )
@@ -260,7 +537,9 @@ const Games = () => {
                 const normalized = (value || '').toLowerCase();
                 const config = {
                     completed: { status: 'inactive', label: 'Finalizado' },
+                    finalizado: { status: 'inactive', label: 'Finalizado' },
                     scheduled: { status: 'pending', label: 'Programado' },
+                    programado: { status: 'pending', label: 'Programado' },
                     live: { status: 'active', label: 'En Vivo' },
                 };
 
@@ -530,374 +809,217 @@ const Games = () => {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#CE1126]/5 via-white to-[#002D62]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Header Gubernamental Profesional */}
-            <div className="sticky top-0 z-50 bg-gradient-to-r from-[#CE1126] via-[#CE1126]/95 to-[#002D62] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 shadow-2xl">
-                {/* Patrón de fondo sutil */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5"></div>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]"></div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="max-w-7xl mx-auto px-6 py-6">
+                {/* Header */}
+                <PageHeader
+                    title="Gestión de Partidos"
+                    subtitle="Selección Nacional • República Dominicana"
+                    action={
+                        <button
+                            onClick={hasAdminPermissions ? openCreateModal : () => {
+                                showToast(
+                                    'warning',
+                                    'Permisos Requeridos',
+                                    'Necesitas permisos de administrador para programar encuentros.'
+                                );
+                            }}
+                            disabled={!hasAdminPermissions}
+                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${hasAdminPermissions
+                                ? 'bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white hover:shadow-lg'
+                                : 'text-gray-500 cursor-not-allowed opacity-60'
+                                }`}
+                        >
+                            <Plus className="w-3 h-3 inline mr-1" />
+                            Programar Encuentro
+                        </button>
+                    }
+                />
+                {/* Estadísticas - 4 Cards KPI */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                    {/* Total Partidos */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.05 }}
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-5 text-center"
+                    >
+                        <p className="text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
+                            Partidos
+                        </p>
+                        <p className="text-4xl font-black text-gray-900 dark:text-white">
+                            {teamStats.totalGames}
+                        </p>
+                    </motion.div>
+
+                    {/* Victorias */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-5 text-center"
+                    >
+                        <p className="text-sm font-bold uppercase tracking-wider text-[#CE1126] mb-2">
+                            Victorias
+                        </p>
+                        <p className="text-4xl font-black text-gray-900 dark:text-white">
+                            {teamStats.victories}
+                        </p>
+                    </motion.div>
+
+                    {/* Derrotas */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.15 }}
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-5 text-center"
+                    >
+                        <p className="text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2">
+                            Derrotas
+                        </p>
+                        <p className="text-4xl font-black text-gray-900 dark:text-white">
+                            {teamStats.losses || 0}
+                        </p>
+                    </motion.div>
+
+                    {/* Porcentaje de Victorias */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-5 text-center"
+                    >
+                        <p className="text-sm font-bold uppercase tracking-wider text-[#002D62] mb-2">
+                            % Victoria
+                        </p>
+                        <p className="text-4xl font-black text-gray-900 dark:text-white">
+                            {teamStats.winRate}%
+                        </p>
+                    </motion.div>
                 </div>
 
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                        {/* Identidad Institucional */}
-                        <div className="flex items-center gap-6">
-                            <RDScoreLogo size={64} className="flex-shrink-0" />
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-                                        Sistema de Partidos
-                                    </h1>
-                                    <div className="hidden sm:flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
-                                        <Activity className="w-4 h-4 text-white/80" />
-                                        <span className="text-xs font-semibold text-white/90 tracking-wide">EN VIVO</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 text-white/90">
-                                    <Target className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Selección Nacional de República Dominicana</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Controles de Acción */}
-                        <div className="flex items-center gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleRefresh}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl border border-white/20 text-white font-medium transition-all duration-200 shadow-lg"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                                <span className="hidden sm:inline">Actualizar</span>
-                            </motion.button>
-
-                            <motion.button
-                                whileHover={hasAdminPermissions ? { scale: 1.05 } : {}}
-                                whileTap={hasAdminPermissions ? { scale: 0.95 } : {}}
-                                onClick={hasAdminPermissions ? openCreateModal : () => {
-                                    showToast(
-                                        'warning',
-                                        'Permisos Requeridos',
-                                        'Necesitas permisos de administrador para programar encuentros.'
-                                    );
-                                }}
-                                disabled={!hasAdminPermissions}
-                                className={`flex items-center gap-2 px-6 py-2.5 font-bold rounded-xl shadow-xl transition-all duration-200 border ${hasAdminPermissions
-                                    ? 'bg-gradient-to-r from-white to-white/90 hover:from-white/90 hover:to-white text-[#CE1126] border-white/50 cursor-pointer'
-                                    : 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed opacity-60'
-                                    }`}
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Programar Encuentro</span>
-                                <span className="sm:hidden">Nuevo</span>
-                            </motion.button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Línea decorativa inferior */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#CE1126] via-white/50 to-[#002D62]"></div>
-            </div>
-
-            {/* Contenido principal */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-                {/* Dashboard de Estadísticas RDscore Profesional */}
-                <div className="mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Carta 1: Encuentros Totales */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.1 }}
-                            className="relative group h-48"
-                        >
-                            <div className="h-full bg-gradient-to-br from-white/95 to-white/85 dark:from-gray-800/95 dark:to-gray-900/85 backdrop-blur-xl rounded-2xl border border-[#CE1126]/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-                                {/* Borde superior decorativo */}
-                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#CE1126] to-[#CE1126]/70"></div>
-
-                                <div className="p-6 h-full flex flex-col justify-between">
-                                    <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-gradient-to-br from-[#CE1126]/15 to-[#CE1126]/25 rounded-xl shadow-md">
-                                            <Trophy className="w-7 h-7 text-[#CE1126]" />
-                                        </div>
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                            <TrendingUp className="w-3 h-3 text-green-600" />
-                                            <span className="text-xs font-semibold text-green-600">+12%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-bold text-gray-900 dark:text-white font-mono">
-                                                {pagination.total}
-                                            </span>
-                                            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                partidos
-                                            </span>
-                                        </div>
-                                        <h3 className="text-base font-semibold text-[#CE1126] leading-tight">
-                                            Encuentros Totales
-                                        </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                                            Registro completo del sistema
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Carta 2: Victorias RD */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                            className="relative group h-48"
-                        >
-                            <div className="h-full bg-gradient-to-br from-white/95 to-white/85 dark:from-gray-800/95 dark:to-gray-900/85 backdrop-blur-xl rounded-2xl border border-[#002D62]/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-                                {/* Borde superior decorativo */}
-                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#002D62] to-[#002D62]/70"></div>
-
-                                <div className="p-6 h-full flex flex-col justify-between">
-                                    <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-gradient-to-br from-[#002D62]/15 to-[#002D62]/25 rounded-xl shadow-md">
-                                            <Target className="w-7 h-7 text-[#002D62]" />
-                                        </div>
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                            <TrendingUp className="w-3 h-3 text-green-600" />
-                                            <span className="text-xs font-semibold text-green-600">+8%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-bold text-gray-900 dark:text-white font-mono">
-                                                {victories}
-                                            </span>
-                                            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                triunfos
-                                            </span>
-                                        </div>
-                                        <h3 className="text-base font-semibold text-[#002D62] leading-tight">
-                                            Victorias RD
-                                        </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                                            Éxitos de la Selección Nacional
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Carta 3: Efectividad */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.3 }}
-                            className="relative group h-48"
-                        >
-                            <div className="h-full bg-gradient-to-br from-white/95 to-white/85 dark:from-gray-800/95 dark:to-gray-900/85 backdrop-blur-xl rounded-2xl border border-green-500/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-                                {/* Borde superior decorativo */}
-                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
-
-                                <div className="p-6 h-full flex flex-col justify-between">
-                                    <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-gradient-to-br from-green-500/15 to-green-600/25 rounded-xl shadow-md">
-                                            <Activity className="w-7 h-7 text-green-600" />
-                                        </div>
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                            <TrendingUp className="w-3 h-3 text-green-600" />
-                                            <span className="text-xs font-semibold text-green-600">+5%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-bold text-gray-900 dark:text-white font-mono">
-                                                {Math.round((victories / Math.max(pagination.total, 1)) * 100)}%
-                                            </span>
-                                            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                ratio
-                                            </span>
-                                        </div>
-                                        <h3 className="text-base font-semibold text-green-600 leading-tight">
-                                            Efectividad
-                                        </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                                            Porcentaje de victorias logradas
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
-
-                {/* Barra de búsqueda y filtros mejorada */}
+                {/* Filtros */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="mb-8"
+                    transition={{ delay: 0.4 }}
+                    className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-6 shadow-md border border-gray-200 dark:border-gray-700"
                 >
-                    <div className="bg-gradient-to-br from-white/95 to-white/85 dark:from-gray-800/95 dark:to-gray-900/85 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/30 shadow-xl overflow-hidden">
-                        {/* Header del panel de filtros */}
-                        <div className="bg-gradient-to-r from-gray-50/80 to-gray-100/60 dark:from-gray-700/50 dark:to-gray-800/40 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 rounded-lg">
-                                        <Activity className="w-5 h-5 text-[#CE1126]" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                            Filtros de Encuentros
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            Filtra encuentros por estado, torneo y equipo participante
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Indicador de estado de conexión */}
-                                {error && error.includes('timeout') ? (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium">
-                                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                                        Conexión lenta
-                                    </div>
-                                ) : error && error.includes('conexión') ? (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                        Sin conexión
-                                    </div>
-                                ) : loading ? (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                        Cargando...
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        Conectado
-                                    </div>
-                                )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Filtro por Torneo */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Torneo o Competición
+                            </label>
+                            <div className="relative">
+                                <Trophy className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <select
+                                    value={filters.tournament_id || 'todos'}
+                                    onChange={(e) => updateFilters({ tournament_id: e.target.value === 'todos' ? null : e.target.value })}
+                                    className="w-full pl-10 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="todos">Todas las competiciones</option>
+                                    {(tournaments || []).map((tournament) => (
+                                        <option key={tournament.id} value={tournament.id}>
+                                            {tournament.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                             </div>
                         </div>
 
-                        <div className="p-6">
-                            {/* Filtros */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Filtro por Torneo */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                        Torneo o Competición
-                                    </label>
-                                    <div className="relative">
-                                        <Trophy className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                        <select
-                                            value={filters.tournament_id || 'todos'}
-                                            onChange={(e) => updateFilters({ tournament_id: e.target.value === 'todos' ? null : e.target.value })}
-                                            className="w-full pl-12 pr-10 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#002D62]/50 focus:border-[#002D62] transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md appearance-none cursor-pointer"
-                                        >
-                                            <option value="todos">Todas las competiciones</option>
-                                            {(tournaments || []).map((tournament) => (
-                                                <option key={tournament.id} value={tournament.id}>
-                                                    {tournament.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-                                    </div>
-                                </div>
-
-                                {/* Filtro por Equipo */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                        Equipo Participante
-                                    </label>
-                                    <div className="relative">
-                                        <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                        <select
-                                            value={filters.team_id || 'todos'}
-                                            onChange={(e) => updateFilters({ team_id: e.target.value === 'todos' ? null : e.target.value })}
-                                            className="w-full pl-12 pr-10 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md appearance-none cursor-pointer"
-                                        >
-                                            <option value="todos">Todos los equipos</option>
-                                            {(teams || []).map((team) => (
-                                                <option key={team.id} value={team.id}>
-                                                    {team.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-                                    </div>
-                                </div>
+                        {/* Filtro por Equipo */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Equipo Participante
+                            </label>
+                            <div className="relative">
+                                <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <select
+                                    value={filters.team_id || 'todos'}
+                                    onChange={(e) => updateFilters({ team_id: e.target.value === 'todos' ? null : e.target.value })}
+                                    className="w-full pl-10 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="todos">Todos los equipos</option>
+                                    {(teams || []).map((team) => (
+                                        <option key={team.id} value={team.id}>
+                                            {team.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                             </div>
-
-                            {/* Indicadores de filtros activos */}
-                            {(filters.tournament_id || filters.team_id) && (
-                                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Activity className="w-4 h-4 text-[#CE1126]" />
-                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                Filtros activos:
-                                            </span>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                {filters.tournament_id && (
-                                                    <span className="px-2 py-1 bg-[#002D62]/10 text-[#002D62] text-xs font-medium rounded-md">
-                                                        Torneo seleccionado
-                                                    </span>
-                                                )}
-                                                {filters.team_id && (
-                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-md">
-                                                        Equipo seleccionado
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => {
-                                                updateFilters({ tournament_id: null, team_id: null });
-                                            }}
-                                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                            Limpiar filtros
-                                        </motion.button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
+
+                    {/* Indicadores de filtros activos */}
+                    {(filters.tournament_id || filters.team_id) && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                        Filtros activos:
+                                    </span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {filters.tournament_id && (
+                                            <span className="px-2 py-1 bg-[#002D62]/10 text-[#002D62] dark:bg-[#002D62]/20 dark:text-[#002D62] text-[10px] font-bold rounded-md">
+                                                Torneo
+                                            </span>
+                                        )}
+                                        {filters.team_id && (
+                                            <span className="px-2 py-1 bg-[#CE1126]/10 text-[#CE1126] dark:bg-[#CE1126]/20 dark:text-[#CE1126] text-[10px] font-bold rounded-md">
+                                                Equipo
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        updateFilters({ tournament_id: null, team_id: null });
+                                    }}
+                                    className="text-xs font-bold text-[#CE1126] hover:underline transition-all"
+                                >
+                                    Limpiar filtros
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
 
                 {/* Tabla de partidos mejorada */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
                 >
-                    <div className="bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/30 shadow-2xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-[#CE1126]/5 to-[#002D62]/5 px-8 py-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 rounded-xl">
-                                    <Calendar className="w-6 h-6 text-[#CE1126]" />
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10 rounded-lg">
+                                        <Calendar className="w-5 h-5 text-[#CE1126]" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                                            Encuentros Programados
+                                        </h2>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Calendario oficial de la Selección Nacional
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                        Encuentros Programados
-                                    </h2>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                                        Calendario oficial de la Selección Nacional
-                                    </p>
-                                </div>
+                                <button
+                                    onClick={handleRefresh}
+                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-[#CE1126] dark:hover:text-[#CE1126] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                                    title="Actualizar"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 
-                        <div className="p-8">
+                        <div className="p-6">
                             {loading ? (
                                 <LoadingState
                                     title="Cargando encuentros"
@@ -914,31 +1036,14 @@ const Games = () => {
                                     <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
                                         {error}
                                     </p>
-                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                        <button
                                             onClick={() => refetch()}
-                                            className="px-6 py-3 bg-[#CE1126] hover:bg-[#a00e1e] text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                                            className="px-4 py-2 bg-[#CE1126] hover:bg-[#a00e1e] text-white text-sm font-bold rounded-lg transition-all"
                                         >
                                             <RefreshCw className="w-4 h-4 inline mr-2" />
                                             Reintentar
-                                        </motion.button>
-                                        {error.includes('timeout') || error.includes('tardando') ? (
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => {
-                                                    // Reducir el límite temporalmente para cargas más rápidas
-                                                    updatePagination({ limit: 2, skip: 0 });
-                                                    refetch();
-                                                }}
-                                                className="px-6 py-3 bg-[#002D62] hover:bg-[#001a3d] text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                                            >
-                                                <Zap className="w-4 h-4 inline mr-2" />
-                                                Carga Rápida (2 elementos)
-                                            </motion.button>
-                                        ) : null}
+                                        </button>
                                     </div>
                                 </div>
                             ) : mappedGames.length === 0 ? (
@@ -960,20 +1065,16 @@ const Games = () => {
                                         }
                                     </p>
                                     {(filters.tournament_id || filters.team_id) ? (
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                        <button
                                             onClick={() => {
                                                 updateFilters({ tournament_id: null, team_id: null });
                                             }}
-                                            className="px-6 py-3 bg-[#002D62] hover:bg-[#001a3d] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                                            className="px-4 py-2 bg-[#002D62] hover:bg-[#001a3d] text-white text-sm font-bold rounded-lg transition-all"
                                         >
                                             Limpiar filtros
-                                        </motion.button>
+                                        </button>
                                     ) : (
-                                        <motion.button
-                                            whileHover={hasAdminPermissions ? { scale: 1.05 } : {}}
-                                            whileTap={hasAdminPermissions ? { scale: 0.95 } : {}}
+                                        <button
                                             onClick={hasAdminPermissions ? openCreateModal : () => {
                                                 showToast(
                                                     'warning',
@@ -982,194 +1083,123 @@ const Games = () => {
                                                 );
                                             }}
                                             disabled={!hasAdminPermissions}
-                                            className={`px-6 py-3 font-bold rounded-xl shadow-lg transition-all duration-200 ${hasAdminPermissions
-                                                ? 'bg-gradient-to-r from-[#CE1126] to-[#002D62] hover:shadow-xl text-white cursor-pointer'
-                                                : 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-60'
+                                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${hasAdminPermissions
+                                                ? 'bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white cursor-pointer'
+                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
                                                 }`}
                                         >
                                             Programar Primer Encuentro
-                                        </motion.button>
+                                        </button>
                                     )}
                                 </div>
                             ) : (
-                                <div className="space-y-6">
+                                <div>
                                     {/* Tabla personalizada mejorada */}
-                                    <div className="overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+                                    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                                         <div className="overflow-x-auto">
                                             <table className="w-full">
                                                 {/* Header de la tabla */}
-                                                <thead className="bg-gradient-to-r from-gray-50/80 to-gray-100/60 dark:from-gray-700/50 dark:to-gray-800/40">
+                                                <thead className="bg-gray-50 dark:bg-gray-800">
                                                     <tr>
-                                                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                                                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                                             Encuentro
                                                         </th>
-                                                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                                                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                                             Torneo
                                                         </th>
-                                                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                                                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                                             Fecha
                                                         </th>
-                                                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                                                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                                             Acciones
                                                         </th>
                                                     </tr>
                                                 </thead>
 
                                                 {/* Cuerpo de la tabla */}
-                                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                                                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                                                     {mappedGames.map((game, index) => (
-                                                        <motion.tr
+                                                        <tr
                                                             key={game.id}
-                                                            initial={{ opacity: 0, y: 20 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            transition={{ duration: 0.3, delay: index * 0.1 }}
                                                             onClick={() => navigate(`/games/${game.id}`)}
-                                                            className="hover:bg-gradient-to-r hover:from-[#CE1126]/5 hover:to-[#002D62]/5 transition-all duration-200 cursor-pointer group"
+                                                            className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                                                         >
                                                             {/* Columna Encuentro */}
-                                                            <td className="px-6 py-6 text-center">
-                                                                <div className="flex items-center justify-between max-w-md mx-auto">
+                                                            <td className="px-4 py-4">
+                                                                <div className="flex items-center gap-3">
                                                                     {/* Equipo Local */}
-                                                                    <div className="flex flex-col items-center text-center min-w-0 flex-1">
-                                                                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">
-                                                                            🏀
+                                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                        <div className="w-6 h-6 rounded overflow-hidden border border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                                                            <img src={getCountryFlag(game.homeTeam)} alt={game.homeTeam} className="w-full h-full object-cover" />
                                                                         </div>
-                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-full">
+                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                                                                             {game.homeTeam}
                                                                         </p>
-                                                                        <div className="w-8 h-0.5 bg-gradient-to-r from-[#CE1126] to-[#002D62] mt-1 rounded-full"></div>
                                                                     </div>
 
-                                                                    {/* Marcador/VS con Estado */}
-                                                                    <div className="flex flex-col items-center px-4 min-w-0">
+                                                                    {/* Marcador/VS */}
+                                                                    <div className="flex items-center gap-2 px-3">
                                                                         {game.status === 'completed' ? (
-                                                                            <div className="flex flex-col items-center">
-                                                                                <div className="flex items-center gap-3 mb-2">
-                                                                                    <span className="text-2xl font-black text-gray-900 dark:text-white">
-                                                                                        {game.homeScore}
-                                                                                    </span>
-                                                                                    <div className="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
-                                                                                    <span className="text-2xl font-black text-gray-900 dark:text-white">
-                                                                                        {game.awayScore}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                                                                    <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                        Finalizado
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="flex flex-col items-center">
-                                                                                <span className="text-2xl font-black text-gray-500 dark:text-gray-400 mb-2">
-                                                                                    VS
+                                                                            <>
+                                                                                <span className="text-lg font-black text-gray-900 dark:text-white">
+                                                                                    {game.homeScore}
                                                                                 </span>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    {game.status === 'live' ? (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                En Vivo
-                                                                                            </span>
-                                                                                        </>
-                                                                                    ) : game.status === 'cancelled' ? (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                Cancelado
-                                                                                            </span>
-                                                                                        </>
-                                                                                    ) : game.status === 'postponed' ? (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                Pospuesto
-                                                                                            </span>
-                                                                                        </>
-                                                                                    ) : game.status === 'unknown' ? (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                Sin Estado
-                                                                                            </span>
-                                                                                        </>
-                                                                                    ) : game.status === 'scheduled' ? (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                Programado
-                                                                                            </span>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                                                                                                {game.status || 'Desconocido'}
-                                                                                            </span>
-                                                                                        </>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
+                                                                                <span className="text-gray-400">-</span>
+                                                                                <span className="text-lg font-black text-gray-900 dark:text-white">
+                                                                                    {game.awayScore}
+                                                                                </span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                                                                                VS
+                                                                            </span>
                                                                         )}
                                                                     </div>
 
                                                                     {/* Equipo Visitante */}
-                                                                    <div className="flex flex-col items-center text-center min-w-0 flex-1">
-                                                                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">
-                                                                            🏀
-                                                                        </div>
-                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-full">
+                                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                                                                             {game.awayTeam}
                                                                         </p>
-                                                                        <div className="w-8 h-0.5 bg-gradient-to-r from-[#002D62] to-[#CE1126] mt-1 rounded-full"></div>
+                                                                        <div className="w-6 h-6 rounded overflow-hidden border border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                                                            <img src={getCountryFlag(game.awayTeam)} alt={game.awayTeam} className="w-full h-full object-cover" />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </td>
 
                                                             {/* Columna Torneo */}
-                                                            <td className="px-6 py-6 text-center">
-                                                                <div className="flex flex-col items-center justify-center">
-                                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                                                        {game.tournament}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                                        Competición oficial
-                                                                    </p>
-                                                                </div>
+                                                            <td className="px-4 py-4 text-center">
+                                                                <p className="text-xs font-bold text-gray-900 dark:text-white">
+                                                                    {game.tournament}
+                                                                </p>
                                                             </td>
 
                                                             {/* Columna Fecha */}
-                                                            <td className="px-6 py-6 text-center">
-                                                                <div className="flex items-center justify-center">
-                                                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                        {game.date ? new Date(game.date).toLocaleDateString('es-ES', {
-                                                                            year: 'numeric',
-                                                                            month: 'short',
-                                                                            day: 'numeric'
-                                                                        }) : 'Sin fecha'}
-                                                                    </span>
-                                                                </div>
+                                                            <td className="px-4 py-4 text-center">
+                                                                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                                    {game.date ? new Date(game.date).toLocaleDateString('es-ES', {
+                                                                        year: 'numeric',
+                                                                        month: 'short',
+                                                                        day: 'numeric'
+                                                                    }) : 'Sin fecha'}
+                                                                </span>
                                                             </td>
 
                                                             {/* Columna Acciones */}
-                                                            <td className="px-6 py-6 text-center">
+                                                            <td className="px-4 py-4 text-center">
                                                                 <div className="flex items-center justify-center gap-1">
-                                                                    <motion.button
-                                                                        whileHover={{ scale: 1.05 }}
-                                                                        whileTap={{ scale: 0.95 }}
+                                                                    <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             navigate(`/games/${game.id}`);
                                                                         }}
-                                                                        className="px-3 py-1.5 bg-[#002D62] hover:bg-[#001a3d] text-white text-xs font-semibold rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
+                                                                        className="px-2 py-1 bg-[#002D62] hover:bg-[#001a3d] text-white text-[10px] font-bold rounded transition-all"
                                                                         title="Ver detalles"
                                                                     >
                                                                         Ver
-                                                                    </motion.button>
-                                                                    <motion.button
-                                                                        whileHover={hasAdminPermissions ? { scale: 1.05 } : {}}
-                                                                        whileTap={hasAdminPermissions ? { scale: 0.95 } : {}}
+                                                                    </button>
+                                                                    <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (hasAdminPermissions) {
@@ -1183,17 +1213,15 @@ const Games = () => {
                                                                             }
                                                                         }}
                                                                         disabled={!hasAdminPermissions}
-                                                                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 shadow-sm border ${hasAdminPermissions
-                                                                            ? 'bg-white hover:bg-gray-50 text-[#002D62] border-[#002D62] hover:shadow-md cursor-pointer'
-                                                                            : 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60'
+                                                                        className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${hasAdminPermissions
+                                                                            ? 'bg-white hover:bg-gray-50 text-[#002D62] border border-[#002D62] cursor-pointer'
+                                                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
                                                                             }`}
-                                                                        title={hasAdminPermissions ? "Editar encuentro" : "Permisos requeridos"}
+                                                                        title={hasAdminPermissions ? "Editar" : "Permisos requeridos"}
                                                                     >
                                                                         Editar
-                                                                    </motion.button>
-                                                                    <motion.button
-                                                                        whileHover={hasAdminPermissions ? { scale: 1.05 } : {}}
-                                                                        whileTap={hasAdminPermissions ? { scale: 0.95 } : {}}
+                                                                    </button>
+                                                                    <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (hasAdminPermissions) {
@@ -1207,17 +1235,17 @@ const Games = () => {
                                                                             }
                                                                         }}
                                                                         disabled={!hasAdminPermissions}
-                                                                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 shadow-sm ${hasAdminPermissions
-                                                                            ? 'bg-[#CE1126] hover:bg-[#a00e1e] text-white hover:shadow-md cursor-pointer'
-                                                                            : 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-60'
+                                                                        className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${hasAdminPermissions
+                                                                            ? 'bg-[#CE1126] hover:bg-[#a00e1e] text-white cursor-pointer'
+                                                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
                                                                             }`}
-                                                                        title={hasAdminPermissions ? "Eliminar encuentro" : "Permisos requeridos"}
+                                                                        title={hasAdminPermissions ? "Eliminar" : "Permisos requeridos"}
                                                                     >
                                                                         Eliminar
-                                                                    </motion.button>
+                                                                    </button>
                                                                 </div>
                                                             </td>
-                                                        </motion.tr>
+                                                        </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
@@ -1230,93 +1258,65 @@ const Games = () => {
                     </div>
                 </motion.div>
 
-                {/* Paginación RDscore */}
+                {/* Paginación */}
                 {pagination.total > pagination.limit && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                    >
-                        <div className="bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-900/70 backdrop-blur-xl rounded-2xl p-6 mt-8 border border-white/20 dark:border-gray-700/30 shadow-xl">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 rounded-lg">
-                                        <Calendar className="w-5 h-5 text-[#CE1126]" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                            Página {Math.floor(pagination.skip / pagination.limit) + 1} de {Math.ceil(pagination.total / pagination.limit)}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            {pagination.total} encuentros totales • {pagination.limit} por página {isSidebarOpen ? '(vista compacta)' : '(vista expandida)'}
-                                        </p>
-                                    </div>
-                                </div>
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 mt-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                                Mostrando {pagination.skip + 1} a {Math.min(pagination.skip + pagination.limit, pagination.total)} de {pagination.total} encuentros
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => updatePagination({ skip: Math.max(0, pagination.skip - pagination.limit) })}
+                                    disabled={pagination.skip === 0}
+                                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                                >
+                                    Anterior
+                                </button>
 
-                                <div className="flex items-center gap-3">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => updatePagination({ skip: Math.max(0, pagination.skip - pagination.limit) })}
-                                        disabled={pagination.skip === 0}
-                                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${pagination.skip === 0
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 text-[#CE1126] hover:from-[#CE1126]/20 hover:to-[#002D62]/20 shadow-lg hover:shadow-xl'
-                                            }`}
-                                    >
-                                        ← Anterior
-                                    </motion.button>
+                                {/* Números de página */}
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }, (_, i) => {
+                                        const pageNumber = i + 1;
+                                        const isCurrentPage = Math.floor(pagination.skip / pagination.limit) + 1 === pageNumber;
+                                        const totalPages = Math.ceil(pagination.total / pagination.limit);
 
-                                    <div className="flex items-center gap-2">
-                                        {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }, (_, i) => {
-                                            const pageNumber = i + 1;
-                                            const isCurrentPage = Math.floor(pagination.skip / pagination.limit) + 1 === pageNumber;
-                                            const totalPages = Math.ceil(pagination.total / pagination.limit);
+                                        // Mostrar solo algunas páginas alrededor de la actual
+                                        const currentPageIndex = Math.floor(pagination.skip / pagination.limit);
+                                        const showPage = i === 0 || i === totalPages - 1 || Math.abs(i - currentPageIndex) <= 2;
 
-                                            // Mostrar solo algunas páginas alrededor de la actual
-                                            const currentPageIndex = Math.floor(pagination.skip / pagination.limit);
-                                            const showPage = i === 0 || i === totalPages - 1 || Math.abs(i - currentPageIndex) <= 1;
-
-                                            if (!showPage) {
-                                                if (i === currentPageIndex - 2 || i === currentPageIndex + 2) {
-                                                    return <span key={i} className="px-2 text-gray-400 font-bold">•••</span>;
-                                                }
-                                                return null;
+                                        if (!showPage) {
+                                            if (i === currentPageIndex - 3 || i === currentPageIndex + 3) {
+                                                return <span key={i} className="px-2 text-gray-400">...</span>;
                                             }
+                                            return null;
+                                        }
 
-                                            return (
-                                                <motion.button
-                                                    key={i}
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={() => updatePagination({ skip: i * pagination.limit })}
-                                                    className={`w-10 h-10 rounded-xl font-bold transition-all duration-200 ${isCurrentPage
-                                                        ? 'bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white shadow-lg'
-                                                        : 'bg-white/80 text-gray-700 hover:bg-gradient-to-r hover:from-[#CE1126]/10 hover:to-[#002D62]/10 hover:text-[#CE1126] shadow-md hover:shadow-lg'
-                                                        }`}
-                                                >
-                                                    {pageNumber}
-                                                </motion.button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => updatePagination({ skip: pagination.skip + pagination.limit })}
-                                        disabled={pagination.skip + pagination.limit >= pagination.total}
-                                        className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${pagination.skip + pagination.limit >= pagination.total
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 text-[#CE1126] hover:from-[#CE1126]/20 hover:to-[#002D62]/20 shadow-lg hover:shadow-xl'
-                                            }`}
-                                    >
-                                        Siguiente →
-                                    </motion.button>
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => updatePagination({ skip: i * pagination.limit })}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg ${isCurrentPage
+                                                    ? 'bg-[#CE1126] text-white dark:bg-[#002D62]'
+                                                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
+                                                    }`}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+
+                                <button
+                                    onClick={() => updatePagination({ skip: pagination.skip + pagination.limit })}
+                                    disabled={pagination.skip + pagination.limit >= pagination.total}
+                                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                                >
+                                    Siguiente
+                                </button>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
 
                 {/* Modal Moderno */}
@@ -1580,7 +1580,7 @@ const Games = () => {
                     position="top-right"
                 />
             </div>
-        </div >
+        </div>
     );
 };
 

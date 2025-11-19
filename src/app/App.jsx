@@ -13,7 +13,6 @@ import LazyLoadErrorBoundary from './LazyLoadErrorBoundary';
 const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/ModernDashboard'));
 const EnhancedDashboard = lazy(() => import('../features/dashboard/components/EnhancedDashboard'));
 const WidgetTest = lazy(() => import('../features/dashboard/components/WidgetTest'));
-const DataManagement = lazy(() => import('../features/settings/components/DataManagement'));
 const Tournaments = lazy(() => import('../features/tournaments/pages/Tournaments/Tournaments'));
 const TournamentDetail = lazy(() => import('../features/tournaments/pages/Tournaments/TournamentDetail'));
 const Teams = lazy(() => import('../features/teams/pages/Teams/Teams'));
@@ -82,7 +81,6 @@ function App() {
                             <Route key="dashboard-enhanced" path="/dashboard/enhanced" element={<EnhancedDashboard />} />
                             <Route key="dashboard-test" path="/dashboard/test" element={<WidgetTest />} />
 
-                            <Route key="data-management" path="/data/management" element={<DataManagement />} />
                             <Route key="tournaments" path="/tournaments" element={<Tournaments />} />
                             <Route key="tournament-detail" path="/tournaments/:id" element={<TournamentDetail />} />
                             <Route key="teams" path="/teams" element={<Teams />} />

@@ -2,24 +2,24 @@
 export const config = {
     // Configuración de la API
     api: {
-        baseURL: 'http://localhost:8000',
+        baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
         timeout: 30000, // 30 segundos
     },
-    
+
     // Configuración de autenticación
     auth: {
         tokenKey: 'basketscore_token',
         refreshTokenKey: 'basketscore_refresh_token',
         userKey: 'basketscore_user',
     },
-    
+
     // Configuración de logging
     logging: {
         enableApiLogs: process.env.NODE_ENV === 'development',
         enablePerformanceLogs: process.env.NODE_ENV === 'development',
         logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'error',
     },
-    
+
     // Configuración de la aplicación
     app: {
         name: 'BasketscoreRD',
@@ -28,7 +28,7 @@ export const config = {
         defaultLanguage: 'es',
         supportedLanguages: ['es', 'en'],
     },
-    
+
     // Configuración de UI
     ui: {
         theme: {
@@ -55,21 +55,21 @@ export const config = {
             easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
         }
     },
-    
+
     // Configuración de paginación
     pagination: {
         defaultPageSize: 20,
         pageSizeOptions: [10, 20, 50, 100],
         maxPageSize: 100,
     },
-    
+
     // Configuración de archivos
     files: {
         maxSize: 10 * 1024 * 1024, // 10MB
         allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'],
         uploadEndpoint: '/api/v1/upload',
     },
-    
+
     // URLs externas
     external: {
         fiba: 'https://www.fiba.basketball',
@@ -87,7 +87,7 @@ export const APP_CONSTANTS = {
         ANALYST: 'analyst',
         VIEWER: 'viewer',
     },
-    
+
     // Estados de partidos
     GAME_STATUS: {
         SCHEDULED: 'scheduled',
@@ -96,7 +96,7 @@ export const APP_CONSTANTS = {
         CANCELLED: 'cancelled',
         POSTPONED: 'postponed',
     },
-    
+
     // Tipos de torneos
     TOURNAMENT_TYPES: {
         FIBA_WORLD_CUP: 'fiba_world_cup',
@@ -105,16 +105,16 @@ export const APP_CONSTANTS = {
         QUALIFIERS: 'qualifiers',
         FRIENDLY: 'friendly',
     },
-    
+
     // Posiciones de jugadores
     PLAYER_POSITIONS: {
         PG: 'Point Guard',
-        SG: 'Shooting Guard', 
+        SG: 'Shooting Guard',
         SF: 'Small Forward',
         PF: 'Power Forward',
         C: 'Center',
     },
-    
+
     // Tipos de estadísticas
     STAT_TYPES: {
         BASIC: 'basic',
@@ -122,7 +122,7 @@ export const APP_CONSTANTS = {
         SHOOTING: 'shooting',
         DEFENSIVE: 'defensive',
     },
-    
+
     // Filtros de tiempo
     TIME_FILTERS: {
         ALL_TIME: 'all_time',

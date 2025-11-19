@@ -1,11 +1,14 @@
-import { Plus, User, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, Trophy, Target, Filter, CheckCircle, XCircle, Circle, RefreshCw, Download, Upload } from 'lucide-react';
+import { Plus, User, Edit, Trash2, Eye, Grid, List, Search, Calendar, MapPin, Users, Trophy, Target, Filter, CheckCircle, XCircle, Circle, RefreshCw, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import BanderaDominicana from '../../../../assets/icons/do.svg';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
 import useViewMode from '../../../../shared/hooks/useViewMode';
 import { playerSchema } from '../../../../lib/validations/schemas';
 import { usePlayers } from '../../hooks/usePlayers';
 import { teamsService } from '../../../../shared/api/endpoints/teams';
+import { playersService } from '../../../../shared/api/endpoints/players';
 
 const Players = () => {
     const navigate = useNavigate();
@@ -115,7 +118,7 @@ const Players = () => {
     const getShortPosition = (position) => {
         const positionAbbr = {
             'Armador': 'PG',
-            'Escolta': 'SG', 
+            'Escolta': 'SG',
             'Alero': 'SF',
             'Ala-pívot': 'PF',
             'Pívot': 'C'
@@ -145,9 +148,28 @@ const Players = () => {
         updateFilters({ search: '', status: 'todos', position: '' });
     };
 
-    // Estadísticas calculadas
-    const activePlayers = players.filter(p => p.status === 'activo').length;
-    const inactivePlayers = players.filter(p => p.status === 'inactivo').length;
+    // Estadísticas calculadas - usar pagination.total para obtener el total real del backend
+    // Para activos e inactivos, necesitamos hacer peticiones separadas o calcular del total
+    const [totalActivePlayers, setTotalActivePlayers] = useState(0);
+    const [totalInactivePlayers, setTotalInactivePlayers] = useState(0);
+
+    // Calcular totales de activos e inactivos desde el backend
+    useEffect(() => {
+        const calculateTotals = async () => {
+            try {
+                // Obtener todos los jugadores activos
+                const activeResponse = await playersService.getAll({ status: 'activo', limit: 1 });
+                setTotalActivePlayers(activeResponse.pagination?.total || 0);
+
+                // Obtener todos los jugadores inactivos
+                const inactiveResponse = await playersService.getAll({ status: 'inactivo', limit: 1 });
+                setTotalInactivePlayers(inactiveResponse.pagination?.total || 0);
+            } catch (error) {
+                console.error('Error calculating totals:', error);
+            }
+        };
+        calculateTotals();
+    }, []); // Solo calcular una vez al montar
     const averageHeight = players.length > 0
         ? Math.round(players.reduce((sum, p) => sum + (p.height_cm || 0), 0) / players.length)
         : 0;
@@ -267,223 +289,157 @@ const Players = () => {
         return age;
     };
 
+    // Componente PlayerAvatar con fallback automático a múltiples extensiones
+    const PlayerAvatar = ({ playerName, size = 10 }) => {
+        const [currentExtIndex, setCurrentExtIndex] = useState(0);
+        const [showFallback, setShowFallback] = useState(false);
+        const extensions = ['webp', 'avif', 'png', 'jpg', 'jpeg'];
+        const basePath = '/images/jugadores/';
+        const currentSrc = showFallback ? null : `${basePath}${playerName}.${extensions[currentExtIndex]}`;
+
+        const handleImageError = () => {
+            if (currentExtIndex < extensions.length - 1) {
+                setCurrentExtIndex(prev => prev + 1);
+            } else {
+                setShowFallback(true);
+            }
+        };
+
+        if (showFallback || !playerName) {
+            return (
+                <div className="w-full h-full rounded-full flex items-center justify-center font-bold text-gray-400 dark:text-gray-500 text-xs bg-white dark:bg-gray-700">
+                    {playerName?.split(' ').map(n => n[0]).join('').slice(0, 2) || '??'}
+                </div>
+            );
+        }
+
+        return (
+            <img
+                src={currentSrc}
+                alt={playerName}
+                className="w-full h-full rounded-full object-cover"
+                onError={handleImageError}
+            />
+        );
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/10 dark:to-indigo-900/20">
-            {/* Header profesional */}
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30 sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-gradient-to-br from-[#CE1126] to-[#B00E20] dark:from-[#002D62] dark:to-[#001F4A] rounded-xl shadow-lg">
-                                <Users className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="max-w-7xl mx-auto px-6 py-6">
+                {/* Header compacto con fondo gradiente */}
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="rounded-2xl shadow-xl bg-gradient-to-r from-[#CE1126] from-0% via-white via-50% to-[#002D62] to-100% p-4 mb-6"
+                >
+                    <div className="flex items-center justify-between gap-4">
+                        {/* Lado izquierdo: título compacto */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-white/60 overflow-hidden">
+                                <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
                             </div>
                             <div>
-                                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+                                <h1 className="text-lg font-black text-white">
                                     Gestión de Jugadores
                                 </h1>
-                                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                    Sistema de análisis táctico • BasketscoreRD
+                                <p className="text-[10px] font-bold text-white">
+                                    Selección Nacional • República Dominicana
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={`inline-flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${showFilters
-                                    ? 'bg-[#CE1126] text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                    }`}
-                            >
-                                <Filter className="w-4 h-4" />
-                                Filtros
-                            </button>
-                            <button
-                                onClick={handleRefresh}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
-                                disabled={loading}
-                            >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                Actualizar
-                            </button>
+                        {/* Lado derecho: botones compactos */}
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={toggleViewMode}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors duration-200"
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 hover:border-[#CE1126] dark:hover:border-[#002D62] text-gray-700 dark:text-gray-300 hover:text-[#CE1126] dark:hover:text-[#002D62] rounded-lg transition-all shadow-sm hover:shadow-md"
+                                title={isTableView ? 'Vista de cartas' : 'Vista de tabla'}
                             >
                                 {isTableView ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-                                {isTableView ? 'Cartas' : 'Tabla'}
+                                <span className="text-xs font-bold">{isTableView ? 'Cartas' : 'Tabla'}</span>
                             </button>
+
                             <button
                                 onClick={openCreateModal}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#CE1126] hover:bg-[#B00E20] dark:bg-[#002D62] dark:hover:bg-[#001F4A] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                                className="px-4 py-1.5 text-xs font-bold rounded-md bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white hover:shadow-lg transition-all"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3 h-3 inline mr-1" />
                                 Nuevo Jugador
                             </button>
                         </div>
                     </div>
+                </motion.div>
+                {/* Stats Cards compactas - clickeables para filtrar */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <button
+                        onClick={() => updateFilters({ status: 'todos' })}
+                        className="p-4 bg-white dark:bg-gray-900 rounded-xl shadow-md border-2 border-[#CE1126]/30 hover:border-[#CE1126]/60 hover:shadow-lg transition-all text-left"
+                    >
+                        <div className="text-center">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+                                Total Jugadores
+                            </p>
+                            <p className="text-3xl font-black text-[#CE1126] dark:text-[#CE1126]">
+                                {pagination.total}
+                            </p>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => updateFilters({ status: 'activo' })}
+                        className="p-4 bg-white dark:bg-gray-900 rounded-xl shadow-md border-2 border-[#002D62]/30 hover:border-[#002D62]/60 hover:shadow-lg transition-all text-left"
+                    >
+                        <div className="text-center">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+                                Activos
+                            </p>
+                            <p className="text-3xl font-black text-[#002D62] dark:text-[#002D62]">
+                                {totalActivePlayers}
+                            </p>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => updateFilters({ status: 'inactivo' })}
+                        className="p-4 bg-white dark:bg-gray-900 rounded-xl shadow-md border-2 border-[#CE1126]/30 hover:border-[#CE1126]/60 hover:shadow-lg transition-all text-left"
+                    >
+                        <div className="text-center">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+                                Inactivos
+                            </p>
+                            <p className="text-3xl font-black text-[#CE1126] dark:text-[#CE1126]">
+                                {totalInactivePlayers}
+                            </p>
+                        </div>
+                    </button>
+
+                    <div className="p-4 bg-white dark:bg-gray-900 rounded-xl shadow-md border-2 border-[#002D62]/30 hover:border-[#002D62]/60 hover:shadow-lg transition-all">
+                        <div className="text-center">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-900 dark:text-white mb-2">
+                                Altura Promedio
+                            </p>
+                            <p className="text-3xl font-black text-[#002D62] dark:text-[#002D62]">
+                                {averageHeight} cm
+                            </p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
-                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
-                            </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total</p>
-                            </div>
-                        </div>
+                {/* Search - simplificado */}
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-6 shadow-md border border-gray-200 dark:border-gray-700">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar jugadores por nombre..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all"
+                        />
                     </div>
-
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{activePlayers}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Activos</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400" />
-                            </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{inactivePlayers}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Inactivos</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="p-2 sm:p-3 bg-[#CE1126]/10 dark:bg-[#002D62]/20 rounded-lg">
-                                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[#CE1126] dark:text-[#002D62]" />
-                            </div>
-                            <div>
-                                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{averageHeight}cm</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Altura Promedio</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Search and Filters */}
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                    <div className="flex flex-col lg:flex-row gap-4">
-                        {/* Search */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar jugadores por nombre..."
-                                value={searchTerm}
-                                onChange={handleSearchChange}
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent transition-all duration-200"
-                            />
-                        </div>
-
-                        {/* Quick Status Filters */}
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                onClick={() => handleStatusFilterChange('todos')}
-                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${statusFilter === 'todos'
-                                    ? 'bg-[#CE1126] text-white'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }`}
-                            >
-                                <Circle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">Todos</span>
-                                <span className="sm:hidden">Todo</span>
-                            </button>
-                            <button
-                                onClick={() => handleStatusFilterChange('activo')}
-                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${statusFilter === 'activo'
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }`}
-                            >
-                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">Activos</span>
-                                <span className="sm:hidden">Activo</span>
-                            </button>
-                            <button
-                                onClick={() => handleStatusFilterChange('inactivo')}
-                                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm sm:text-base ${statusFilter === 'inactivo'
-                                    ? 'bg-red-600 text-white'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }`}
-                            >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">Inactivos</span>
-                                <span className="sm:hidden">Inact.</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Advanced Filters */}
-                    {showFilters && (
-                        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Posición
-                                    </label>
-                                    <select
-                                        value={positionFilter}
-                                        onChange={(e) => handlePositionFilterChange(e.target.value)}
-                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
-                                    >
-                                        <option value="">Todas las posiciones</option>
-                                        <option value="PG">Base (PG)</option>
-                                        <option value="SG">Escolta (SG)</option>
-                                        <option value="SF">Alero (SF)</option>
-                                        <option value="PF">Ala-Pívot (PF)</option>
-                                        <option value="C">Pívot (C)</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Ordenar por
-                                    </label>
-                                    <select
-                                        value={filters.order_by}
-                                        onChange={(e) => updateFilters({ order_by: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CE1126] dark:focus:ring-[#002D62] focus:border-transparent"
-                                    >
-                                        <option value="full_name">Nombre</option>
-                                        <option value="jersey_number">Número</option>
-                                        <option value="position">Posición</option>
-                                        <option value="height_cm">Altura</option>
-                                    </select>
-                                </div>
-
-                                <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
-                                    <button
-                                        onClick={handleClearFilters}
-                                        className="w-full px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 text-sm sm:text-base"
-                                    >
-                                        Limpiar Filtros
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Jugadores Content */}
-                <div className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm overflow-hidden transition-all duration-300 ${showFilters ? 'lg:max-w-none' : ''
-                    }`}>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CE1126] dark:border-[#002D62]"></div>
@@ -498,190 +454,237 @@ const Players = () => {
                             <p className="text-gray-600 dark:text-gray-400">No se encontraron jugadores</p>
                         </div>
                     ) : isTableView ? (
-                        /* Vista de Tabla */
-                        <div className={`overflow-x-auto transition-all duration-300 ${showFilters ? 'text-sm' : ''}`}>
-                            <table className={`w-full ${showFilters ? 'min-w-[500px]' : 'min-w-[650px]'}`}>
-                                <thead className="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th className={`text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${showFilters ? 'px-3 py-2' : 'px-6 py-3'
-                                            }`}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                                <thead className="bg-gray-100 dark:bg-gray-800">
+                                    <tr className="border-b-2 border-gray-300 dark:border-gray-600">
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
                                             Jugador
                                         </th>
-                                        <th className={`text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${showFilters ? 'px-3 py-2' : 'px-6 py-3'
-                                            }`}>
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
                                             Posición
                                         </th>
-                                        <th className={`text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${showFilters ? 'hidden xl:table-cell px-2 py-2' : 'px-6 py-3'}`}>
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
                                             Altura
                                         </th>
-                                        <th className={`text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${showFilters ? 'px-3 py-2' : 'px-6 py-3'
-                                            }`}>
-                                            Status
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                            Edad
                                         </th>
-                                        <th className={`text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${showFilters ? 'px-2 py-2' : 'px-6 py-3'
-                                            }`}>
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                            Estado
+                                        </th>
+                                        <th className="px-4 py-2.5 text-center text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">
                                             Acciones
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="divide-y-2 divide-gray-200 dark:divide-gray-700">
                                     {players.map((player) => (
-                                        <tr key={player.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                            <td className={`whitespace-nowrap ${showFilters ? 'px-3 py-3' : 'px-6 py-4'
-                                                }`}>
-                                                <div className="flex items-center">
-                                                    <div className={`bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-lg flex items-center justify-center text-white font-bold text-sm ${showFilters ? 'w-8 h-8 mr-2' : 'w-10 h-10 mr-4'
-                                                        }`}>
-                                                        {player.jersey_number || '?'}
+                                        <tr key={player.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                                        <PlayerAvatar playerName={player.full_name} size={10} />
                                                     </div>
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white" title={player.full_name}>
-                                                            {getShortName(player.full_name)}
+                                                    <div className="text-left">
+                                                        <div className="text-xs font-bold text-gray-900 dark:text-white">
+                                                            {player.full_name}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {player.nationality || 'Sin nacionalidad'}
+                                                        <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                                                            #{player.jersey_number || '?'}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className={`whitespace-nowrap ${showFilters ? 'px-3 py-3' : 'px-6 py-4'
-                                                }`}>
+                                            <td className="px-4 py-3 text-center">
                                                 {player.position && (
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPositionColor(player.position)}`} 
-                                                          title={getPositionName(player.position)}>
-                                                        {showFilters ? getShortPosition(player.position) : getPositionName(player.position)}
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${getPositionColor(player.position)}`}>
+                                                        {player.position}
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className={`whitespace-nowrap text-sm text-gray-900 dark:text-white ${showFilters ? 'hidden xl:table-cell px-2 py-3' : 'px-6 py-4'}`}>
-                                                {player.height_cm ? `${player.height_cm}cm` : '-'}
+                                            <td className="px-4 py-3 text-center text-xs font-bold text-gray-900 dark:text-white">
+                                                {player.height_cm ? `${player.height_cm} cm` : '-'}
                                             </td>
-                                            <td className={`whitespace-nowrap ${showFilters ? 'px-3 py-3' : 'px-6 py-4'
-                                                }`}>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${player.status === 'activo'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                            <td className="px-4 py-3 text-center text-xs font-bold text-gray-900 dark:text-white">
+                                                {calculateAge(player.birth_date) || '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`px-2 py-1 rounded-md text-[10px] font-bold border-2 ${player.status === 'activo'
+                                                    ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700'
+                                                    : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
                                                     }`}>
                                                     {player.status === 'activo' ? 'Activo' : 'Inactivo'}
                                                 </span>
                                             </td>
-                                            <td className={`whitespace-nowrap text-right text-sm font-medium ${showFilters ? 'px-2 py-3' : 'px-6 py-4'
-                                                }`}>
-                                                <div className={`flex items-center justify-end ${showFilters ? 'gap-1' : 'gap-2'}`}>
-                                                    <button
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={() => navigate(`/players/${player.id}`)}
-                                                        className={`text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 ${showFilters ? 'p-1' : 'p-1.5'}`}
+                                                        className="px-2 py-1 bg-[#002D62] hover:bg-[#001a3d] text-white text-[10px] font-bold rounded border-2 border-black transition-all duration-200"
                                                         title="Ver detalles"
                                                     >
-                                                        <Eye className={`${showFilters ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                                                    </button>
-                                                    <button
+                                                        Ver
+                                                    </motion.button>
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={() => handleEdit(player)}
-                                                        className={`text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 ${showFilters ? 'p-1' : 'p-1.5'}`}
+                                                        className="px-2 py-1 bg-white hover:bg-gray-50 text-[#002D62] border-2 border-black text-[10px] font-bold rounded transition-all duration-200"
                                                         title="Editar"
                                                     >
-                                                        <Edit className={`${showFilters ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                                                    </button>
-                                                    <button
+                                                        Editar
+                                                    </motion.button>
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={() => handleDelete(player)}
-                                                        className={`text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ${showFilters ? 'p-1' : 'p-1.5'}`}
+                                                        className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded border-2 border-black transition-all duration-200"
                                                         title="Eliminar"
                                                     >
-                                                        <Trash2 className={`${showFilters ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                                                    </button>
+                                                        Eliminar
+                                                    </motion.button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+
+                            {/* Paginación profesional y compacta para tabla */}
+                            {pagination.pages > 1 && (
+                                <div className="flex items-center justify-between px-4 py-3 border-t-2 border-gray-200 dark:border-gray-700 bg-[#CE1126]/10 dark:bg-[#002D62]/10">
+                                    <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400">
+                                        Pág. {pagination.page} de {pagination.pages} • {pagination.total} total
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => updatePagination({ page: pagination.page - 1 })}
+                                            disabled={pagination.page === 1}
+                                            className="p-1.5 text-gray-500 hover:text-[#CE1126] hover:bg-white dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </button>
+
+                                        {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
+                                            let page;
+                                            if (pagination.pages <= 5) {
+                                                page = i + 1;
+                                            } else if (pagination.page <= 3) {
+                                                page = i + 1;
+                                            } else if (pagination.page >= pagination.pages - 2) {
+                                                page = pagination.pages - 4 + i;
+                                            } else {
+                                                page = pagination.page - 2 + i;
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => updatePagination({ page })}
+                                                    className={`min-w-[28px] h-7 px-2 text-[10px] font-bold rounded transition-all ${pagination.page === page
+                                                        ? 'bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white shadow-md'
+                                                        : 'text-[#CE1126] dark:text-[#002D62] hover:bg-white dark:hover:bg-gray-700'
+                                                        }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            );
+                                        })}
+
+                                        <button
+                                            onClick={() => updatePagination({ page: pagination.page + 1 })}
+                                            disabled={pagination.page === pagination.pages}
+                                            className="p-1.5 text-gray-500 hover:text-[#002D62] hover:bg-white dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
-                        /* Vista de Cartas */
-                        <div className={`grid p-4 sm:p-6 transition-all duration-300 ${showFilters
-                            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8'
-                            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6'
-                            }`}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                             {players.map((player) => (
                                 <div
                                     key={player.id}
-                                    className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#CE1126]/30 dark:hover:border-[#002D62]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 p-5"
+                                    className="bg-white dark:bg-gray-900 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-[#CE1126]/50 dark:hover:border-[#002D62]/50 transition-all hover:shadow-lg"
                                 >
-                                    {/* Header */}
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-[#CE1126] to-[#002D62] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                                {player.jersey_number || '?'}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight mb-1" 
-                                                    title={player.full_name}>
-                                                    {getShortName(player.full_name)}
-                                                </h3>
+                                    {/* Header con imagen redonda */}
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-600 flex-shrink-0">
+                                            <PlayerAvatar playerName={player.full_name} size={12} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-black text-sm text-gray-900 dark:text-white truncate">
+                                                {player.full_name}
+                                            </h3>
+                                            <div className="flex items-center gap-2 mt-1">
                                                 {player.position && (
-                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getPositionColor(player.position)}`}>
-                                                        {getPositionName(player.position)}
+                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${getPositionColor(player.position)}`}>
+                                                        {player.position}
                                                     </span>
                                                 )}
+                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${player.status === 'activo'
+                                                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                    : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                                                    }`}>
+                                                    {player.status === 'activo' ? 'Activo' : 'Inactivo'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className={`w-3 h-3 rounded-full ${
-                                            player.status === 'activo' ? 'bg-green-500' : 'bg-red-500'
-                                        } shadow-sm`} title={player.status === 'activo' ? 'Activo' : 'Inactivo'} />
                                     </div>
 
-                                    {/* Información */}
-                                    <div className="space-y-3 mb-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {player.height_cm && (
-                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Altura</div>
-                                                    <div className="text-base font-bold text-gray-900 dark:text-white">{player.height_cm}cm</div>
-                                                </div>
-                                            )}
-                                            {player.birth_date && (
-                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Edad</div>
-                                                    <div className="text-base font-bold text-gray-900 dark:text-white">{calculateAge(player.birth_date)} años</div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* Información compacta */}
+                                    <div className="space-y-1.5 mb-3">
+                                        {player.height_cm && (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Altura:</span>
+                                                <span className="text-xs font-bold text-gray-900 dark:text-white">{player.height_cm} cm</span>
+                                            </div>
+                                        )}
+                                        {player.birth_date && (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Edad:</span>
+                                                <span className="text-xs font-bold text-gray-900 dark:text-white">{calculateAge(player.birth_date)} años</span>
+                                            </div>
+                                        )}
                                         {teams.find(t => t.id === player.team_id) && (
-                                            <div className="bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 dark:from-[#CE1126]/20 dark:to-[#002D62]/20 rounded-lg p-3 text-center border border-[#CE1126]/20 dark:border-[#002D62]/20">
-                                                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Equipo</div>
-                                                <div className="text-base font-bold text-[#CE1126] dark:text-[#002D62] truncate" title={teams.find(t => t.id === player.team_id)?.name}>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Equipo:</span>
+                                                <span className="text-xs font-bold text-gray-900 dark:text-white truncate" title={teams.find(t => t.id === player.team_id)?.name}>
                                                     {teams.find(t => t.id === player.team_id)?.name}
-                                                </div>
+                                                </span>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Acciones */}
-                                    <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    {/* Acciones compactas */}
+                                    <div className="flex items-center gap-2 pt-3 border-t-2 border-gray-200 dark:border-gray-700">
                                         <button
                                             onClick={() => navigate(`/players/${player.id}`)}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#CE1126] to-[#B00E20] dark:from-[#002D62] dark:to-[#001F4A] text-white rounded-lg text-sm font-medium hover:shadow-md transition-all duration-200 transform hover:scale-105"
+                                            className="flex-1 px-3 py-1.5 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white text-[10px] font-bold rounded-lg hover:shadow-md transition-all"
                                         >
-                                            <Eye className="w-4 h-4" />
-                                            Ver Perfil
+                                            <Eye className="w-3 h-3 inline mr-1" />
+                                            Ver
                                         </button>
-                                        
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => handleEdit(player)}
-                                                className="p-2 text-gray-500 hover:text-[#CE1126] dark:hover:text-[#002D62] hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 hover:scale-110"
-                                                title="Editar jugador"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(player)}
-                                                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 hover:scale-110"
-                                                title="Eliminar jugador"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => handleEdit(player)}
+                                            className="p-1.5 text-[#CE1126] hover:bg-[#CE1126]/10 rounded-lg transition-colors"
+                                            title="Editar"
+                                        >
+                                            <Edit className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(player)}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -752,8 +755,8 @@ const Players = () => {
 
                 {/* Modal de crear/editar jugador */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-12 overflow-y-auto">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl my-8">
                             {/* Header del modal */}
                             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 rounded-t-2xl">
                                 <div className="flex items-center justify-between">
@@ -1048,7 +1051,7 @@ const Players = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -52,3 +52,8 @@ export { Button } from './Button';
 export { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } from './Card';
 export { Input as ModernInput, Textarea as ModernTextarea } from './Input';
 export { Badge as ModernBadge, BadgeGroup } from './Badge';
+
+// Custom Components
+export { default as CountryFlag } from './CountryFlag';
+export { default as PlayerAvatar } from './PlayerAvatar';
+export { default as PageHeader } from './PageHeader';

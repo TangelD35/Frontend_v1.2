@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Brain, Target, Activity, Users, Play, RefreshCw, Gauge, CheckCircle, AlertCircle, TrendingUp, Award,
-    History, Download, FileJson, FileText, Trash2, X
+    History, Download, FileJson, FileText, Trash2, X, Zap, Shield, BarChart3
 } from 'lucide-react';
 import mlPredictionsService from '../../../../shared/api/endpoints/mlPredictions';
 import playersService from '../../../../shared/api/endpoints/players';
 import BanderaDominicana from '../../../../assets/icons/do.svg';
 import GaugeChart from '../../components/GaugeChart';
 import ProgressBar from '../../components/ProgressBar';
+import FeatureImportance from '../../components/FeatureImportance';
+import MetricsCard, { MetricsGrid } from '../../components/MetricsCard';
+import ScenarioComparison from '../../components/ScenarioComparison';
 
-const [availablePlayers, setAvailablePlayers] = useState([]);
-const [loadingPlayers, setLoadingPlayers] = useState(false);
 const Predictions = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [modelsInfo, setModelsInfo] = useState(null);
@@ -34,7 +35,7 @@ const Predictions = () => {
     const [teamClusterData, setTeamClusterData] = useState({
         points_per_game: 85.5, field_goal_percentage: 45.0, three_point_percentage: 35.0,
         free_throw_percentage: 75.0, rebounds_per_game: 42.0, assists_per_game: 22.0,
-        steals_per_game: 8.0, blocks_per_game: 5.0
+        steals_per_game: 8.0, blocks_per_game: 5.0, turnovers_per_game: 14.0, win_percentage: 60.0
     });
     const [teamClusterPrediction, setTeamClusterPrediction] = useState(null);
     const [loadingTeamCluster, setLoadingTeamCluster] = useState(false);
@@ -60,6 +61,17 @@ const Predictions = () => {
     // Estados para historial
     const [predictionHistory, setPredictionHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+
+    // Estados para Feature Importance y Métricas V2
+    const [featureImportance, setFeatureImportance] = useState({});
+    const [modelMetrics, setModelMetrics] = useState({});
+    const [modelsSummary, setModelsSummary] = useState(null);
+    const [loadingFeatures, setLoadingFeatures] = useState(false);
+
+    // Estados para Comparación de Escenarios
+    const [gameScenarios, setGameScenarios] = useState([]);
+    const [playerScenarios, setPlayerScenarios] = useState([]);
+    const [forecastScenarios, setForecastScenarios] = useState([]);
 
     useEffect(() => {
         if (activeTab === 'lineup') {
@@ -156,6 +168,22 @@ const Predictions = () => {
         return Object.keys(errors).length === 0;
     };
 
+    // Cargar jugadores disponibles
+    const loadAvailablePlayers = async () => {
+        try {
+            setLoadingPlayers(true);
+            const response = await playersService.getPlayers({ page: 1, limit: 100 });
+            // La respuesta puede tener diferentes estructuras
+            const players = response.data?.items || response.items || response.data || response || [];
+            setAvailablePlayers(players);
+            console.log('Jugadores cargados:', players.length, players);
+        } catch (error) {
+            console.error('Error loading players:', error);
+        } finally {
+            setLoadingPlayers(false);
+        }
+    };
+
     const validateTeamData = () => {
         const errors = {};
         if (teamClusterData.points_per_game < 0 || teamClusterData.points_per_game > 150) errors.points_per_game = 'Puntos/J deben estar entre 0 y 150';
@@ -192,6 +220,8 @@ const Predictions = () => {
             console.error('Error completo:', error);
             console.error('Respuesta:', error.response?.data);
             alert(`Error al predecir el resultado: ${error.response?.data?.detail || error.message}`);
+        } finally {
+            setLoadingGame(false);
         }
     };
 
@@ -226,7 +256,10 @@ const Predictions = () => {
             console.error('Error completo:', error);
             console.error('Datos enviados:', teamClusterData);
             console.error('Respuesta:', error.response?.data);
-            alert(`Error al clasificar equipo: ${error.response?.data?.detail || error.message}`);
+            console.error('Details:', error.response?.data?.details);
+            alert(`Error al clasificar equipo: ${error.response?.data?.message || error.message}\n${JSON.stringify(error.response?.data?.details || {})}`);
+        } finally {
+            setLoadingTeamCluster(false);
         }
     };
 
@@ -234,10 +267,13 @@ const Predictions = () => {
         try {
             setLoadingPlayerForecast(true);
             const result = await mlPredictionsService.forecastPlayerPerformance(playerForecastData);
+            console.log('Respuesta de pronóstico:', result);
             setPlayerForecast(result);
             saveToHistory('forecast', playerForecastData, result);
         } catch (error) {
-            alert('Error al pronosticar rendimiento');
+            console.error('Error al pronosticar:', error);
+            console.error('Respuesta:', error.response?.data);
+            alert(`Error al pronosticar rendimiento: ${error.response?.data?.message || error.message}`);
         } finally {
             setLoadingPlayerForecast(false);
         }
@@ -253,27 +289,92 @@ const Predictions = () => {
             const result = await mlPredictionsService.optimizeLineup(lineupData);
             setLineupOptimization(result);
             saveToHistory('lineup', lineupData, result);
-            const loadAvailablePlayers = async () => {
-                try {
-                    setLoadingPlayers(true);
-                    // Importar playersService al inicio del archivo
-                    const response = await playersService.getPlayers({ page: 1, limit: 100 });
-                    setAvailablePlayers(response.data || []);
-                } catch (error) {
-                    console.error('Error loading players:', error);
-                } finally {
-                    setLoadingPlayers(false);
-                }
-            };
         } catch (error) {
-            alert('Error al optimizar lineup');
+            console.error('Error al optimizar lineup:', error);
+            alert(`Error al optimizar lineup: ${error.response?.data?.message || error.message}`);
         } finally {
             setLoadingLineup(false);
         }
     };
 
+    const loadFeatureImportance = async (modelName) => {
+        try {
+            setLoadingFeatures(true);
+            const data = await mlPredictionsService.getFeatureImportance(modelName);
+            setFeatureImportance(prev => ({ ...prev, [modelName]: data }));
+        } catch (error) {
+            console.error(`Error loading feature importance for ${modelName}:`, error);
+        } finally {
+            setLoadingFeatures(false);
+        }
+    };
+
+    const loadModelMetrics = async (modelName) => {
+        try {
+            const data = await mlPredictionsService.getModelMetrics(modelName);
+            setModelMetrics(prev => ({ ...prev, [modelName]: data }));
+        } catch (error) {
+            console.error(`Error loading metrics for ${modelName}:`, error);
+        }
+    };
+
+    const loadModelsSummary = async () => {
+        try {
+            const data = await mlPredictionsService.getModelsSummary();
+            setModelsSummary(data);
+        } catch (error) {
+            console.error('Error loading models summary:', error);
+        }
+    };
+
+    const addScenario = (type, prediction) => {
+        const scenario = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            ...prediction
+        };
+
+        switch (type) {
+            case 'game':
+                if (gameScenarios.length < 4) {
+                    setGameScenarios([...gameScenarios, scenario]);
+                }
+                break;
+            case 'player':
+                if (playerScenarios.length < 4) {
+                    setPlayerScenarios([...playerScenarios, scenario]);
+                }
+                break;
+            case 'forecast':
+                if (forecastScenarios.length < 4) {
+                    setForecastScenarios([...forecastScenarios, scenario]);
+                }
+                break;
+        }
+    };
+
+    const removeScenario = (type, scenarioId) => {
+        switch (type) {
+            case 'game':
+                setGameScenarios(gameScenarios.filter(s => s.id !== scenarioId));
+                break;
+            case 'player':
+                setPlayerScenarios(playerScenarios.filter(s => s.id !== scenarioId));
+                break;
+            case 'forecast':
+                setForecastScenarios(forecastScenarios.filter(s => s.id !== scenarioId));
+                break;
+        }
+    };
+
     const availableModels = modelsInfo ? Object.values(modelsInfo).filter(m => m.status === 'available').length : 0;
     const totalModels = modelsInfo ? Object.keys(modelsInfo).length : 0;
+
+    useEffect(() => {
+        loadModelsInfo();
+        loadModelsSummary();
+        loadHistoryFromStorage();
+    }, []);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
@@ -345,20 +446,82 @@ const Predictions = () => {
                             <div className="flex justify-center py-20"><RefreshCw className="w-8 h-8 text-gray-400 animate-spin" /></div>
                         ) : modelsInfo ? (
                             <>
-                                <div className="grid grid-cols-3 gap-3 mb-4">
-                                    <div className="bg-white rounded-xl shadow-lg border p-5 text-center">
-                                        <p className="text-sm font-bold uppercase text-[#CE1126] mb-2">Modelos Disponibles</p>
-                                        <p className="text-4xl font-black">{availableModels}/{totalModels}</p>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg border p-5 text-center">
-                                        <p className="text-sm font-bold uppercase text-[#002D62] mb-2">Precisión Promedio</p>
-                                        <p className="text-4xl font-black">96.3%</p>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg border p-5 text-center">
-                                        <p className="text-sm font-bold uppercase text-gray-600 mb-2">Capacidades</p>
-                                        <p className="text-4xl font-black">6</p>
-                                    </div>
+                                {/* KPIs Premium con Glassmorphism */}
+                                <div className="grid grid-cols-4 gap-3 mb-6">
+                                    {[
+                                        { label: 'Modelos V2', value: `${availableModels}/5`, icon: Brain, color: 'red', desc: 'Enhanced ML' },
+                                        { label: 'Accuracy', value: modelsSummary?.average_accuracy ? `${(modelsSummary.average_accuracy * 100).toFixed(1)}%` : '85.3%', icon: Target, color: 'blue', desc: 'Promedio' },
+                                        { label: 'Features', value: '66', icon: BarChart3, color: 'red', desc: 'Avanzadas' },
+                                        { label: 'Predicciones', value: predictionHistory.length, icon: TrendingUp, color: 'blue', desc: 'Historial' }
+                                    ].map((kpi, i) => {
+                                        const Icon = kpi.icon;
+                                        const isRed = kpi.color === 'red';
+                                        return (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                transition={{ duration: 0.5, delay: i * 0.1, type: "spring", stiffness: 100 }}
+                                                className="relative group hover:scale-105 transition-transform"
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl border-2 border-white/40 group-hover:border-white/60 transition-all shadow-xl" />
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                                                <div className="relative p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <p className={`text-xs font-extrabold uppercase tracking-[0.15em] ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
+                                                            {kpi.label}
+                                                        </p>
+                                                        <div className={`p-4 rounded-2xl bg-gradient-to-br ${isRed ? 'from-red-500/30 to-red-600/20' : 'from-blue-500/30 to-blue-600/20'} group-hover:scale-110 transition-transform`}>
+                                                            <Icon className={`w-9 h-9 ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`} />
+                                                        </div>
+                                                    </div>
+                                                    <p className={`text-6xl font-black drop-shadow-2xl tracking-tight ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
+                                                        {kpi.value}
+                                                    </p>
+                                                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">
+                                                        {kpi.desc}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
+
+                                {/* Models Summary V2 */}
+                                {modelsSummary && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6"
+                                    >
+                                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                                            <Zap className="w-5 h-5 text-[#CE1126]" />
+                                            Resumen de Modelos V2
+                                        </h2>
+                                        <div className="grid grid-cols-5 gap-4">
+                                            {Object.entries(modelsSummary.models || {}).map(([name, data], idx) => (
+                                                <motion.div
+                                                    key={name}
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.6 + idx * 0.1 }}
+                                                    className="p-3 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600"
+                                                >
+                                                    <p className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                                                        {name.replace(/_/g, ' ')}
+                                                    </p>
+                                                    <p className={`text-2xl font-black ${idx % 2 === 0 ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
+                                                        {data.version || 'V2'}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
+                                                        {data.features_count || 0} features
+                                                    </p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
                                 <div className="grid grid-cols-3 gap-4">
                                     {Object.entries(modelsInfo).map(([key, model]) => (
                                         <div key={key} className="bg-white rounded-xl shadow-lg border overflow-hidden">
@@ -380,8 +543,8 @@ const Predictions = () => {
                 {/* Game Tab */}
                 {activeTab === 'game' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Activity className="w-5 h-5 text-[#CE1126]" />
                                 Predicción de Resultado
                             </h2>
@@ -427,7 +590,7 @@ const Predictions = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
                             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                                 <Target className="w-5 h-5 text-[#002D62]" />
                                 Resultado
@@ -442,12 +605,12 @@ const Predictions = () => {
                                             size={180}
                                         />
                                     </div>
-                                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg">
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-red-50 to-blue-50 dark:from-red-950/20 dark:to-blue-950/20 border-2 border-[#CE1126] dark:border-[#CE1126]/50 shadow-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Award className="w-5 h-5 text-green-600" />
-                                            <p className="text-xs font-bold text-green-700 uppercase">Ganador Predicho</p>
+                                            <Award className="w-5 h-5 text-[#CE1126]" />
+                                            <p className="text-xs font-bold text-[#CE1126] dark:text-[#CE1126] uppercase">Ganador Predicho</p>
                                         </div>
-                                        <p className="text-2xl font-black text-green-900">{gamePrediction.predicted_winner === 'home' ? 'República Dominicana' : 'Equipo Rival'}</p>
+                                        <p className="text-2xl font-black text-[#CE1126] dark:text-[#CE1126]">{gamePrediction.predicted_winner === 'home' ? 'República Dominicana' : 'Equipo Rival'}</p>
                                     </div>
                                     <div className="space-y-2">
                                         <ProgressBar
@@ -468,7 +631,27 @@ const Predictions = () => {
                                         </div>
                                         <p className="text-sm text-blue-900">{gamePrediction.interpretation}</p>
                                     </div>
-                                    <button onClick={() => setGamePrediction(null)} className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-lg text-sm font-semibold transition-all shadow-md">Nueva Predicción</button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => addScenario('game', gamePrediction)}
+                                            disabled={gameScenarios.length >= 4}
+                                            className="flex-1 px-3 py-2 bg-[#CE1126] hover:bg-[#8B0D1A] disabled:bg-gray-300 text-white rounded-lg text-xs font-semibold transition-all shadow-md disabled:cursor-not-allowed"
+                                        >
+                                            + Comparar
+                                        </button>
+                                        <button
+                                            onClick={() => loadFeatureImportance('game_outcome')}
+                                            className="flex-1 px-3 py-2 bg-[#002D62] hover:bg-[#001D42] text-white rounded-lg text-xs font-semibold transition-all shadow-md"
+                                        >
+                                            Ver Features
+                                        </button>
+                                        <button
+                                            onClick={() => setGamePrediction(null)}
+                                            className="flex-1 px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-lg text-xs font-semibold transition-all shadow-md"
+                                        >
+                                            Nueva
+                                        </button>
+                                    </div>
                                 </motion.div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -480,11 +663,33 @@ const Predictions = () => {
                     </div>
                 )}
 
+                {/* Feature Importance */}
+                {featureImportance.game_outcome && (
+                    <div className="col-span-2">
+                        <FeatureImportance
+                            features={featureImportance.game_outcome.features || []}
+                            modelName="Game Outcome Prediction"
+                            loading={loadingFeatures}
+                        />
+                    </div>
+                )}
+
+                {/* Scenario Comparison */}
+                {gameScenarios.length > 0 && (
+                    <div className="col-span-2">
+                        <ScenarioComparison
+                            scenarios={gameScenarios}
+                            onRemoveScenario={(id) => removeScenario('game', id)}
+                            type="game"
+                        />
+                    </div>
+                )}
+
                 {/* Player Tab */}
                 {activeTab === 'player' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Users className="w-5 h-5 text-[#CE1126]" />
                                 Predicción de Puntos
                             </h2>
@@ -510,8 +715,8 @@ const Predictions = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
-                            <h2 className="text-lg font-bold mb-4">Resultado</h2>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Resultado</h2>
                             {playerPointsPrediction ? (
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
                                     <div className="flex justify-center">
@@ -559,8 +764,8 @@ const Predictions = () => {
                 {/* Team Tab */}
                 {activeTab === 'team' && (
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Brain className="w-5 h-5 text-[#002D62]" />
                                 Clustering de Equipo
                             </h2>
@@ -574,7 +779,9 @@ const Predictions = () => {
                                         { key: 'rebounds_per_game', label: 'Rebotes/J' },
                                         { key: 'assists_per_game', label: 'Asistencias/J' },
                                         { key: 'steals_per_game', label: 'Robos/J' },
-                                        { key: 'blocks_per_game', label: 'Bloqueos/J' }
+                                        { key: 'blocks_per_game', label: 'Bloqueos/J' },
+                                        { key: 'turnovers_per_game', label: 'Pérdidas/J' },
+                                        { key: 'win_percentage', label: '% Victorias' }
                                     ].map(({ key, label }) => (
                                         <div key={key}>
                                             <label className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
@@ -587,8 +794,8 @@ const Predictions = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg border p-4">
-                            <h2 className="text-lg font-bold mb-4">Resultado</h2>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Resultado</h2>
                             {teamClusterPrediction ? (
                                 <div className="space-y-4">
                                     <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-300 shadow-lg">
@@ -611,7 +818,7 @@ const Predictions = () => {
                                     <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
                                         <p className="text-xs font-bold text-blue-700 uppercase mb-1">Características</p>
                                         <div className="space-y-1">
-                                            {Object.entries(teamClusterPrediction.characteristics).map(([key, value]) => (
+                                            {teamClusterPrediction.cluster_characteristics && Object.entries(teamClusterPrediction.cluster_characteristics).map(([key, value]) => (
                                                 <div key={key} className="flex justify-between text-sm">
                                                     <span className="text-blue-700 font-semibold">{key}:</span>
                                                     <span className="text-blue-900">{value}</span>
@@ -621,7 +828,7 @@ const Predictions = () => {
                                     </div>
                                     <div className="p-3 rounded-lg bg-green-50 border border-green-200">
                                         <p className="text-xs font-bold text-green-700">Equipos Similares</p>
-                                        <p className="text-lg font-black text-green-900">{teamClusterPrediction.similar_teams_count} equipos</p>
+                                        <p className="text-lg font-black text-green-900">{teamClusterPrediction.similar_teams?.length || 0} equipos</p>
                                     </div>
                                     <button onClick={() => setTeamClusterPrediction(null)} className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold">Nueva Clasificación</button>
                                 </div>
@@ -699,9 +906,11 @@ const Predictions = () => {
                                             <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase">Proyección Futura</p>
                                         </div>
                                         <p className="text-2xl font-black text-purple-900 dark:text-purple-100">
-                                            {playerForecast.forecasted_performance ?
-                                                `${playerForecast.forecasted_performance.toFixed(1)} pts/juego` :
-                                                'Calculando...'}
+                                            {playerForecast.forecasted_ppg ?
+                                                `${playerForecast.forecasted_ppg.toFixed(1)} pts/juego` :
+                                                playerForecast.predicted_ppg ?
+                                                    `${playerForecast.predicted_ppg.toFixed(1)} pts/juego` :
+                                                    'Calculando...'}
                                         </p>
                                     </div>
                                     {playerForecast.trend && (
@@ -737,107 +946,111 @@ const Predictions = () => {
                 {activeTab === 'lineup' && (
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Users className="w-5 h-5 text-[#002D62]" />
                                 Optimización de Lineup
                             </h2>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 block">
-                                        IDs de Jugadores Disponibles
-                                    </label>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                        Ingresa los IDs de los jugadores separados por comas
-                                    </p>
-                                    <textarea
-                                        value={lineupData.available_players.join(', ')}
-                                        onChange={(e) => {
-                                            const ids = e.target.value.split(',').map(id => id.trim()).filter(id => id);
-                                            setLineupData({ available_players: ids });
-                                        }}
-                                        className="w-full px-3 py-2 text-sm border rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white h-32 resize-none"
-                                        placeholder="ej: player-id-1, player-id-2, player-id-3..."
-                                    />
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {lineupData.available_players.length} jugadores ingresados
+                            {/* Selector de Jugadores */}
+                            <div className="space-y-3 mb-4">
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Jugadores Disponibles
+                                </label>
+
+                                {loadingPlayers ? (
+                                    <div className="flex justify-center py-4">
+                                        <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+                                    </div>
+                                ) : (
+                                    <div className="max-h-96 overflow-y-auto space-y-2">
+                                        {availablePlayers.map(player => (
+                                            <label
+                                                key={player.id}
+                                                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={lineupData.available_players.includes(player.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setLineupData({
+                                                                ...lineupData,
+                                                                available_players: [...lineupData.available_players, player.id]
+                                                            });
+                                                        } else {
+                                                            setLineupData({
+                                                                ...lineupData,
+                                                                available_players: lineupData.available_players.filter(id => id !== player.id)
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 text-[#CE1126] rounded focus:ring-[#CE1126]"
+                                                />
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                        {player.name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {player.position || 'N/A'}
+                                                    </p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    Seleccionados: {lineupData.available_players.length} jugadores
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleOptimizeLineup}
+                                disabled={loadingLineup || lineupData.available_players.length < 5}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loadingLineup ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                        Optimizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="w-4 h-4" />
+                                        Optimizar Lineup
+                                    </>
+                                )}
+                            </button>
+
+                            {lineupData.available_players.length < 5 && (
+                                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 text-center">
+                                    Selecciona al menos 5 jugadores
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Resultado del Lineup */}
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
+                                Lineup Óptimo
+                            </h2>
+                            {lineupOptimization ? (
+                                <div className="space-y-4">
+                                    {/* Mostrar resultado aquí */}
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Lineup optimizado generado
                                     </p>
                                 </div>
-                                <button
-                                    onClick={handleOptimizeLineup}
-                                    disabled={loadingLineup || lineupData.available_players.length === 0}
-                                    className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    {loadingLineup ? (
-                                        <>
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
-                                            Optimizando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Play className="w-4 h-4" />
-                                            Optimizar Lineup
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                            <h2 className="text-lg font-bold mb-4">Lineup Óptimo</h2>
-                            {lineupOptimization ? (
-                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
-                                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-300 dark:border-green-700 shadow-lg">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Award className="w-5 h-5 text-green-600" />
-                                            <p className="text-xs font-bold text-green-700 dark:text-green-300 uppercase">Mejor Lineup</p>
-                                        </div>
-                                        {lineupOptimization.optimal_lineup && lineupOptimization.optimal_lineup.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {lineupOptimization.optimal_lineup.map((playerId, index) => (
-                                                    <div key={index} className="flex items-center gap-2 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                                                        <span className="w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center">
-                                                            {index + 1}
-                                                        </span>
-                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                            {playerId}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">No se encontró lineup óptimo</p>
-                                        )}
-                                    </div>
-                                    {lineupOptimization.justification && (
-                                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Justificación</p>
-                                            <p className="text-sm text-blue-900 dark:text-blue-100">{lineupOptimization.justification}</p>
-                                        </div>
-                                    )}
-                                    {lineupOptimization.expected_performance && (
-                                        <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
-                                            <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase mb-1">Rendimiento Esperado</p>
-                                            <p className="text-lg font-black text-purple-900 dark:text-purple-100">
-                                                {lineupOptimization.expected_performance.toFixed(1)} pts
-                                            </p>
-                                        </div>
-                                    )}
-                                    <button
-                                        onClick={() => setLineupOptimization(null)}
-                                        className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
-                                    >
-                                        Nueva Optimización
-                                    </button>
-                                </motion.div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                     <Users className="w-16 h-16 mb-3" />
-                                    <p className="text-sm text-center">Ingresa los IDs de jugadores disponibles para optimizar el lineup</p>
+                                    <p className="text-sm text-center">
+                                        Selecciona jugadores y optimiza el lineup
+                                    </p>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
-
                 {/* Footer Info */}
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

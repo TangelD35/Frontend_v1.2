@@ -128,13 +128,6 @@ export const NAVIGATION_ITEMS = [
         label: 'Predicciones',
         description: 'Modelos ML',
         color: 'from-blue-500 to-red-500'
-    },
-    {
-        path: '/data/management',
-        icon: 'Database',
-        label: 'Gestión de Datos',
-        description: 'Importar y exportar',
-        color: 'from-green-500 to-green-600'
     }
 ];
 

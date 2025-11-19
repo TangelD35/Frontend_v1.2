@@ -9,11 +9,12 @@ export const useGames = () => {
     const [pagination, setPagination] = useState({
         total: 0,
         skip: 0,
-        limit: 12
+        limit: 10
     });
     const [filters, setFilters] = useState({
         tournament_id: '',
         team_id: '',
+        search: '',
         order_by: 'game_date',
         sort: 'desc'
     });
@@ -161,7 +162,7 @@ export const useGames = () => {
 
     // Función para ajustar el límite dinámicamente según el estado del sidebar (memoizada)
     const adjustLimit = useCallback((showFilters) => {
-        const newLimit = showFilters ? 3 : 4; // 3 elementos cuando sidebar abierto, 4 cuando cerrado
+        const newLimit = showFilters ? 10 : 12; // Mínimo 10 elementos por página
         setPagination(prev => {
             if (prev.limit !== newLimit) {
                 return {

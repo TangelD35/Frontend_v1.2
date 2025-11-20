@@ -1232,14 +1232,11 @@ const ModernAnalytics = () => {
 
                                                         <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Trophy className="w-7 h-7 text-white drop-shadow-lg" />
-                                                                </div>
                                                                 <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Torneos
                                                                 </p>
                                                                 <div className="mb-1">
-                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
+                                                                    <p className="text-5xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.tournaments || 0}
                                                                     </p>
                                                                 </div>
@@ -1263,14 +1260,11 @@ const ModernAnalytics = () => {
 
                                                         <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-blue-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Users className="w-7 h-7 text-white drop-shadow-lg" />
-                                                                </div>
                                                                 <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Jugadores
                                                                 </p>
                                                                 <div className="mb-1">
-                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
+                                                                    <p className="text-5xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.players || 0}
                                                                     </p>
                                                                 </div>
@@ -1294,14 +1288,11 @@ const ModernAnalytics = () => {
 
                                                         <div className="relative p-4 transform group-hover:scale-105 transition-transform duration-300">
                                                             <div className="flex flex-col items-center">
-                                                                <div className="mb-2 p-3 rounded-xl bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-sm shadow-xl group-hover:shadow-red-500/20 transition-all duration-300 group-hover:scale-110">
-                                                                    <Target className="w-7 h-7 text-white drop-shadow-lg" />
-                                                                </div>
                                                                 <p className="text-white/90 text-[10px] font-extrabold uppercase tracking-wider mb-2 group-hover:text-white transition-colors">
                                                                     Partidos
                                                                 </p>
                                                                 <div className="mb-1">
-                                                                    <p className="text-4xl font-black text-white drop-shadow-xl tracking-tight">
+                                                                    <p className="text-5xl font-black text-white drop-shadow-xl tracking-tight">
                                                                         {summary.games || 0}
                                                                     </p>
                                                                 </div>

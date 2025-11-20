@@ -34,39 +34,6 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                     overflow-hidden
                 `}
             >
-                {/* Header del Sidebar */}
-                <div className="sticky top-0 z-10 px-6 py-5 border-b border-gray-200/40 dark:border-white/15 bg-gradient-to-br from-red-50/80 via-white/60 to-blue-50/80 dark:from-[#CE1126]/30 dark:via-[#0f2244]/25 dark:to-[#002D62]/30 backdrop-blur-xl">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="relative">
-                                <div className="w-10 h-10 rounded-xl border-2 border-[#CE1126]/30 dark:border-white/25 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 dark:from-[#CE1126]/30 dark:to-[#002D62]/30 backdrop-blur-md flex items-center justify-center shadow-lg shadow-[#CE1126]/30 dark:shadow-[#CE1126]/40">
-                                    <Flag className="w-5 h-5 text-[#CE1126] dark:text-white/90" />
-                                </div>
-                                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-wide text-gray-600 dark:text-white/80">
-                                    🇩🇴
-                                </span>
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-black text-gray-900 dark:text-white drop-shadow">
-                                    {config.app.name}
-                                </h2>
-                                <p className="text-xs text-gray-600 dark:text-white/60">
-                                    {config.app.description}
-                                </p>
-                            </div>
-                        </div>
-                        {isMobile && (
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-lg border border-gray-300 dark:border-white/20 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors lg:hidden"
-                            >
-                                <X className="w-5 h-5 text-gray-600 dark:text-white" />
-                            </button>
-                        )}
-                    </div>
-                    <div className="mt-5 h-px w-full bg-gradient-to-r from-transparent via-gray-300 dark:via-white/45 to-transparent" />
-                </div>
-
                 {/* Navigation */}
                 <nav className="flex-1 sidebar-scroll overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-[#CE1126]/40 dark:scrollbar-thumb-[#CE1126]/60 scrollbar-track-transparent hover:scrollbar-thumb-[#CE1126]/60 dark:hover:scrollbar-thumb-[#CE1126]/80">
                     <div className="mb-6">

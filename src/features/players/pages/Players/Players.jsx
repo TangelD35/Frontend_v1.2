@@ -158,19 +158,22 @@ const Players = () => {
     useEffect(() => {
         const calculateTotals = async () => {
             try {
-                // Obtener todos los jugadores activos
-                const activeResponse = await playersService.getAll({ status: 'activo', limit: 1 });
+                // Obtener todos los jugadores activos (usar active: true en lugar de status)
+                const activeResponse = await playersService.getAll({ active: true, limit: 1 });
                 setTotalActivePlayers(activeResponse.pagination?.total || 0);
 
-                // Obtener todos los jugadores inactivos
-                const inactiveResponse = await playersService.getAll({ status: 'inactivo', limit: 1 });
+                // Obtener todos los jugadores inactivos (usar active: false en lugar de status)
+                const inactiveResponse = await playersService.getAll({ active: false, limit: 1 });
                 setTotalInactivePlayers(inactiveResponse.pagination?.total || 0);
             } catch (error) {
                 console.error('Error calculating totals:', error);
+                // Fallback: calcular desde los jugadores actuales si falla
+                setTotalActivePlayers(players.filter(p => p.status === 'activo').length);
+                setTotalInactivePlayers(players.filter(p => p.status === 'inactivo').length);
             }
         };
         calculateTotals();
-    }, []); // Solo calcular una vez al montar
+    }, [players]); // Recalcular cuando cambien los jugadores
     const averageHeight = players.length > 0
         ? Math.round(players.reduce((sum, p) => sum + (p.height_cm || 0), 0) / players.length)
         : 0;

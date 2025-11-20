@@ -319,44 +319,28 @@ const Games = () => {
                     return;
                 }
 
-                // Obtener tendencias del equipo (2010-2025)
-                const trends = await advancedAnalyticsService.getTeamTrends(rdTeam.id, 2010, 2025);
+                // Obtener resumen de estadísticas de partidos desde el endpoint summary
+                const summary = await gamesService.getSummary({ team_id: rdTeam.id });
 
-                // Sumar todas las victorias y derrotas de todos los períodos
-                let totalVictories = 0;
-                let totalLosses = 0;
-                let totalGames = 0;
-
-                if (trends && Array.isArray(trends)) {
-                    trends.forEach(period => {
-                        // El backend devuelve 'wins' y 'losses' directamente
-                        totalVictories += period.wins || 0;
-                        totalLosses += period.losses || 0;
-                        // El backend devuelve 'games' en lugar de 'total_games'
-                        totalGames += period.games || 0;
-                    });
-                }
-
-                const winRate = totalGames > 0 ? Math.round((totalVictories / totalGames) * 100) : 0;
+                // Extraer estadísticas del summary
+                const totalGames = summary.total_games || 0;
+                const totalVictories = summary.total_wins || 0;
+                const totalLosses = summary.total_losses || 0;
+                const winRate = summary.win_percentage || 0;
 
                 setTeamStats({
                     victories: totalVictories,
                     losses: totalLosses,
-                    winRate: winRate,
+                    winRate: Math.round(winRate),
                     totalGames: totalGames
                 });
 
-                // Verificar discrepancia entre partidos del analytics vs base de datos
-                console.log('📊 ESTADÍSTICAS DEL EQUIPO:');
-                console.log('  - Total partidos (analytics):', totalGames);
+                // Log de estadísticas
+                console.log('📊 ESTADÍSTICAS DEL EQUIPO (desde summary):');
+                console.log('  - Total partidos:', totalGames);
                 console.log('  - Victorias:', totalVictories);
                 console.log('  - Derrotas:', totalLosses);
-                console.log('  - Win Rate:', winRate + '%');
-                console.log('  - Períodos analizados:', trends.length);
-                console.log('  - Suma V+D:', totalVictories + totalLosses);
-                if (totalGames !== (totalVictories + totalLosses)) {
-                    console.warn('⚠️ DISCREPANCIA: Total partidos (' + totalGames + ') no coincide con V+D (' + (totalVictories + totalLosses) + ')');
-                }
+                console.log('  - Win Rate:', Math.round(winRate) + '%');
 
             } catch (err) {
                 console.error('❌ Error al cargar estadísticas del equipo:', err);

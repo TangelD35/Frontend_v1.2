@@ -81,13 +81,6 @@ export const NAVIGATION_ITEMS = [
         color: 'from-red-500 to-red-600'
     },
     {
-        path: '/dashboard/enhanced',
-        icon: 'Grid3X3',
-        label: 'Dashboard Avanzado',
-        description: 'Widgets interactivos',
-        color: 'from-purple-500 to-purple-600'
-    },
-    {
         path: '/tournaments',
         icon: 'Trophy',
         label: 'Torneos',

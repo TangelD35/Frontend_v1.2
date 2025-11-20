@@ -27,20 +27,20 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className={`
                     fixed top-16 bottom-0 left-0 z-30 w-80 flex flex-col
-                    bg-white/90 dark:bg-slate-950/80 backdrop-blur-2xl
-                    border-r border-gray-200/30 dark:border-white/10
-                    shadow-2xl
+                    bg-white/85 dark:bg-slate-950/85 backdrop-blur-2xl
+                    border-r border-gray-200/40 dark:border-white/15
+                    shadow-2xl shadow-[#CE1126]/5 dark:shadow-[#002D62]/10
                     ${isMobile ? 'lg:transform-none' : ''}
                     overflow-hidden
                 `}
             >
                 {/* Header del Sidebar */}
-                <div className="sticky top-0 z-10 px-6 py-5 border-b border-gray-200/30 dark:border-white/10 bg-gradient-to-br from-red-100/60 via-blue-100/30 to-purple-100/30 dark:from-[#CE1126]/40 dark:via-[#0f2244]/30 dark:to-[#002D62]/40 backdrop-blur-xl">
+                <div className="sticky top-0 z-10 px-6 py-5 border-b border-gray-200/40 dark:border-white/15 bg-gradient-to-br from-red-50/80 via-white/60 to-blue-50/80 dark:from-[#CE1126]/30 dark:via-[#0f2244]/25 dark:to-[#002D62]/30 backdrop-blur-xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="relative">
-                                <div className="w-10 h-10 rounded-xl border border-red-200 dark:border-white/20 bg-red-50 dark:bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg shadow-red-500/40 dark:shadow-[#CE1126]/40">
-                                    <Flag className="w-5 h-5 text-red-600 dark:text-white/90" />
+                                <div className="w-10 h-10 rounded-xl border-2 border-[#CE1126]/30 dark:border-white/25 bg-gradient-to-br from-[#CE1126]/20 to-[#002D62]/20 dark:from-[#CE1126]/30 dark:to-[#002D62]/30 backdrop-blur-md flex items-center justify-center shadow-lg shadow-[#CE1126]/30 dark:shadow-[#CE1126]/40">
+                                    <Flag className="w-5 h-5 text-[#CE1126] dark:text-white/90" />
                                 </div>
                                 <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-wide text-gray-600 dark:text-white/80">
                                     🇩🇴
@@ -68,7 +68,7 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 sidebar-scroll overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-red-300 dark:scrollbar-thumb-[#CE1126]/60 scrollbar-track-transparent hover:scrollbar-thumb-red-400 dark:hover:scrollbar-thumb-[#CE1126]/80">
+                <nav className="flex-1 sidebar-scroll overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-[#CE1126]/40 dark:scrollbar-thumb-[#CE1126]/60 scrollbar-track-transparent hover:scrollbar-thumb-[#CE1126]/60 dark:hover:scrollbar-thumb-[#CE1126]/80">
                     <div className="mb-6">
                         <h3 className="text-xs font-bold text-gray-500 dark:text-white/50 uppercase tracking-[0.2em] mb-3 px-3">
                             Navegación Principal

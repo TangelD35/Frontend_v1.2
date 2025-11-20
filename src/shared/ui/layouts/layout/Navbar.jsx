@@ -106,8 +106,8 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/20 dark:border-white/10 bg-white/70 dark:bg-slate-950/70 backdrop-blur-3xl shadow-[0_20px_40px_-24px_rgba(8,25,43,0.8)]">
-                <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-purple-500/5 to-blue-500/5 dark:from-[#0f2244]/40 dark:via-transparent dark:to-[#5a0f1c]/40 opacity-70 pointer-events-none" />
+            <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/50 dark:border-white/15 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#CE1126]/5 via-transparent to-[#002D62]/5 dark:from-[#CE1126]/10 dark:via-transparent dark:to-[#002D62]/10 opacity-70 pointer-events-none" />
 
                 <div className="px-4 sm:px-6 relative z-10">
                     <div className="flex items-center justify-between h-16">
@@ -116,13 +116,13 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                             {/* Menu Toggle Button with enhanced animation */}
                             <button
                                 onClick={onMenuToggle}
-                                className="p-2 rounded-xl bg-gray-100/50 dark:bg-white/5 hover:bg-gray-200/50 dark:hover:bg-white/10 transition-all duration-200 border border-gray-300/20 dark:border-white/10"
+                                className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-[#CE1126]/10 hover:to-[#002D62]/10 dark:hover:from-[#CE1126]/20 dark:hover:to-[#002D62]/20 transition-all duration-300 hover:shadow-md border border-gray-200/50 dark:border-white/10"
                                 aria-label="Toggle menu"
                             >
                                 {isSidebarOpen ? (
-                                    <X className="w-5 h-5 text-gray-600 dark:text-white/80" />
+                                    <X className="w-5 h-5" />
                                 ) : (
-                                    <Menu className="w-5 h-5 text-gray-600 dark:text-white/80" />
+                                    <Menu className="w-5 h-5" />
                                 )}
                             </button>
 

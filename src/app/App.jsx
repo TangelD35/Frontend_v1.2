@@ -11,9 +11,6 @@ import LazyLoadErrorBoundary from './LazyLoadErrorBoundary';
 
 // Lazy-loaded components
 const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard/Dashboard'));
-const ModernDashboard = lazy(() => import('../features/dashboard/pages/Dashboard/ModernDashboard'));
-const EnhancedDashboard = lazy(() => import('../features/dashboard/components/EnhancedDashboard'));
-const WidgetTest = lazy(() => import('../features/dashboard/components/WidgetTest'));
 const Tournaments = lazy(() => import('../features/tournaments/pages/Tournaments/Tournaments'));
 const TournamentDetail = lazy(() => import('../features/tournaments/pages/Tournaments/TournamentDetail'));
 const Teams = lazy(() => import('../features/teams/pages/Teams/Teams'));
@@ -79,10 +76,6 @@ function App() {
                         <Route key="root-redirect" path="/" element={<Navigate to="/dashboard" replace />} />
                         <Route key="protected-layout" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                             <Route key="dashboard" path="/dashboard" element={<Dashboard />} />
-                            <Route key="dashboard-modern" path="/dashboard/modern" element={<ModernDashboard />} />
-                            <Route key="dashboard-enhanced" path="/dashboard/enhanced" element={<EnhancedDashboard />} />
-                            <Route key="dashboard-test" path="/dashboard/test" element={<WidgetTest />} />
-
                             <Route key="tournaments" path="/tournaments" element={<Tournaments />} />
                             <Route key="tournament-detail" path="/tournaments/:id" element={<TournamentDetail />} />
                             <Route key="teams" path="/teams" element={<Teams />} />

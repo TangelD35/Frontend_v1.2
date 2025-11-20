@@ -945,6 +945,13 @@ const Dashboard = () => {
                                                         src={`/src/assets/icons/${rival.flagCode}.svg`}
                                                         alt={`Bandera de ${rival.rival}`}
                                                         className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            const parent = e.target.parentElement;
+                                                            if (parent) {
+                                                                parent.innerHTML = '<span class="text-xl">🏀</span>';
+                                                            }
+                                                        }}
                                                     />
                                                 ) : (
                                                     <span className="text-xl">🏀</span>

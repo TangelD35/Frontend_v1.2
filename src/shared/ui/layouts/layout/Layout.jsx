@@ -37,11 +37,11 @@ const Layout = () => {
 
     return (
         <div className="min-h-screen relative overflow-hidden">
-            {/* Background Pattern Dominicano - Responsive to theme */}
-            <div className="fixed inset-0 bg-slate-950 dark:bg-slate-950 bg-gradient-to-br from-slate-50 via-red-50/30 to-blue-50/30 dark:from-slate-950 dark:via-[#021633] dark:to-slate-950">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-red-100/40 to-blue-100/40 dark:from-slate-950/95 dark:via-[#021633] dark:to-slate-950/95 opacity-95" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(206,17,38,0.25)_0%,transparent_60%),radial-gradient(circle_at_bottom,rgba(0,45,98,0.25)_0%,transparent_60%)] dark:bg-[radial-gradient(circle_at_top,rgba(15,76,129,0.55)_0%,transparent_60%),radial-gradient(circle_at_bottom,rgba(112,23,38,0.55)_0%,transparent_60%)] opacity-45" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.055)_1px,transparent_1px)] bg-[size:80px_80px] opacity-10" />
+            {/* Background Pattern Dominicano Mejorado */}
+            <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-red-50/20 to-blue-50/20 dark:from-slate-950 dark:via-[#021633] dark:to-slate-950">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-red-100/30 to-blue-100/30 dark:from-slate-950/90 dark:via-[#021633]/95 dark:to-slate-950/90" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(206,17,38,0.15)_0%,transparent_50%),radial-gradient(circle_at_bottom_left,rgba(0,45,98,0.15)_0%,transparent_50%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(206,17,38,0.3)_0%,transparent_50%),radial-gradient(circle_at_bottom_left,rgba(0,45,98,0.3)_0%,transparent_50%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
             </div>
 
             {/* Content */}
@@ -92,14 +92,13 @@ const Layout = () => {
                     {/* Main Content */}
                     <motion.main
                         layout
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className={`
-                            flex-1 transition-all duration-500 ease-in-out
+                            flex-1 transition-all duration-300 ease-in-out
                             ${isSidebarOpen && !isMobile ? 'lg:ml-80' : 'ml-0'}
-                            p-4 sm:p-6 lg:p-10
+                            p-4 sm:p-6 lg:p-8
+                            min-h-[calc(100vh-4rem)]
                         `}
-                        style={{
-                            marginLeft: isSidebarOpen && !isMobile ? '320px' : '0px'
-                        }}
                     >
                         <div className="max-w-7xl mx-auto space-y-8">
                             {/* Breadcrumbs */}

@@ -250,14 +250,18 @@ const Predictions = () => {
         }
         try {
             setLoadingTeamCluster(true);
+            console.log(' CLUSTERING - Datos enviados:', teamClusterData);
             const result = await mlPredictionsService.predictTeamCluster(teamClusterData);
+            console.log(' CLUSTERING - Respuesta recibida:', result);
+            console.log(' CLUSTERING - Cluster:', result.cluster);
+            console.log(' CLUSTERING - Características:', result.cluster_characteristics);
             setTeamClusterPrediction(result);
             saveToHistory('team', teamClusterData, result);
         } catch (error) {
-            console.error('Error completo:', error);
-            console.error('Datos enviados:', teamClusterData);
-            console.error('Respuesta:', error.response?.data);
-            console.error('Details:', error.response?.data?.details);
+            console.error(' CLUSTERING - Error completo:', error);
+            console.error(' CLUSTERING - Datos enviados:', teamClusterData);
+            console.error(' CLUSTERING - Respuesta:', error.response?.data);
+            console.error(' CLUSTERING - Details:', error.response?.data?.details);
             alert(`Error al clasificar equipo: ${error.response?.data?.message || error.message}\n${JSON.stringify(error.response?.data?.details || {})}`);
         } finally {
             setLoadingTeamCluster(false);
@@ -267,13 +271,18 @@ const Predictions = () => {
     const handleForecastPlayerPerformance = async () => {
         try {
             setLoadingPlayerForecast(true);
+            console.log(' FORECAST - Datos enviados:', playerForecastData);
+            console.log('📊 FORECAST - Datos enviados:', playerForecastData);
             const result = await mlPredictionsService.forecastPlayerPerformance(playerForecastData);
-            console.log('Respuesta de pronóstico:', result);
+            console.log('📊 FORECAST - Respuesta recibida:', result);
+            console.log('📊 FORECAST - Predicción:', result.prediction);
+            console.log('📊 FORECAST - Tendencia:', result.trend);
+            console.log('📊 FORECAST - Análisis:', result.analysis);
             setPlayerForecast(result);
             saveToHistory('forecast', playerForecastData, result);
         } catch (error) {
-            console.error('Error al pronosticar:', error);
-            console.error('Respuesta:', error.response?.data);
+            console.error('❌ FORECAST - Error:', error);
+            console.error('❌ FORECAST - Respuesta:', error.response?.data);
             alert(`Error al pronosticar rendimiento: ${error.response?.data?.message || error.message}`);
         } finally {
             setLoadingPlayerForecast(false);
@@ -890,37 +899,57 @@ const Predictions = () => {
                             <h2 className="text-lg font-bold mb-4">Pronóstico</h2>
                             {playerForecast ? (
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
-                                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-2 border-purple-300 dark:border-purple-700 shadow-lg">
+                                    {/* Proyección Futura */}
+                                    <div className="p-4 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10 border-2 border-[#CE1126]/30 shadow-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <TrendingUp className="w-5 h-5 text-purple-600" />
-                                            <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase">Proyección Futura</p>
+                                            <TrendingUp className="w-5 h-5 text-[#CE1126]" />
+                                            <p className="text-xs font-bold text-[#CE1126] uppercase tracking-wider">Proyección Futura</p>
                                         </div>
-                                        <p className="text-2xl font-black text-purple-900 dark:text-purple-100">
+                                        <p className="text-3xl font-black text-gray-900 dark:text-white mb-1">
                                             {playerForecast.forecasted_ppg ?
                                                 `${playerForecast.forecasted_ppg.toFixed(1)} pts/juego` :
                                                 playerForecast.predicted_ppg ?
                                                     `${playerForecast.predicted_ppg.toFixed(1)} pts/juego` :
                                                     'Calculando...'}
                                         </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                                            Promedio histórico: {playerForecastData.hist_ppg.toFixed(1)} pts/juego
+                                        </p>
                                     </div>
+
+                                    {/* Tendencia */}
                                     {playerForecast.trend && (
-                                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase mb-1">Tendencia</p>
-                                            <p className="text-sm text-blue-900 dark:text-blue-100">{playerForecast.trend}</p>
+                                        <div className={`p-4 rounded-lg border-2 shadow-lg ${playerForecast.trend === 'improving' || playerForecast.trend === 'stable'
+                                            ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-300 dark:border-green-700'
+                                            : 'bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-300 dark:border-orange-700'
+                                            }`}>
+                                            <p className={`text-xs font-bold uppercase mb-2 tracking-wider ${playerForecast.trend === 'improving' || playerForecast.trend === 'stable'
+                                                ? 'text-green-700 dark:text-green-300'
+                                                : 'text-orange-700 dark:text-orange-300'
+                                                }`}>
+                                                Tendencia
+                                            </p>
+                                            <p className={`text-lg font-bold ${playerForecast.trend === 'improving' || playerForecast.trend === 'stable'
+                                                ? 'text-green-900 dark:text-green-100'
+                                                : 'text-orange-900 dark:text-orange-100'
+                                                }`}>
+                                                {playerForecast.trend === 'improving' ? '📈 Mejorando' :
+                                                    playerForecast.trend === 'declining' ? '📉 Declinando' :
+                                                        playerForecast.trend === 'stable' ? '➡️ Estable' :
+                                                            playerForecast.trend}
+                                            </p>
                                         </div>
                                     )}
+
+                                    {/* Análisis */}
                                     {playerForecast.interpretation && (
-                                        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                                            <p className="text-xs font-bold text-green-700 dark:text-green-300 uppercase mb-1">Análisis</p>
-                                            <p className="text-sm text-green-900 dark:text-green-100">{playerForecast.interpretation}</p>
-                                        </div>
+                                        <button
+                                            onClick={() => setPlayerForecast(null)}
+                                            className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
+                                        >
+                                            Nuevo Pronóstico
+                                        </button>
                                     )}
-                                    <button
-                                        onClick={() => setPlayerForecast(null)}
-                                        className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
-                                    >
-                                        Nuevo Pronóstico
-                                    </button>
                                 </motion.div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">

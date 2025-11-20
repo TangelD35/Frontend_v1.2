@@ -47,6 +47,26 @@ import { teamsService } from '../../../../shared/api/endpoints/teams';
 import { mlPredictionsService } from '../../../../shared/api/endpoints/mlPredictions';
 import BanderaDominicana from '../../../../assets/icons/do.svg';
 
+// Helper para obtener imagen del jugador
+const getPlayerImage = (playerName) => {
+    if (!playerName) return null;
+
+    // Normalizar el nombre del jugador
+    const normalizedName = playerName.trim();
+
+    // Lista de extensiones posibles (ordenadas por preferencia)
+    const extensions = ['.webp', '.avif', '.png', '.jpg', '.jpeg'];
+
+    // Intentar con el nombre completo primero
+    for (const ext of extensions) {
+        const imagePath = `/images/jugadores/${normalizedName}${ext}`;
+        // Retornar la ruta - el navegador manejará si existe o no
+        return imagePath;
+    }
+
+    return null;
+};
+
 // Componente optimizado para estadística individual
 const StatCard = memo(({ stat, index }) => {
     const navigate = useNavigate();
@@ -71,21 +91,21 @@ const StatCard = memo(({ stat, index }) => {
                 onClick={() => navigate('/analytics')}
             >
                 {/* Header con título */}
-                <div className={`${headerColors[index]} px-3 py-2 border-b`}>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider text-center">
+                <div className={`${headerColors[index]} px-2 py-1.5 border-b`}>
+                    <h3 className="text-[10px] font-bold text-white uppercase tracking-wider text-center">
                         {stat.label}
                     </h3>
                 </div>
 
                 {/* Contenido */}
-                <div className="p-4 text-center">
-                    <div className="text-3xl font-black text-gray-900 dark:text-white mb-1">
+                <div className="p-3 text-center">
+                    <div className="text-2xl font-black text-gray-900 dark:text-white mb-0.5">
                         {stat.value}
                     </div>
-                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    <div className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">
                         {stat.description}
                     </div>
-                    <div className={`text-xs font-bold mt-2 ${stat.trend === 'up' ? 'text-green-600' :
+                    <div className={`text-[10px] font-bold mt-1 ${stat.trend === 'up' ? 'text-green-600' :
                         stat.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                         }`}>
                         {stat.change}
@@ -109,39 +129,58 @@ const PlayerCard = memo(({ player, index }) => {
         'FG%': 'bg-[#CE1126] text-white'
     };
 
+    const playerImage = getPlayerImage(player.name);
+
     return (
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1, duration: 0.3 }}
-            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             onClick={() => navigate(`/players/${player.id}`)}
         >
-            <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-700">
-                    {player.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </span>
+            {/* Imagen del jugador */}
+            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex-shrink-0">
+                {playerImage ? (
+                    <img
+                        src={playerImage}
+                        alt={player.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ display: playerImage ? 'none' : 'flex' }}
+                >
+                    <span className="text-xs font-bold text-gray-700">
+                        {player.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </span>
+                </div>
             </div>
 
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">
                         {player.name}
                     </h4>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
                         {player.position}
                     </span>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
+                <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
                     {player.description}
                 </p>
             </div>
 
-            <div className="text-right">
-                <div className={`px-2 py-1 rounded-md text-xs font-bold ${categoryColors[player.category] || 'bg-gray-500 text-white'}`}>
+            <div className="text-right flex-shrink-0">
+                <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${categoryColors[player.category] || 'bg-gray-500 text-white'}`}>
                     {player.category}
                 </div>
-                <div className="text-lg font-black text-gray-900 dark:text-white mt-1">
+                <div className="text-base font-black text-gray-900 dark:text-white mt-0.5">
                     {player.value}
                 </div>
             </div>
@@ -303,13 +342,6 @@ const Dashboard = () => {
             const summaryData = await analyticsService.getSummary();
             setSummary(summaryData);
 
-            // Console log para stats cards
-            console.log('📊 DEBUG STATS CARDS - Datos del summary:');
-            console.log('Total Partidos:', summaryData?.total_games || 'N/A');
-            console.log('Victorias:', summaryData?.total_wins || 'N/A');
-            console.log('Derrotas:', summaryData?.total_losses || 'N/A');
-            console.log('% Victorias:', summaryData?.win_percentage || 'N/A');
-
             // Buscar equipo RD
             const rdTeam = await teamsService.getDominicanTeam();
             if (rdTeam) {
@@ -318,15 +350,6 @@ const Dashboard = () => {
                 // Cargar overview del equipo
                 const overview = await analyticsService.getTeamStats(rdTeam.id, 2010, 2025);
                 setTeamOverview(overview);
-
-                // Console log para team overview
-                console.log('🏀 DEBUG TEAM OVERVIEW - Datos del equipo:');
-                console.log('Overview completo:', overview);
-                if (overview?.overview) {
-                    console.log('Total games (overview):', overview.overview.total_games);
-                    console.log('Total wins (overview):', overview.overview.total_wins);
-                    console.log('Total losses (overview):', overview.overview.total_losses);
-                }
 
                 // Cargar tendencias reales del equipo
                 try {
@@ -349,10 +372,8 @@ const Dashboard = () => {
                         }));
 
                         setTrendsData(formattedTrends);
-                        console.log('📈 Tendencias cargadas del backend:', formattedTrends);
                     }
                 } catch (error) {
-                    console.error('❌ Error cargando tendencias:', error);
                     setTrendsData([]);
                 }
             }
@@ -382,24 +403,21 @@ const Dashboard = () => {
                                 // Mapear el valor correcto según la categoría
                                 let value = 'N/A';
 
-                                // Console log para ver estructura del jugador
-                                console.log(`🔍 Estructura del jugador ${player.player_name} para ${category}:`, player);
-
                                 switch (category) {
                                     case 'PPG':
-                                        value = player.ppg || player.points_per_game || player.avg_points || player.value || 'N/A';
+                                        value = player.metric_value || player.ppg || player.avg_points || 'N/A';
                                         break;
                                     case 'APG':
-                                        value = player.apg || player.assists_per_game || player.avg_assists || player.value || 'N/A';
+                                        value = player.metric_value || player.apg || player.avg_assists || 'N/A';
                                         break;
                                     case 'RPG':
-                                        value = player.rpg || player.rebounds_per_game || player.avg_rebounds || player.total_rebounds || player.value || 'N/A';
+                                        value = player.metric_value || player.rpg || player.avg_rebounds || 'N/A';
                                         break;
                                     case 'SPG':
-                                        value = player.spg || player.steals_per_game || player.avg_steals || player.steals || player.value || 'N/A';
+                                        value = player.metric_value || player.avg_steals || 'N/A';
                                         break;
                                     case 'BPG':
-                                        value = player.bpg || player.blocks_per_game || player.avg_blocks || player.blocks || player.value || 'N/A';
+                                        value = player.metric_value || player.avg_blocks || 'N/A';
                                         break;
                                 }
 
@@ -422,24 +440,8 @@ const Dashboard = () => {
                 addPlayerIfUnique(spgPlayers, 'SPG', 'Líder en Robos');
                 addPlayerIfUnique(bpgPlayers, 'BPG', 'Líder en Bloqueos');
 
-                // Console log para estructura de jugadores
-                console.log('🔍 DEBUG ESTRUCTURA JUGADORES - Datos del backend:');
-                if (ppgPlayers && ppgPlayers.length > 0) {
-                    console.log('Primer jugador PPG completo:', ppgPlayers[0]);
-                }
-                if (apgPlayers && apgPlayers.length > 0) {
-                    console.log('Primer jugador APG completo:', apgPlayers[0]);
-                }
-
-                // Console log para jugadores
-                console.log('👥 DEBUG JUGADORES - Mejores por estadística (sin repeticiones):');
-                topPlayersList.forEach((player, index) => {
-                    console.log(`${index + 1}. ${player.player_name} -> ${player.category}: ${player.value || 'N/A'} (${player.description})`);
-                });
-
                 setTopPlayers(topPlayersList.slice(0, 5));
             } catch (error) {
-                console.log('❌ Error cargando jugadores del backend, usando datos de fallback');
                 // Fallback con jugadores únicos por categoría
                 setTopPlayers([
                     {
@@ -519,6 +521,16 @@ const Dashboard = () => {
                     }
                 });
 
+                // Cargar torneos para mapear IDs a nombres
+                const tournamentsService = await import('../../../../shared/api/endpoints/tournaments');
+                const tournamentsResponse = await tournamentsService.tournamentsService.getAll();
+                const tournamentsArray = Array.isArray(tournamentsResponse) ? tournamentsResponse : (tournamentsResponse?.items || []);
+
+                const tournamentMap = {};
+                tournamentsArray.forEach(tournament => {
+                    tournamentMap[tournament.id] = tournament.name;
+                });
+
                 // Ahora cargar los partidos
                 const games = await gamesService.getAll({ limit: 100 });
 
@@ -551,9 +563,10 @@ const Dashboard = () => {
 
                             // Guardar detalles del último partido
                             if (!rivalDetails[rival] || new Date(game.game_date) > new Date(rivalDetails[rival].date)) {
+                                const tournamentName = game.tournament_id ? tournamentMap[game.tournament_id] : null;
                                 rivalDetails[rival] = {
                                     date: game.game_date,
-                                    tournament: game.tournament_name || 'Torneo',
+                                    tournament: tournamentName || game.tournament_name || 'Amistoso',
                                     result: game.result || 'N/A'
                                 };
                             }
@@ -638,36 +651,46 @@ const Dashboard = () => {
                             };
                         });
 
-                    // Console log para banderas
-                    console.log('🏴 DEBUG BANDERAS - Rivales encontrados:');
-                    topRivals.forEach((rival, index) => {
-                        console.log(`${index + 1}. ${rival.rival} -> ${rival.flagCode} (${rival.flagCode ? 'OK' : 'NO ENCONTRADA'})`);
-                    });
-
-                    // Console log para torneos
-                    console.log('🏆 DEBUG TORNEOS - Últimos encuentros:');
-                    topRivals.forEach((rival, index) => {
-                        console.log(`${index + 1}. ${rival.rival} -> Torneo: "${rival.lastMeeting}" | Resultado: "${rival.result}"`);
-                    });
-
                     setGamesData(topRivals);
                 } else {
                     setGamesData([]);
                 }
             } catch (error) {
-                console.error('❌ Error cargando rivales:', error);
                 setGamesData([]);
             }
 
-            // Datos simulados para modelos ML
-            setMlModels([
-                { name: 'Predictor de Victorias', accuracy: 0.85, type: 'Clasificación' },
-                { name: 'Análisis de Rendimiento', accuracy: 0.78, type: 'Regresión' },
-                { name: 'Predictor de Puntos', accuracy: 0.82, type: 'Regresión' }
-            ]);
+            // Cargar modelos ML reales del backend
+            try {
+                const modelsSummary = await mlPredictionsService.getModelsSummary();
+
+                const mlModelsData = [];
+
+                // Modelo de predicción de resultado de partido
+                if (modelsSummary?.game_outcome) {
+                    mlModelsData.push({
+                        name: 'Predictor de Victorias',
+                        accuracy: modelsSummary.game_outcome.accuracy || modelsSummary.game_outcome.test_accuracy,
+                        type: 'Clasificación',
+                        metrics: modelsSummary.game_outcome
+                    });
+                }
+
+                // Modelo de predicción de puntos de jugador
+                if (modelsSummary?.player_points) {
+                    mlModelsData.push({
+                        name: 'Predictor de Puntos de Jugador',
+                        accuracy: modelsSummary.player_points.r2_score || modelsSummary.player_points.test_r2,
+                        type: 'Regresión',
+                        metrics: modelsSummary.player_points
+                    });
+                }
+
+                setMlModels(mlModelsData);
+            } catch (error) {
+                setMlModels([]);
+            }
 
         } catch (error) {
-            console.error('Error cargando dashboard:', error);
             // Establecer datos por defecto en caso de error
             setSummary({
                 total_games: 150,
@@ -688,52 +711,34 @@ const Dashboard = () => {
         const offense = teamOverview.offense?.efficiency_metrics || {};
         const defense = teamOverview.defense?.defensive_actions || {};
 
-        // Console log para verificar datos de stats cards
-        console.log('🔧 DEBUG STATS CALCULATION - Datos para las cards:');
-        console.log('Overview data:', overview);
-        console.log('Offense data:', offense);
-        console.log('Defense data:', defense);
-
         return [
             {
-                icon: Trophy,
                 label: 'Total Partidos',
                 value: overview.total_games || summary.games || 0,
                 change: `${overview.total_wins || 0}V - ${overview.total_losses || 0}D`,
-                color: 'bg-gradient-to-br from-[#CE1126] to-[#8B0D1A]',
                 trend: 'neutral',
-                period: '2010-2025',
-                description: 'Período histórico'
+                description: 'Período 2010-2025'
             },
             {
-                icon: Target,
                 label: 'Eficiencia Ofensiva',
                 value: offense.avg_points ? `${offense.avg_points.toFixed(1)}` : '0.0',
                 change: `FG: ${offense.shooting_efficiency?.fg_pct?.toFixed(1) || 0}%`,
-                color: 'bg-gradient-to-br from-green-500 to-green-600',
                 trend: 'up',
-                period: 'PPG',
                 description: 'Puntos por partido'
             },
             {
-                icon: Shield,
                 label: 'Eficiencia Defensiva',
                 value: defense.avg_steals ? `${defense.avg_steals.toFixed(1)}` : '0.0',
                 change: `${defense.avg_blocks?.toFixed(1) || 0} BLQ`,
-                color: 'bg-gradient-to-br from-[#002D62] to-blue-700',
                 trend: 'up',
-                period: 'SPG',
                 description: 'Robos por partido'
             },
             {
-                icon: Percent,
                 label: '% de Victorias',
                 value: overview.win_percentage ? `${(overview.win_percentage * 100).toFixed(1)}%` : '0%',
                 change: overview.total_wins ? `${overview.total_wins} victorias` : '0 victorias',
-                color: 'bg-gradient-to-br from-orange-500 to-orange-600',
                 trend: overview.win_percentage > 0.5 ? 'up' : 'down',
-                period: 'Histórico',
-                description: 'Período 2010-2025'
+                description: 'Período histórico'
             },
         ];
     }, [teamOverview, summary]);
@@ -917,123 +922,70 @@ const Dashboard = () => {
                             </button>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {frequentRivals.length > 0 ? (
                                 frequentRivals.map((rival, index) => (
                                     <motion.div
                                         key={rival.id}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1, duration: 0.3 }}
-                                        className="group relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden"
+                                        className={`group relative rounded-lg p-3 hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4 ${index === 0 ? 'bg-gradient-to-r from-[#CE1126]/10 to-transparent border-[#CE1126]' :
+                                            index === 1 ? 'bg-gradient-to-r from-[#002D62]/10 to-transparent border-[#002D62]' :
+                                                'bg-gradient-to-r from-gray-100/50 to-transparent border-gray-400 dark:from-gray-800/50'
+                                            }`}
                                         onClick={() => navigate('/games')}
                                     >
-                                        {/* Gradiente de fondo sutil */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-[#CE1126]/5 via-transparent to-[#002D62]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                        <div className="relative flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4">
-                                            {/* Bandera y ranking */}
-                                            <div className="flex items-center gap-3 w-full md:w-auto">
-                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center shadow-lg border-2 border-white/60 dark:border-gray-600 flex-shrink-0 overflow-hidden">
-                                                    {rival.flagCode ? (
-                                                        <img
-                                                            src={`/src/assets/icons/${rival.flagCode}.svg`}
-                                                            alt={`Bandera de ${rival.rival}`}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-xl md:text-2xl">🏀</span>
-                                                    )}
-                                                </div>
-                                                <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-xs font-black text-white shadow-lg flex-shrink-0 ${index === 0 ? 'bg-gradient-to-br from-[#CE1126] to-[#8B0D1A]' :
-                                                    index === 1 ? 'bg-gradient-to-br from-[#002D62] to-[#1e3a8a]' :
-                                                        'bg-gradient-to-br from-gray-500 to-gray-600'
-                                                    }`}>
-                                                    #{index + 1}
-                                                </div>
-
-                                                {/* Información del rival - móvil */}
-                                                <div className="flex-1 md:hidden">
-                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                                                        <h4 className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
-                                                            {rival.rival}
-                                                        </h4>
-                                                        <div className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-fit">
-                                                            <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                                                                {rival.count} partidos
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
-                                                        Rival histórico más frecuente
-                                                    </p>
-                                                </div>
+                                        <div className="flex items-center gap-3">
+                                            {/* Bandera */}
+                                            <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center shadow border border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-hidden">
+                                                {rival.flagCode ? (
+                                                    <img
+                                                        src={`/src/assets/icons/${rival.flagCode}.svg`}
+                                                        alt={`Bandera de ${rival.rival}`}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xl">🏀</span>
+                                                )}
                                             </div>
 
-                                            {/* Información del rival - desktop */}
-                                            <div className="hidden md:block flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className="text-lg font-black text-gray-900 dark:text-white">
+                                            {/* Info principal */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className={`text-xs font-black ${index === 0 ? 'text-[#CE1126]' :
+                                                        index === 1 ? 'text-[#002D62]' :
+                                                            'text-gray-500'
+                                                        }`}>
+                                                        #{index + 1}
+                                                    </span>
+                                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
                                                         {rival.rival}
                                                     </h4>
-                                                    <div className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                                                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                                                            {rival.count} partidos
-                                                        </span>
-                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
-                                                    Rival histórico más frecuente
-                                                </p>
-                                            </div>
-
-                                            {/* Métricas de rendimiento */}
-                                            <div className="grid grid-cols-2 gap-2 md:gap-3 text-center w-full md:w-auto">
-                                                {/* Record histórico */}
-                                                <div className="p-2 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700">
-                                                    <div className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                                        Record
-                                                    </div>
-                                                    <div className="text-sm md:text-lg font-black text-gray-900 dark:text-white">
-                                                        {rival.record}
-                                                    </div>
-                                                </div>
-
-                                                {/* Dominancia */}
-                                                <div className={`p-2 rounded-lg border ${rival.dominance >= 50
-                                                    ? 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800'
-                                                    : 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-800'
-                                                    }`}>
-                                                    <div className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                                                        Dominancia
-                                                    </div>
-                                                    <div className={`text-sm md:text-lg font-black ${rival.dominance >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                                        }`}>
-                                                        {rival.dominance}%
-                                                    </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400">
+                                                    <span className="font-semibold">{rival.count} partidos</span>
+                                                    <span>•</span>
+                                                    <span className="font-semibold">Record: {rival.record}</span>
                                                 </div>
                                             </div>
 
-                                            {/* Último encuentro */}
-                                            <div className="text-center md:text-right w-full md:min-w-[100px] lg:min-w-[120px] md:w-auto">
-                                                <div className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                            {/* Último encuentro compacto */}
+                                            <div className="text-right flex-shrink-0">
+                                                <div className="text-[9px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-0.5">
                                                     Último vs
                                                 </div>
-                                                <div className="text-xs text-gray-600 dark:text-gray-300 font-semibold mb-1 truncate">
+                                                <div className="text-[10px] text-gray-700 dark:text-gray-300 font-semibold mb-1 truncate max-w-[100px]">
                                                     {rival.lastMeeting}
                                                 </div>
-                                                <div className={`inline-flex px-2 py-1 rounded-md text-xs font-bold ${rival.result.startsWith('W')
-                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                                                <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold ${rival.result.startsWith('W')
+                                                    ? 'bg-[#CE1126]/10 text-[#CE1126] border border-[#CE1126]/20'
+                                                    : 'bg-[#002D62]/10 text-[#002D62] border border-[#002D62]/20'
                                                     }`}>
                                                     {rival.result}
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        {/* Indicador de hover */}
-                                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0 translate-x-2">
-                                            <ArrowRight className="w-5 h-5 text-[#CE1126]" />
                                         </div>
                                     </motion.div>
                                 ))
@@ -1107,65 +1059,143 @@ const Dashboard = () => {
 
             {/* Sección de Tendencias del Equipo */}
             {trendsData && trendsData.length > 0 && (
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
-                                <BarChart3 className="w-5 h-5 text-[#CE1126]" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                                    Tendencias del Equipo
-                                </h2>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Evolución histórica por temporadas
-                                </p>
-                            </div>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
+                            <TrendingUp className="w-6 h-6 text-[#CE1126]" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Tendencias del Equipo
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Evolución histórica por temporadas
+                            </p>
                         </div>
                     </div>
 
-                    <div className="h-64">
+                    {/* Filtros de métricas */}
+                    <div className="mb-6">
+                        <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
+                            Seleccionar Estadística
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { key: 'points', label: 'Puntos', color: '#CE1126' },
+                                { key: 'assists', label: 'Asistencias', color: '#002D62' },
+                                { key: 'rebounds', label: 'Rebotes', color: '#6b7280' },
+                                { key: 'steals', label: 'Robos', color: '#10b981' },
+                                { key: 'blocks', label: 'Bloqueos', color: '#f59e0b' },
+                                { key: 'fg_pct', label: 'FG%', color: '#8b5cf6' },
+                                { key: 'three_pct', label: '3P%', color: '#ec4899' },
+                                { key: 'ft_pct', label: 'FT%', color: '#06b6d4' },
+                            ].map(metric => (
+                                <button
+                                    key={metric.key}
+                                    onClick={() => setSelectedMetric(metric.key)}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${selectedMetric === metric.key
+                                        ? 'text-white shadow-lg transform scale-105'
+                                        : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        }`}
+                                    style={selectedMetric === metric.key ? { backgroundColor: metric.color } : {}}
+                                >
+                                    {metric.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Filtros de rango de años */}
+                    <div className="mb-6">
+                        <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
+                            Rango de Años
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { label: 'Últimos 5 años', start: 2020, end: 2025 },
+                                { label: 'Últimos 10 años', start: 2015, end: 2025 },
+                                { label: 'Todo el período', start: 2010, end: 2025 },
+                            ].map(range => (
+                                <button
+                                    key={`${range.start}-${range.end}`}
+                                    onClick={() => setSelectedYearRange({ start: range.start, end: range.end })}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${selectedYearRange.start === range.start && selectedYearRange.end === range.end
+                                        ? 'bg-[#002D62] text-white shadow-lg'
+                                        : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        }`}
+                                >
+                                    {range.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Gráfico */}
+                    <div className="h-80 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl p-4">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={trendsData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" opacity={0.3} />
-                                <XAxis
-                                    dataKey="season"
-                                    stroke="#6b7280"
-                                    fontSize={10}
-                                />
-                                <YAxis
-                                    stroke="#6b7280"
-                                    fontSize={10}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '6px',
-                                        fontSize: '10px',
-                                        padding: '6px 10px'
-                                    }}
-                                />
-                                <Legend fontSize={10} />
-                                <Bar
-                                    dataKey="points"
-                                    fill="#CE1126"
-                                    name="Puntos"
-                                    radius={[2, 2, 0, 0]}
-                                />
-                                <Bar
-                                    dataKey="assists"
-                                    fill="#002D62"
-                                    name="Asistencias"
-                                    radius={[2, 2, 0, 0]}
-                                />
-                                <Bar
-                                    dataKey="rebounds"
-                                    fill="#6b7280"
-                                    name="Rebotes"
-                                    radius={[2, 2, 0, 0]}
-                                />
-                            </BarChart>
+                            {(() => {
+                                // Obtener color dinámico según métrica seleccionada
+                                const metricColors = {
+                                    'points': '#CE1126',
+                                    'assists': '#002D62',
+                                    'rebounds': '#6b7280',
+                                    'steals': '#10b981',
+                                    'blocks': '#f59e0b',
+                                    'fg_pct': '#8b5cf6',
+                                    'three_pct': '#ec4899',
+                                    'ft_pct': '#06b6d4'
+                                };
+                                const currentColor = metricColors[selectedMetric] || '#CE1126';
+
+                                return (
+                                    <AreaChart
+                                        data={trendsData.filter(d =>
+                                            parseInt(d.season) >= selectedYearRange.start &&
+                                            parseInt(d.season) <= selectedYearRange.end
+                                        )}
+                                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                                    >
+                                        <defs>
+                                            <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={currentColor} stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor={currentColor} stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                        <XAxis
+                                            dataKey="season"
+                                            stroke="#6b7280"
+                                            fontSize={12}
+                                            fontWeight={600}
+                                        />
+                                        <YAxis
+                                            stroke="#6b7280"
+                                            fontSize={12}
+                                            fontWeight={600}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                                                border: `2px solid ${currentColor}`,
+                                                borderRadius: '8px',
+                                                fontSize: '12px',
+                                                padding: '8px 12px',
+                                                fontWeight: 600
+                                            }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey={selectedMetric}
+                                            stroke={currentColor}
+                                            strokeWidth={3}
+                                            fill="url(#colorMetric)"
+                                            dot={{ r: 4, fill: currentColor, strokeWidth: 2, stroke: '#fff' }}
+                                            activeDot={{ r: 6, fill: currentColor, strokeWidth: 2, stroke: '#fff' }}
+                                        />
+                                    </AreaChart>
+                                );
+                            })()}
                         </ResponsiveContainer>
                     </div>
                 </div>
@@ -1175,20 +1205,24 @@ const Dashboard = () => {
             {leagueAverages && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Card PPG */}
-                    <div className="bg-white dark:bg-gray-50 border border-gray-200 dark:border-gray-300 shadow-lg rounded-lg p-8">
-                        <div className="text-center">
-                            <p className="text-lg font-bold text-[#002D62] uppercase tracking-wider mb-3">
-                                Promedio PPG
-                            </p>
-                            <p className="text-6xl font-black text-gray-900 dark:text-gray-900 mb-1">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-950/20 border-2 border-[#002D62]/20 shadow-xl rounded-xl p-6 hover:shadow-2xl transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#002D62]/5 rounded-full -mr-16 -mt-16"></div>
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-bold text-[#002D62] uppercase tracking-wider">
+                                    Promedio PPG
+                                </p>
+                                <TrendingUp className="w-5 h-5 text-[#002D62]" />
+                            </div>
+                            <p className="text-5xl font-black text-gray-900 dark:text-white mb-3">
                                 {leagueAverages.avg_points?.toFixed(1) || '0.0'}
                             </p>
-                            <div className="h-16 mt-4 bg-gradient-to-b from-gray-50 to-white">
+                            <div className="h-12 bg-gradient-to-b from-transparent to-white/50 dark:to-gray-900/50 rounded">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={trendsData?.slice(-5) || []}>
                                         <defs>
                                             <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#002D62" stopOpacity={0.4} />
+                                                <stop offset="5%" stopColor="#002D62" stopOpacity={0.5} />
                                                 <stop offset="95%" stopColor="#002D62" stopOpacity={0.05} />
                                             </linearGradient>
                                         </defs>
@@ -1197,29 +1231,36 @@ const Dashboard = () => {
                                             dataKey="points"
                                             stroke="#002D62"
                                             fill="url(#colorPoints)"
-                                            strokeWidth={2}
+                                            strokeWidth={2.5}
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-semibold">
+                                Últimas 5 temporadas
+                            </p>
                         </div>
                     </div>
 
                     {/* Card APG */}
-                    <div className="bg-white dark:bg-gray-50 border border-gray-200 dark:border-gray-300 shadow-lg rounded-lg p-8">
-                        <div className="text-center">
-                            <p className="text-lg font-bold text-gray-600 uppercase tracking-wider mb-3">
-                                Promedio APG
-                            </p>
-                            <p className="text-6xl font-black text-gray-900 dark:text-gray-900 mb-1">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-950/20 border-2 border-gray-300/30 shadow-xl rounded-xl p-6 hover:shadow-2xl transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gray-400/5 rounded-full -mr-16 -mt-16"></div>
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-bold text-gray-600 uppercase tracking-wider">
+                                    Promedio APG
+                                </p>
+                                <Activity className="w-5 h-5 text-gray-600" />
+                            </div>
+                            <p className="text-5xl font-black text-gray-900 dark:text-white mb-3">
                                 {leagueAverages.avg_assists?.toFixed(1) || '0.0'}
                             </p>
-                            <div className="h-16 mt-4 bg-gradient-to-b from-gray-50 to-white">
+                            <div className="h-12 bg-gradient-to-b from-transparent to-white/50 dark:to-gray-900/50 rounded">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={trendsData?.slice(-5) || []}>
                                         <defs>
                                             <linearGradient id="colorAssists" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
+                                                <stop offset="5%" stopColor="#6b7280" stopOpacity={0.5} />
                                                 <stop offset="95%" stopColor="#6b7280" stopOpacity={0.05} />
                                             </linearGradient>
                                         </defs>
@@ -1228,29 +1269,36 @@ const Dashboard = () => {
                                             dataKey="assists"
                                             stroke="#6b7280"
                                             fill="url(#colorAssists)"
-                                            strokeWidth={2}
+                                            strokeWidth={2.5}
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-semibold">
+                                Últimas 5 temporadas
+                            </p>
                         </div>
                     </div>
 
                     {/* Card RPG */}
-                    <div className="bg-white dark:bg-gray-50 border border-gray-200 dark:border-gray-300 shadow-lg rounded-lg p-8">
-                        <div className="text-center">
-                            <p className="text-lg font-bold text-[#CE1126] uppercase tracking-wider mb-3">
-                                Promedio RPG
-                            </p>
-                            <p className="text-6xl font-black text-gray-900 dark:text-gray-900 mb-1">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-red-950/20 border-2 border-[#CE1126]/20 shadow-xl rounded-xl p-6 hover:shadow-2xl transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#CE1126]/5 rounded-full -mr-16 -mt-16"></div>
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-bold text-[#CE1126] uppercase tracking-wider">
+                                    Promedio RPG
+                                </p>
+                                <Target className="w-5 h-5 text-[#CE1126]" />
+                            </div>
+                            <p className="text-5xl font-black text-gray-900 dark:text-white mb-3">
                                 {leagueAverages.avg_rebounds?.toFixed(1) || '0.0'}
                             </p>
-                            <div className="h-16 mt-4 bg-gradient-to-b from-gray-50 to-white">
+                            <div className="h-12 bg-gradient-to-b from-transparent to-white/50 dark:to-gray-900/50 rounded">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={trendsData?.slice(-5) || []}>
                                         <defs>
                                             <linearGradient id="colorRebounds" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#CE1126" stopOpacity={0.4} />
+                                                <stop offset="5%" stopColor="#CE1126" stopOpacity={0.5} />
                                                 <stop offset="95%" stopColor="#CE1126" stopOpacity={0.05} />
                                             </linearGradient>
                                         </defs>
@@ -1264,6 +1312,9 @@ const Dashboard = () => {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-semibold">
+                                Últimas 5 temporadas
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1273,57 +1324,108 @@ const Dashboard = () => {
             {mlModels && mlModels.length > 0 && (
                 <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10">
-                                <Zap className="w-6 h-6 text-purple-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    Modelos de Machine Learning
-                                </h2>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Predicciones y análisis predictivo
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Modelos de Machine Learning
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Predicciones y análisis predictivo
+                            </p>
                         </div>
                         <button
                             onClick={() => navigate('/predictions')}
-                            className="text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-2"
+                            className="text-sm font-semibold text-[#CE1126] hover:text-[#8B0D1A] transition-colors flex items-center gap-2"
                         >
                             Ver predicciones
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {mlModels.slice(0, 3).map((model, index) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {mlModels.map((model, index) => (
                             <div
                                 key={index}
-                                className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20"
+                                className="relative overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-lg transition-all duration-300"
                             >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Award className="w-5 h-5 text-purple-600" />
-                                        <h3 className="font-bold text-sm text-gray-900 dark:text-white">
+                                {/* Header con color alternado */}
+                                <div className={`px-4 py-3 ${index % 2 === 0
+                                    ? 'bg-[#CE1126]'
+                                    : 'bg-[#002D62]'
+                                    }`}>
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-bold text-sm text-white">
                                             {model.name || 'Modelo ML'}
                                         </h3>
+                                        <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded">
+                                            Activo
+                                        </span>
                                     </div>
-                                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded">
-                                        Activo
-                                    </span>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-gray-600 dark:text-gray-400">Precisión</span>
-                                        <span className="text-sm font-black text-purple-600">
-                                            {model.accuracy ? `${(model.accuracy * 100).toFixed(1)}%` : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-gray-600 dark:text-gray-400">Tipo</span>
-                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                            {model.type || 'Clasificación'}
-                                        </span>
+
+                                {/* Body con métricas */}
+                                <div className={`px-4 py-4 ${index % 2 === 0
+                                    ? 'bg-red-50 dark:bg-red-950/20'
+                                    : 'bg-blue-50 dark:bg-blue-950/20'
+                                    }`}>
+                                    <div className="space-y-3">
+                                        {/* Precisión destacada */}
+                                        <div className="text-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                                            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                                Precisión del Modelo
+                                            </p>
+                                            <p className={`text-4xl font-black ${index % 2 === 0
+                                                ? 'text-[#CE1126]'
+                                                : 'text-[#002D62]'
+                                                }`}>
+                                                {model.accuracy ? `${(model.accuracy * 100).toFixed(1)}%` : 'N/A'}
+                                            </p>
+                                        </div>
+
+                                        {/* Tipo de modelo */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                Tipo de Modelo
+                                            </span>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white px-2 py-1 bg-white dark:bg-gray-700 rounded">
+                                                {model.type || 'Clasificación'}
+                                            </span>
+                                        </div>
+
+                                        {/* Métricas adicionales si existen */}
+                                        {model.metrics && (
+                                            <>
+                                                {model.metrics.precision && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                            Precision
+                                                        </span>
+                                                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                            {(model.metrics.precision * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {model.metrics.recall && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                            Recall
+                                                        </span>
+                                                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                            {(model.metrics.recall * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {model.metrics.f1_score && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                                            F1 Score
+                                                        </span>
+                                                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                            {(model.metrics.f1_score * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>

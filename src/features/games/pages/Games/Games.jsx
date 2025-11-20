@@ -24,7 +24,7 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useFormValidation from '../../../../shared/hooks/useFormValidation';
@@ -34,6 +34,8 @@ import { useGames } from '../../hooks/useGames';
 import { useTeams } from '../../../teams/hooks/useTeams';
 import { useTournaments } from '../../../tournaments/hooks/useTournaments';
 import { gamesService } from '../../../../shared/api/endpoints/games';
+import { teamsService } from '../../../../shared/api/endpoints/teams';
+import { analyticsService } from '../../../../shared/api/endpoints/analytics';
 import { advancedAnalyticsService } from '../../../../shared/api/endpoints/advancedAnalytics';
 import { GlassCard, AnimatedButton, LoadingState, ErrorState, ModernModal, ToastContainer } from '../../../../shared/ui/components/modern';
 
@@ -227,13 +229,16 @@ const Games = () => {
     // Estado para almacenar TODOS los partidos (sin paginación) para estadísticas
     const [allGames, setAllGames] = useState([]);
 
-    // Estado para estadísticas del equipo desde analytics
+    // Estado para estadísticas del equipo desde analytics (backend)
     const [teamStats, setTeamStats] = useState({
         victories: 0,
         losses: 0,
         winRate: 0,
         totalGames: 0
     });
+
+    // Estado para el ID del equipo RD
+    const [rdTeamId, setRdTeamId] = useState(null);
 
     // Usar el hook de validación
     const {
@@ -304,55 +309,47 @@ const Games = () => {
         };
     });
 
-    // Cargar estadísticas del equipo República Dominicana desde analytics
+    // Cargar estadísticas del equipo desde el backend (fuente de verdad)
     useEffect(() => {
-        const fetchTeamStats = async () => {
+        const loadTeamStats = async () => {
             try {
-                // Obtener el ID del equipo República Dominicana
-                const rdTeam = (teams || []).find(t =>
-                    t.name?.toLowerCase().includes('dominicana') ||
-                    t.id === 'republica_dominicana'
-                );
+                // Buscar el equipo RD si no lo tenemos
+                if (!rdTeamId) {
+                    const rdTeam = await teamsService.getDominicanTeam();
+                    if (rdTeam) {
+                        setRdTeamId(rdTeam.id);
+                        // Cargar estadísticas del equipo
+                        const overview = await analyticsService.getTeamStats(rdTeam.id, 2010, 2025);
+                        const overviewData = overview.overview || {};
 
-                if (!rdTeam) {
-                    console.warn('⚠️ No se encontró el equipo República Dominicana');
-                    return;
+                        setTeamStats({
+                            victories: overviewData.total_wins || 0,
+                            losses: overviewData.total_losses || 0,
+                            winRate: overviewData.win_percentage ? Math.round(overviewData.win_percentage * 100) : 0,
+                            totalGames: overviewData.total_games || 0
+                        });
+                    }
+                } else {
+                    // Ya tenemos el ID, solo cargar estadísticas
+                    const overview = await analyticsService.getTeamStats(rdTeamId, 2010, 2025);
+                    const overviewData = overview.overview || {};
+
+                    setTeamStats({
+                        victories: overviewData.total_wins || 0,
+                        losses: overviewData.total_losses || 0,
+                        winRate: overviewData.win_percentage ? Math.round(overviewData.win_percentage * 100) : 0,
+                        totalGames: overviewData.total_games || 0
+                    });
                 }
-
-                // Obtener resumen de estadísticas de partidos desde el endpoint summary
-                const summary = await gamesService.getSummary({ team_id: rdTeam.id });
-
-                // Extraer estadísticas del summary
-                const totalGames = summary.total_games || 0;
-                const totalVictories = summary.total_wins || 0;
-                const totalLosses = summary.total_losses || 0;
-                const winRate = summary.win_percentage || 0;
-
-                setTeamStats({
-                    victories: totalVictories,
-                    losses: totalLosses,
-                    winRate: Math.round(winRate),
-                    totalGames: totalGames
-                });
-
-                // Log de estadísticas
-                console.log('📊 ESTADÍSTICAS DEL EQUIPO (desde summary):');
-                console.log('  - Total partidos:', totalGames);
-                console.log('  - Victorias:', totalVictories);
-                console.log('  - Derrotas:', totalLosses);
-                console.log('  - Win Rate:', Math.round(winRate) + '%');
-
             } catch (err) {
-                console.error('❌ Error al cargar estadísticas del equipo:', err);
+                console.error('Error al cargar estadísticas del equipo:', err);
             }
         };
 
-        if (teams && teams.length > 0) {
-            fetchTeamStats();
-        }
-    }, [teams]); // Recargar cuando se carguen los equipos
+        loadTeamStats();
+    }, [rdTeamId]); // Cargar cuando tengamos el ID del equipo
 
-    // Cargar TODOS los partidos para estadísticas (sin paginación)
+    // Cargar TODOS los partidos para la tabla (sin paginación)
     useEffect(() => {
         const fetchAllGames = async () => {
             try {
@@ -360,7 +357,6 @@ const Games = () => {
                 const response = await gamesService.getAll({ limit: 1000, skip: 0 });
                 const allGamesData = Array.isArray(response) ? response : (response?.items || []);
                 setAllGames(allGamesData);
-                console.log('📊 Total de partidos en base de datos:', allGamesData.length);
             } catch (err) {
                 console.error('Error al cargar todos los partidos:', err);
             }
@@ -381,54 +377,12 @@ const Games = () => {
         return () => window.removeEventListener('resize', checkSidebarState);
     }, []);
 
-    // Mapear TODOS los partidos para estadísticas
-    const allMappedGames = (allGames || []).map((game) => {
-        const homeName = teamNameById[game.home_team_id] || 'Equipo local';
-        const awayName = teamNameById[game.away_team_id] || 'Equipo visitante';
-
-        return {
-            id: game.id,
-            homeTeam: homeName,
-            awayTeam: awayName,
-            homeScore: game.home_score,
-            awayScore: game.away_score,
-            status: game.status || 'unknown',
-        };
-    });
-
-    // Detectar países sin bandera (usando bandera dominicana como placeholder) - SOLO UNA VEZ
-    useEffect(() => {
-        if (allGames.length > 0) {
-            const countriesWithoutFlag = new Set();
-
-            allGames.forEach(game => {
-                const homeName = teamNameById[game.home_team_id] || 'Equipo local';
-                const awayName = teamNameById[game.away_team_id] || 'Equipo visitante';
-
-                const homeFlag = getCountryFlag(homeName);
-                const awayFlag = getCountryFlag(awayName);
-
-                // Si la bandera es la dominicana pero el equipo NO es República Dominicana
-                if (homeFlag === BanderaDominicana && !homeName.toLowerCase().includes('dominicana')) {
-                    countriesWithoutFlag.add(homeName);
-                }
-                if (awayFlag === BanderaDominicana && !awayName.toLowerCase().includes('dominicana')) {
-                    countriesWithoutFlag.add(awayName);
-                }
-            });
-
-            if (countriesWithoutFlag.size > 0) {
-                console.log('🚩 PAÍSES SIN BANDERA (total: ' + countriesWithoutFlag.size + '):');
-                const sortedCountries = Array.from(countriesWithoutFlag).sort();
-                sortedCountries.forEach(country => {
-                    console.log('  ❌', country);
-                });
-            }
-        }
-    }, [allGames.length]); // Solo ejecutar cuando cambie la cantidad de partidos
-
     // Contar partidos programados desde todos los partidos
-    const upcomingGames = allMappedGames.filter(g => g.status === 'scheduled' || g.status === 'programado').length;
+    const upcomingGames = useMemo(() => {
+        return (allGames || []).filter(g =>
+            g.status === 'scheduled' || g.status === 'programado'
+        ).length;
+    }, [allGames]);
 
     // Configuración de columnas
     const columns = [

@@ -152,6 +152,11 @@ const ModernAnalytics = () => {
 
                 if (rdTeam) {
                     setRdTeamId(rdTeam.id);
+
+                    // Cargar datos del equipo para el resumen
+                    const teamStatsData = await analyticsService.getTeamStats(rdTeam.id, 2010, 2025);
+                    setTeamData(teamStatsData);
+
                     // Cargar tendencias del equipo
                     await fetchTeamTrends(rdTeam.id, 2010, 2025);
                 }
@@ -1293,7 +1298,7 @@ const ModernAnalytics = () => {
                                                                 </p>
                                                                 <div className="mb-1">
                                                                     <p className="text-5xl font-black text-white drop-shadow-xl tracking-tight">
-                                                                        {summary.games || 0}
+                                                                        {teamData?.overview?.total_games || summary.games || 0}
                                                                     </p>
                                                                 </div>
                                                                 <p className="text-white/70 text-xs font-semibold group-hover:text-white/90 transition-colors">

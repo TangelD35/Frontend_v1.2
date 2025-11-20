@@ -36,12 +36,6 @@ export const gamesService = {
         const response = await axiosInstance.get(`/games/${id}/details`);
         return response.data;
     },
-
-    // Obtener resumen de estadísticas de partidos
-    getSummary: async (params = {}) => {
-        const response = await axiosInstance.get('/games/summary', { params });
-        return response.data;
-    },
 };
 
 export default gamesService;

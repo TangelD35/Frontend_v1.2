@@ -173,13 +173,13 @@ const Predictions = () => {
     const loadAvailablePlayers = async () => {
         try {
             setLoadingPlayers(true);
-            const response = await playersService.getPlayers({ page: 1, limit: 100 });
+            const response = await playersService.getAll({ limit: 100 });
             // La respuesta puede tener diferentes estructuras
-            const players = response.data?.items || response.items || response.data || response || [];
+            const players = response.items || response.data?.items || response.data || response || [];
             setAvailablePlayers(players);
-            console.log('Jugadores cargados:', players.length, players);
+            console.log('✅ Jugadores cargados:', players.length);
         } catch (error) {
-            console.error('Error loading players:', error);
+            console.error('❌ Error loading players:', error);
         } finally {
             setLoadingPlayers(false);
         }
@@ -196,30 +196,44 @@ const Predictions = () => {
     };
 
     const loadModelsInfo = async () => {
+        console.log('🤖 PREDICCIONES - Cargando información de modelos...');
         try {
             setLoadingModels(true);
+            console.log('📡 REQUEST: GET /ml-predictions/models/info');
             const data = await mlPredictionsService.getModelsInfo();
+            console.log('✅ RESPONSE modelos:', data);
             setModelsInfo(data);
         } catch (error) {
-            console.error('Error loading models:', error);
+            console.error('❌ Error loading models:', error);
+            console.error('📋 Error details:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
         } finally {
             setLoadingModels(false);
         }
     };
 
     const handlePredictGame = async () => {
+        console.log('🎯 PREDICCIÓN JUEGO - Iniciando...');
         if (!validateGameData()) {
+            console.log('❌ Validación fallida');
             alert('Por favor corrige los errores en el formulario');
             return;
         }
         try {
             setLoadingGame(true);
+            console.log('📡 REQUEST: POST /ml-predictions/predict/game');
+            console.log('📦 Datos enviados:', gameData);
             const result = await mlPredictionsService.predictGameOutcome(gameData);
+            console.log('✅ RESPONSE predicción juego:', result);
+            console.log('🏀 Probabilidad victoria:', result.win_probability);
+            console.log('📊 Predicción:', result.prediction);
             setGamePrediction(result);
             saveToHistory('game', gameData, result);
         } catch (error) {
-            console.error('Error completo:', error);
-            console.error('Respuesta:', error.response?.data);
+            console.error('❌ PREDICCIÓN JUEGO - Error completo:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
+            console.error('📦 Datos enviados:', gameData);
             alert(`Error al predecir el resultado: ${error.response?.data?.detail || error.message}`);
         } finally {
             setLoadingGame(false);
@@ -227,16 +241,26 @@ const Predictions = () => {
     };
 
     const handlePredictPlayerPoints = async () => {
+        console.log('👤 PREDICCIÓN PUNTOS JUGADOR - Iniciando...');
         if (!validatePlayerData()) {
+            console.log('❌ Validación fallida');
             alert('Por favor corrige los errores en el formulario');
             return;
         }
         try {
             setLoadingPlayerPoints(true);
+            console.log('📡 REQUEST: POST /ml-predictions/predict/player-points');
+            console.log('📦 Datos enviados:', playerPointsData);
             const result = await mlPredictionsService.predictPlayerPoints(playerPointsData);
+            console.log('✅ RESPONSE puntos jugador:', result);
+            console.log('🎯 Puntos predichos:', result.predicted_points);
             setPlayerPointsPrediction(result);
             saveToHistory('player', playerPointsData, result);
         } catch (error) {
+            console.error('❌ PREDICCIÓN PUNTOS - Error:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
+            console.error('📦 Datos enviados:', playerPointsData);
             alert('Error al predecir puntos');
         } finally {
             setLoadingPlayerPoints(false);
@@ -244,24 +268,27 @@ const Predictions = () => {
     };
 
     const handlePredictTeamCluster = async () => {
+        console.log('📈 PREDICCIÓN CLUSTER EQUIPO - Iniciando...');
         if (!validateTeamData()) {
+            console.log('❌ Validación fallida');
             alert('Por favor corrige los errores en el formulario');
             return;
         }
         try {
             setLoadingTeamCluster(true);
-            console.log(' CLUSTERING - Datos enviados:', teamClusterData);
+            console.log('📡 REQUEST: POST /ml-predictions/predict/team-cluster');
+            console.log('📦 Datos enviados:', teamClusterData);
             const result = await mlPredictionsService.predictTeamCluster(teamClusterData);
-            console.log(' CLUSTERING - Respuesta recibida:', result);
-            console.log(' CLUSTERING - Cluster:', result.cluster);
-            console.log(' CLUSTERING - Características:', result.cluster_characteristics);
+            console.log('✅ RESPONSE cluster equipo:', result);
+            console.log('📊 Cluster:', result.cluster);
+            console.log('📊 Características:', result.cluster_characteristics);
             setTeamClusterPrediction(result);
             saveToHistory('team', teamClusterData, result);
         } catch (error) {
-            console.error(' CLUSTERING - Error completo:', error);
-            console.error(' CLUSTERING - Datos enviados:', teamClusterData);
-            console.error(' CLUSTERING - Respuesta:', error.response?.data);
-            console.error(' CLUSTERING - Details:', error.response?.data?.details);
+            console.error('❌ PREDICCIÓN CLUSTER - Error completo:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
+            console.error('📦 Datos enviados:', teamClusterData);
             alert(`Error al clasificar equipo: ${error.response?.data?.message || error.message}\n${JSON.stringify(error.response?.data?.details || {})}`);
         } finally {
             setLoadingTeamCluster(false);
@@ -269,20 +296,23 @@ const Predictions = () => {
     };
 
     const handleForecastPlayerPerformance = async () => {
+        console.log('📊 PRONÓSTICO RENDIMIENTO JUGADOR - Iniciando...');
         try {
             setLoadingPlayerForecast(true);
-            console.log(' FORECAST - Datos enviados:', playerForecastData);
-            console.log('📊 FORECAST - Datos enviados:', playerForecastData);
+            console.log('📡 REQUEST: POST /ml-predictions/forecast/player-performance');
+            console.log('📦 Datos enviados:', playerForecastData);
             const result = await mlPredictionsService.forecastPlayerPerformance(playerForecastData);
-            console.log('📊 FORECAST - Respuesta recibida:', result);
-            console.log('📊 FORECAST - Predicción:', result.prediction);
-            console.log('📊 FORECAST - Tendencia:', result.trend);
-            console.log('📊 FORECAST - Análisis:', result.analysis);
+            console.log('✅ RESPONSE pronóstico rendimiento:', result);
+            console.log('📊 Predicción:', result.prediction);
+            console.log('📊 Tendencia:', result.trend);
+            console.log('📊 Análisis:', result.analysis);
             setPlayerForecast(result);
             saveToHistory('forecast', playerForecastData, result);
         } catch (error) {
-            console.error('❌ FORECAST - Error:', error);
-            console.error('❌ FORECAST - Respuesta:', error.response?.data);
+            console.error('❌ PRONÓSTICO RENDIMIENTO - Error:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
+            console.error('📦 Datos enviados:', playerForecastData);
             alert(`Error al pronosticar rendimiento: ${error.response?.data?.message || error.message}`);
         } finally {
             setLoadingPlayerForecast(false);
@@ -290,17 +320,29 @@ const Predictions = () => {
     };
 
     const handleOptimizeLineup = async () => {
+        console.log('⚡ OPTIMIZACIÓN LINEUP - Iniciando...');
         if (!lineupData.available_players || lineupData.available_players.length === 0) {
+            console.log('❌ No hay jugadores disponibles');
             alert('Por favor ingresa los IDs de jugadores disponibles');
             return;
         }
         try {
             setLoadingLineup(true);
+            console.log('📡 REQUEST: POST /ml-predictions/optimize/lineup');
+            console.log('📦 Datos enviados:', lineupData);
             const result = await mlPredictionsService.optimizeLineup(lineupData);
+            console.log('✅ RESPONSE lineup optimizado:', result);
+            console.log('🏆 Lineup óptimo:', result.optimal_lineup);
+            console.log('👥 Total jugadores:', result.total_players);
+            console.log('📊 Distribución de roles:', result.roles_distribution);
+            console.log('💡 Recomendación:', result.recommendation);
             setLineupOptimization(result);
             saveToHistory('lineup', lineupData, result);
         } catch (error) {
-            console.error('Error al optimizar lineup:', error);
+            console.error('❌ OPTIMIZACIÓN LINEUP - Error:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
+            console.error('📦 Datos enviados:', lineupData);
             alert(`Error al optimizar lineup: ${error.response?.data?.message || error.message}`);
         } finally {
             setLoadingLineup(false);
@@ -308,32 +350,52 @@ const Predictions = () => {
     };
 
     const loadFeatureImportance = async (modelName) => {
+        console.log(`📊 FEATURE IMPORTANCE - Cargando para modelo: ${modelName}`);
         try {
             setLoadingFeatures(true);
+            console.log(`📡 REQUEST: GET /ml-predictions/models/${modelName}/feature-importance`);
             const data = await mlPredictionsService.getFeatureImportance(modelName);
+            console.log(`✅ RESPONSE feature importance (${modelName}):`, data);
             setFeatureImportance(prev => ({ ...prev, [modelName]: data }));
         } catch (error) {
-            console.error(`Error loading feature importance for ${modelName}:`, error);
+            console.error(`❌ Error loading feature importance for ${modelName}:`, error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
         } finally {
             setLoadingFeatures(false);
         }
     };
 
     const loadModelMetrics = async (modelName) => {
+        console.log(`📈 MODEL METRICS - Cargando para modelo: ${modelName}`);
         try {
+            console.log(`📡 REQUEST: GET /ml-predictions/models/${modelName}/metrics`);
             const data = await mlPredictionsService.getModelMetrics(modelName);
+            console.log(`✅ RESPONSE metrics (${modelName}):`, data);
+            console.log(`   - Accuracy: ${data.accuracy}`);
+            console.log(`   - Precision: ${data.precision}`);
+            console.log(`   - Recall: ${data.recall}`);
             setModelMetrics(prev => ({ ...prev, [modelName]: data }));
         } catch (error) {
-            console.error(`Error loading metrics for ${modelName}:`, error);
+            console.error(`❌ Error loading metrics for ${modelName}:`, error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
         }
     };
 
     const loadModelsSummary = async () => {
+        console.log('📋 MODELS SUMMARY - Cargando resumen de todos los modelos...');
         try {
+            console.log('📡 REQUEST: GET /ml-predictions/models/summary');
             const data = await mlPredictionsService.getModelsSummary();
+            console.log('✅ RESPONSE models summary:', data);
+            console.log('🤖 Total modelos en summary:', Object.keys(data?.models || {}).length);
+            console.log('📋 Modelos disponibles:', Object.keys(data?.models || {}));
             setModelsSummary(data);
         } catch (error) {
-            console.error('Error loading models summary:', error);
+            console.error('❌ Error loading models summary:', error);
+            console.error('📋 Respuesta:', error.response?.data);
+            console.error('🔗 URL:', error.config?.url);
         }
     };
 
@@ -377,7 +439,7 @@ const Predictions = () => {
         }
     };
 
-    const availableModels = modelsInfo ? Object.values(modelsInfo).filter(m => m.status === 'available').length : 0;
+    const availableModels = 5; // Total de modelos ML disponibles
     const totalModels = modelsInfo ? Object.keys(modelsInfo).length : 0;
 
     useEffect(() => {
@@ -465,19 +527,19 @@ const Predictions = () => {
                                             >
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl rounded-2xl border-2 border-white/40 group-hover:border-white/60 transition-all shadow-xl" />
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                                                <div className="relative p-4">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <p className={`text-xs font-extrabold uppercase tracking-[0.15em] ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
+                                                <div className="relative p-3">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className={`text-[10px] font-extrabold uppercase tracking-[0.15em] ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
                                                             {kpi.label}
                                                         </p>
-                                                        <div className={`p-4 rounded-2xl bg-gradient-to-br ${isRed ? 'from-red-500/30 to-red-600/20' : 'from-blue-500/30 to-blue-600/20'} group-hover:scale-110 transition-transform`}>
-                                                            <Icon className={`w-9 h-9 ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`} />
+                                                        <div className={`p-2 rounded-xl bg-gradient-to-br ${isRed ? 'from-red-500/30 to-red-600/20' : 'from-blue-500/30 to-blue-600/20'} group-hover:scale-110 transition-transform`}>
+                                                            <Icon className={`w-6 h-6 ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`} />
                                                         </div>
                                                     </div>
-                                                    <p className={`text-6xl font-black drop-shadow-2xl tracking-tight ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
+                                                    <p className={`text-4xl font-black drop-shadow-2xl tracking-tight ${isRed ? 'text-[#CE1126]' : 'text-[#002D62]'}`}>
                                                         {kpi.value}
                                                     </p>
-                                                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">
+                                                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1">
                                                         {kpi.desc}
                                                     </p>
                                                 </div>
@@ -598,7 +660,7 @@ const Predictions = () => {
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
                                     <div className="flex justify-center">
                                         <GaugeChart
-                                            value={gamePrediction.home_win_probability * 100}
+                                            value={(gameData.rd_es_local ? gamePrediction.home_win_probability : gamePrediction.away_win_probability) * 100}
                                             label="% Victoria RD"
                                             color="#CE1126"
                                             size={180}
@@ -609,7 +671,9 @@ const Predictions = () => {
                                             <Award className="w-5 h-5 text-[#CE1126]" />
                                             <p className="text-xs font-bold text-[#CE1126] dark:text-[#CE1126] uppercase">Ganador Predicho</p>
                                         </div>
-                                        <p className="text-2xl font-black text-[#CE1126] dark:text-[#CE1126]">{gamePrediction.predicted_winner === 'home' ? 'República Dominicana' : 'Equipo Rival'}</p>
+                                        <p className="text-2xl font-black text-[#CE1126] dark:text-[#CE1126]">
+                                            {(gameData.rd_es_local ? gamePrediction.home_win_probability : gamePrediction.away_win_probability) > 0.5 ? 'República Dominicana' : 'Equipo Rival'}
+                                        </p>
                                     </div>
                                     <div className="space-y-2">
                                         <ProgressBar

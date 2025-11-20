@@ -160,16 +160,20 @@ const Players = () => {
             try {
                 // Obtener todos los jugadores activos (usar active: true en lugar de status)
                 const activeResponse = await playersService.getAll({ active: true, limit: 1 });
-                setTotalActivePlayers(activeResponse.pagination?.total || 0);
+                setTotalActivePlayers(activeResponse.total || 0);
 
                 // Obtener todos los jugadores inactivos (usar active: false en lugar de status)
                 const inactiveResponse = await playersService.getAll({ active: false, limit: 1 });
-                setTotalInactivePlayers(inactiveResponse.pagination?.total || 0);
+                setTotalInactivePlayers(inactiveResponse.total || 0);
             } catch (error) {
                 console.error('Error calculating totals:', error);
+
                 // Fallback: calcular desde los jugadores actuales si falla
-                setTotalActivePlayers(players.filter(p => p.status === 'activo').length);
-                setTotalInactivePlayers(players.filter(p => p.status === 'inactivo').length);
+                const activosLocal = players.filter(p => p.status === 'activo').length;
+                const inactivosLocal = players.filter(p => p.status === 'inactivo').length;
+
+                setTotalActivePlayers(activosLocal);
+                setTotalInactivePlayers(inactivosLocal);
             }
         };
         calculateTotals();

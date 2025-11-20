@@ -12,6 +12,7 @@ import ProgressBar from '../../components/ProgressBar';
 import FeatureImportance from '../../components/FeatureImportance';
 import MetricsCard, { MetricsGrid } from '../../components/MetricsCard';
 import ScenarioComparison from '../../components/ScenarioComparison';
+import { PageHeader } from '../../../../shared/ui/components/common';
 
 const Predictions = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -379,21 +380,10 @@ const Predictions = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Hero */}
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] p-5 shadow-lg mb-4">
-                    <div className="absolute inset-0 opacity-10">
-                        <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px)' }} />
-                    </div>
-                    <div className="relative z-10 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-white/10 backdrop-blur-sm border border-white/30 overflow-hidden flex items-center justify-center">
-                                <img src={BanderaDominicana} alt="RD" className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-black text-white">PREDICCIONES ML</h1>
-                                <p className="text-white/80 text-xs">Machine Learning • República Dominicana</p>
-                            </div>
-                        </div>
+                <PageHeader
+                    title="Predicciones ML"
+                    subtitle="Machine Learning • República Dominicana"
+                    action={
                         <div className="flex items-center gap-2">
                             <button onClick={() => setShowHistory(true)} className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-semibold flex items-center gap-2 relative transition-all">
                                 <History className="w-4 h-4" />
@@ -408,8 +398,8 @@ const Predictions = () => {
                                 Actualizar
                             </button>
                         </div>
-                    </div>
-                </motion.div>
+                    }
+                />
 
                 {/* Tabs */}
                 <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 mb-4">

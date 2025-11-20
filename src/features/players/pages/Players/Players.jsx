@@ -9,6 +9,7 @@ import { playerSchema } from '../../../../lib/validations/schemas';
 import { usePlayers } from '../../hooks/usePlayers';
 import { teamsService } from '../../../../shared/api/endpoints/teams';
 import { playersService } from '../../../../shared/api/endpoints/players';
+import { PageHeader } from '../../../../shared/ui/components/common';
 
 const Players = () => {
     const navigate = useNavigate();
@@ -326,30 +327,10 @@ const Players = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             <div className="max-w-7xl mx-auto px-6 py-6">
-                {/* Header compacto con fondo gradiente */}
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="rounded-2xl shadow-xl bg-gradient-to-r from-[#CE1126] from-0% via-white via-50% to-[#002D62] to-100% p-4 mb-6"
-                >
-                    <div className="flex items-center justify-between gap-4">
-                        {/* Lado izquierdo: título compacto */}
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg border-2 border-white/60 overflow-hidden">
-                                <img src={BanderaDominicana} alt="Bandera Dominicana" className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg font-black text-white">
-                                    Gestión de Jugadores
-                                </h1>
-                                <p className="text-[10px] font-bold text-white">
-                                    Selección Nacional • República Dominicana
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Lado derecho: botones compactos */}
+                <PageHeader
+                    title="Gestión de Jugadores"
+                    subtitle="Selección Nacional • República Dominicana"
+                    action={
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={toggleViewMode}
@@ -368,8 +349,8 @@ const Players = () => {
                                 Nuevo Jugador
                             </button>
                         </div>
-                    </div>
-                </motion.div>
+                    }
+                />
                 {/* Stats Cards compactas - clickeables para filtrar */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <button

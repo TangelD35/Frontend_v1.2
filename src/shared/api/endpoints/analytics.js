@@ -83,6 +83,13 @@ export const analyticsService = {
         return response.data;
     },
 
+    // Obtener tendencias del equipo por temporada
+    getTeamTrends: async (teamId, startYear = 2010, endYear = 2025) => {
+        const params = { team_id: teamId, start_year: startYear, end_year: endYear };
+        const response = await axiosInstance.get('/analytics/team/trends', { params });
+        return response.data;
+    },
+
     // Obtener estadísticas de torneo (ruta directa)
     getTournamentStatsById: async (tournamentId) => {
         const response = await axiosInstance.get(`/analytics/tournament/${tournamentId}/stats`);

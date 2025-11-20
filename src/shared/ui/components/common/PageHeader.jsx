@@ -16,7 +16,7 @@ const PageHeader = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className={`rounded-2xl shadow-xl bg-gradient-to-r from-[#CE1126] from-0% via-white via-50% to-[#002D62] to-100% p-4 mb-6 ${className}`}
+            className={`rounded-2xl shadow-xl bg-gradient-to-r from-[#CE1126] to-[#002D62] p-4 mb-6 ${className}`}
         >
             <div className="flex items-center justify-between gap-4">
                 {/* Lado izquierdo: título compacto */}

@@ -46,6 +46,73 @@ import { gamesService } from '../../../../shared/api/endpoints/games';
 import { teamsService } from '../../../../shared/api/endpoints/teams';
 import { mlPredictionsService } from '../../../../shared/api/endpoints/mlPredictions';
 import BanderaDominicana from '../../../../assets/icons/do.svg';
+import BanderaPuertoRico from '../../../../assets/icons/pr.svg';
+import BanderaMexico from '../../../../assets/icons/mx.svg';
+import BanderaVenezuela from '../../../../assets/icons/ve.svg';
+import BanderaBrasil from '../../../../assets/icons/br.svg';
+import BanderaArgentina from '../../../../assets/icons/ar.svg';
+import BanderaUSA from '../../../../assets/icons/us.svg';
+import BanderaCanada from '../../../../assets/icons/ca.svg';
+import BanderaEspana from '../../../../assets/icons/es.svg';
+import BanderaFrancia from '../../../../assets/icons/fr.svg';
+import BanderaItalia from '../../../../assets/icons/it.svg';
+import BanderaGrecia from '../../../../assets/icons/gr.svg';
+import BanderaSerbia from '../../../../assets/icons/rs.svg';
+import BanderaCroacia from '../../../../assets/icons/hr.svg';
+import BanderaEslovenia from '../../../../assets/icons/si.svg';
+import BanderaLituania from '../../../../assets/icons/lt.svg';
+import BanderaTurquia from '../../../../assets/icons/tr.svg';
+import BanderaAustralia from '../../../../assets/icons/au.svg';
+import BanderaChina from '../../../../assets/icons/cn.svg';
+import BanderaJapon from '../../../../assets/icons/jp.svg';
+import BanderaFilipinas from '../../../../assets/icons/ph.svg';
+import BanderaUruguay from '../../../../assets/icons/uy.svg';
+import BanderaChile from '../../../../assets/icons/cl.svg';
+import BanderaColombia from '../../../../assets/icons/co.svg';
+import BanderaPeru from '../../../../assets/icons/pe.svg';
+import BanderaEcuador from '../../../../assets/icons/ec.svg';
+import BanderaPanama from '../../../../assets/icons/pa.svg';
+import BanderaCostaRica from '../../../../assets/icons/cr.svg';
+import BanderaCuba from '../../../../assets/icons/cu.svg';
+import BanderaJamaica from '../../../../assets/icons/jm.svg';
+import BanderaBahamas from '../../../../assets/icons/bs.svg';
+import BanderaHaiti from '../../../../assets/icons/ht.svg';
+
+// Mapeo de códigos de país a imágenes importadas
+const FLAG_MAP = {
+    'do': BanderaDominicana,
+    'pr': BanderaPuertoRico,
+    'mx': BanderaMexico,
+    've': BanderaVenezuela,
+    'br': BanderaBrasil,
+    'ar': BanderaArgentina,
+    'us': BanderaUSA,
+    'ca': BanderaCanada,
+    'es': BanderaEspana,
+    'fr': BanderaFrancia,
+    'it': BanderaItalia,
+    'gr': BanderaGrecia,
+    'rs': BanderaSerbia,
+    'hr': BanderaCroacia,
+    'si': BanderaEslovenia,
+    'lt': BanderaLituania,
+    'tr': BanderaTurquia,
+    'au': BanderaAustralia,
+    'cn': BanderaChina,
+    'jp': BanderaJapon,
+    'ph': BanderaFilipinas,
+    'uy': BanderaUruguay,
+    'cl': BanderaChile,
+    'co': BanderaColombia,
+    'pe': BanderaPeru,
+    'ec': BanderaEcuador,
+    'pa': BanderaPanama,
+    'cr': BanderaCostaRica,
+    'cu': BanderaCuba,
+    'jm': BanderaJamaica,
+    'bs': BanderaBahamas,
+    'ht': BanderaHaiti,
+};
 
 // Helper para obtener imagen del jugador
 const getPlayerImage = (playerName) => {
@@ -940,18 +1007,11 @@ const Dashboard = () => {
                                         <div className="flex items-center gap-3">
                                             {/* Bandera */}
                                             <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center shadow border border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-hidden">
-                                                {rival.flagCode ? (
+                                                {rival.flagCode && FLAG_MAP[rival.flagCode] ? (
                                                     <img
-                                                        src={`/src/assets/icons/${rival.flagCode}.svg`}
+                                                        src={FLAG_MAP[rival.flagCode]}
                                                         alt={`Bandera de ${rival.rival}`}
                                                         className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            e.target.style.display = 'none';
-                                                            const parent = e.target.parentElement;
-                                                            if (parent) {
-                                                                parent.innerHTML = '<span class="text-xl">🏀</span>';
-                                                            }
-                                                        }}
                                                     />
                                                 ) : (
                                                     <span className="text-xl">🏀</span>

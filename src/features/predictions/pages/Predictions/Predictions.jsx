@@ -595,7 +595,7 @@ const Predictions = () => {
                     <>
                         {loadingModels ? (
                             <div className="flex justify-center py-20"><RefreshCw className="w-8 h-8 text-gray-400 animate-spin" /></div>
-                        ) : modelsInfo ? (
+                        ) : (modelsInfo || modelsSummary) ? (
                             <>
                                 {/* KPIs Premium con Glassmorphism */}
                                 <div className="grid grid-cols-4 gap-3 mb-6">
@@ -673,19 +673,21 @@ const Predictions = () => {
                                         </div>
                                     </motion.div>
                                 )}
-                                <div className="grid grid-cols-3 gap-4">
-                                    {Object.entries(modelsInfo).map(([key, model]) => (
-                                        <div key={key} className="bg-white rounded-xl shadow-lg border overflow-hidden">
-                                            <div className={`px-4 py-2 ${model.status === 'available' ? 'bg-green-500' : 'bg-gray-400'}`}>
-                                                <p className="text-xs font-bold text-white">{model.status === 'available' ? '✓ Disponible' : '✗ No disponible'}</p>
+                                {modelsInfo && (
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {Object.entries(modelsInfo).map(([key, model]) => (
+                                            <div key={key} className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                                <div className={`px-4 py-2 ${model.status === 'available' ? 'bg-green-500' : 'bg-gray-400'}`}>
+                                                    <p className="text-xs font-bold text-white">{model.status === 'available' ? '✓ Disponible' : '✗ No disponible'}</p>
+                                                </div>
+                                                <div className="p-4">
+                                                    <h3 className="text-sm font-bold mb-2 text-gray-900 dark:text-white">{model.model_name}</h3>
+                                                    {model.trained_samples && <p className="text-xs text-gray-500 dark:text-gray-400">Muestras: {model.trained_samples}</p>}
+                                                </div>
                                             </div>
-                                            <div className="p-4">
-                                                <h3 className="text-sm font-bold mb-2">{model.model_name}</h3>
-                                                {model.trained_samples && <p className="text-xs text-gray-500">Muestras: {model.trained_samples}</p>}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </>
                         ) : <p className="text-center py-20 text-gray-500">No se pudieron cargar los modelos</p>}
                     </>

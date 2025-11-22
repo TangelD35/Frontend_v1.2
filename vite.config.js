@@ -27,15 +27,15 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   server: {
-    port: 5175,
+    port: 5173,
     open: true,
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-      port: 5175,
-      clientPort: 5175
+      port: 5173,
+      clientPort: 5173
     },
     cors: true,
-    strictPort: true
+    strictPort: false
   }
 })

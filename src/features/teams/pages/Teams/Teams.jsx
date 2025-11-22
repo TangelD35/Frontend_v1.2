@@ -159,7 +159,7 @@ const Teams = () => {
             // América del Sur
             'ARG': BanderaArgentina, 'AR': BanderaArgentina, 'ARGENTINA': BanderaArgentina,
             'BRA': BanderaBrasil, 'BR': BanderaBrasil, 'BRASIL': BanderaBrasil, 'BRAZIL': BanderaBrasil,
-            'CHI': BanderaChile, 'CL': BanderaChile, 'CHILE': BanderaChile, 'CHN': BanderaChile,
+            'CHI': BanderaChile, 'CL': BanderaChile, 'CHILE': BanderaChile,
             'COL': BanderaColombia, 'CO': BanderaColombia, 'COLOMBIA': BanderaColombia,
             'VEN': BanderaVenezuela, 'VE': BanderaVenezuela, 'VENEZUELA': BanderaVenezuela,
             'URU': BanderaUruguay, 'UY': BanderaUruguay, 'URUGUAY': BanderaUruguay,
@@ -171,7 +171,7 @@ const Teams = () => {
             // Europa
             'ESP': BanderaEspana, 'ES': BanderaEspana, 'ESPAÑA': BanderaEspana, 'SPAIN': BanderaEspana,
             'FRA': BanderaFrancia, 'FR': BanderaFrancia, 'FRANCIA': BanderaFrancia, 'FRANCE': BanderaFrancia,
-            'GER': BanderaAlemania, 'DE': BanderaAlemania, 'ALEMANIA': BanderaAlemania, 'GERMANY': BanderaAlemania, 'GER': BanderaAlemania, 'DEU': BanderaAlemania,
+            'GER': BanderaAlemania, 'DE': BanderaAlemania, 'ALEMANIA': BanderaAlemania, 'GERMANY': BanderaAlemania, 'DEU': BanderaAlemania,
             'ITA': BanderaItalia, 'IT': BanderaItalia, 'ITALIA': BanderaItalia, 'ITALY': BanderaItalia,
             'GRE': BanderaGrecia, 'GR': BanderaGrecia, 'GRECIA': BanderaGrecia, 'GREECE': BanderaGrecia, 'GRC': BanderaGrecia,
             'SRB': BanderaSerbia, 'RS': BanderaSerbia, 'SERBIA': BanderaSerbia,

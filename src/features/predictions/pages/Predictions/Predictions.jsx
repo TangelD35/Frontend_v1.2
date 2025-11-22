@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Brain, Target, Activity, Users, Play, RefreshCw, Gauge, CheckCircle, AlertCircle, TrendingUp, Award,
-    History, Download, FileJson, FileText, Trash2, X, Zap, Shield, BarChart3
+    History, Download, FileJson, FileText, Trash2, X, Zap, Shield, BarChart3, User
 } from 'lucide-react';
 import mlPredictionsService from '../../../../shared/api/endpoints/mlPredictions';
 import playersService from '../../../../shared/api/endpoints/players';
@@ -342,7 +342,16 @@ const Predictions = () => {
             console.error('📋 Respuesta:', error.response?.data);
             console.error('🔗 URL:', error.config?.url);
             console.error('📦 Datos enviados:', playerPointsData);
-            alert('Error al predecir puntos');
+
+            const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+
+            if (errorMessage.includes("'Pipeline' object has no attribute 'get'")) {
+                alert('⚠️ El modelo de predicción está siendo actualizado. Por favor, inténtalo más tarde.');
+            } else if (error.response?.status === 500) {
+                alert('🔧 Error interno del servidor. El equipo técnico ha sido notificado.');
+            } else {
+                alert(`❌ Error al predecir puntos: ${errorMessage}`);
+            }
         } finally {
             setLoadingPlayerPoints(false);
         }
@@ -527,7 +536,7 @@ const Predictions = () => {
         loadModelsInfo();
         loadModelsSummary();
         loadHistoryFromStorage();
-    }, []);
+    }, []); // Solo cargar una vez al montar el componente
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
@@ -829,11 +838,25 @@ const Predictions = () => {
                     </div>
                 )}
 
-                {/* Player Tab */}
+                {/* Player Tab - Pestaña Puntos */}
                 {activeTab === 'player' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Selector de Jugador - COLUMNA COMPLETA */}
-                        <div className="col-span-2 mb-4">
+                    <>
+                        {/* Selector de Jugador - Panel Superior */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-6"
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
+                                    <Users className="w-5 h-5 text-[#CE1126]" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Predicción de Puntos por Jugador</h2>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Selecciona un jugador y ajusta las estadísticas para predecir sus puntos</p>
+                                </div>
+                            </div>
+
                             <PlayerSelector
                                 label="Seleccionar Jugador"
                                 onSelect={loadPlayerStats}
@@ -841,102 +864,202 @@ const Predictions = () => {
                                 showStats={true}
                                 filterActive={true}
                             />
-                        </div>
 
-                        {/* Indicador de carga */}
-                        {loadingPlayerStats && (
-                            <div className="col-span-2 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                                        Cargando estadísticas del jugador...
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Mostrar jugador seleccionado */}
-                        {selectedPlayer && (
-                            <div className="col-span-2 mb-4 p-4 bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 rounded-lg border border-[#CE1126]/30">
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                                    Predicción para: <span className="text-[#CE1126]">{selectedPlayer.name}</span>
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                    Los datos se han auto-completado con las estadísticas del jugador. Puedes ajustarlos manualmente.
-                                </p>
-                            </div>
-                        )}
-                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
-                                <Users className="w-5 h-5 text-[#CE1126]" />
-                                Predicción de Puntos
-                            </h2>
-                            <div className="space-y-2">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { key: 'minutes_played', label: 'Minutos' },
-                                        { key: 'field_goal_percentage', label: 'FG%' },
-                                        { key: 'free_throw_percentage', label: 'FT%' },
-                                        { key: 'total_rebounds', label: 'Rebotes' },
-                                        { key: 'assists', label: 'Asistencias' },
-                                        { key: 'field_goals_made', label: 'FG Anotados' },
-                                        { key: 'three_point_made', label: '3P Anotados' }
-                                    ].map(({ key, label }) => (
-                                        <div key={key}>
-                                            <label className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{label}</label>
-                                            <input type="number" value={playerPointsData[key]} onChange={(e) => setPlayerPointsData({ ...playerPointsData, [key]: parseFloat(e.target.value) })} className="w-full px-2 py-1 text-sm border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
-                                        </div>
-                                    ))}
-                                </div>
-                                <button onClick={handlePredictPlayerPoints} disabled={loadingPlayerPoints} className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] text-white rounded-lg font-semibold flex items-center justify-center gap-2 mt-4">
-                                    {loadingPlayerPoints ? <><RefreshCw className="w-4 h-4 animate-spin" /> Prediciendo...</> : <><Play className="w-4 h-4" /> Predecir Puntos</>}
-                                </button>
-                            </div>
-                        </div>
-                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Resultado</h2>
-                            {playerPointsPrediction ? (
-                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
-                                    <div className="flex justify-center">
-                                        <GaugeChart
-                                            value={playerPointsPrediction.predicted_points}
-                                            max={50}
-                                            label="Puntos"
-                                            color="#CE1126"
-                                            size={180}
-                                        />
+                            {/* Indicador de carga */}
+                            {loadingPlayerStats && (
+                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                            Cargando estadísticas del jugador...
+                                        </span>
                                     </div>
-                                    <div className="p-4 rounded-lg bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 shadow-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Target className="w-5 h-5 text-orange-600" />
-                                            <p className="text-xs font-bold text-orange-700 uppercase">Predicción de Puntos</p>
-                                        </div>
-                                        <p className="text-3xl font-black text-orange-900">{playerPointsPrediction.predicted_points.toFixed(1)} puntos</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <ProgressBar
-                                            value={playerPointsPrediction.confidence_score * 100}
-                                            label="Confianza del Modelo (R²)"
-                                            color="#002D62"
-                                        />
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <CheckCircle className="w-4 h-4 text-blue-600" />
-                                            <p className="text-xs font-bold text-blue-700 uppercase">Interpretación</p>
-                                        </div>
-                                        <p className="text-sm text-blue-900">{playerPointsPrediction.interpretation}</p>
-                                    </div>
-                                    <button onClick={() => setPlayerPointsPrediction(null)} className="w-full px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-lg text-sm font-semibold transition-all shadow-md">Nueva Predicción</button>
-                                </motion.div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                    <Target className="w-16 h-16 mb-3" />
-                                    <p className="text-sm text-center">Ingresa las estadísticas del jugador</p>
                                 </div>
                             )}
+
+                            {/* Mostrar jugador seleccionado */}
+                            {selectedPlayer && (
+                                <div className="mt-4 p-3 bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 rounded-lg border border-[#CE1126]/30">
+                                    <div className="flex items-center gap-2">
+                                        <User className="w-4 h-4 text-[#CE1126]" />
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                            Jugador seleccionado: <span className="text-[#CE1126]">{selectedPlayer.name}</span>
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        ✅ Datos auto-completados. Puedes ajustarlos manualmente antes de predecir.
+                                    </p>
+                                </div>
+                            )}
+                        </motion.div>
+
+                        {/* Grid Principal: Formulario y Resultado */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Panel de Configuración */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/20 to-[#CE1126]/10">
+                                        <Activity className="w-5 h-5 text-[#CE1126]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Estadísticas del Jugador</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Configura las métricas para la predicción</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { key: 'minutes_played', label: 'Minutos Jugados', min: 0, max: 48, step: 1 },
+                                            { key: 'field_goal_percentage', label: 'FG%', min: 0, max: 100, step: 0.1 },
+                                            { key: 'free_throw_percentage', label: 'FT%', min: 0, max: 100, step: 0.1 },
+                                            { key: 'total_rebounds', label: 'Rebotes Totales', min: 0, max: 30, step: 1 },
+                                            { key: 'assists', label: 'Asistencias', min: 0, max: 20, step: 1 },
+                                            { key: 'field_goals_made', label: 'FG Anotados', min: 0, max: 30, step: 1 },
+                                            { key: 'three_point_made', label: '3P Anotados', min: 0, max: 15, step: 1 }
+                                        ].map(({ key, label, min, max, step }) => (
+                                            <div key={key} className="space-y-1">
+                                                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                                    {label}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={playerPointsData[key]}
+                                                    onChange={(e) => setPlayerPointsData({ ...playerPointsData, [key]: parseFloat(e.target.value) || 0 })}
+                                                    className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#CE1126] focus:border-transparent transition-all"
+                                                    min={min}
+                                                    max={max}
+                                                    step={step}
+                                                    placeholder={`0-${max}`}
+                                                />
+                                                {validationErrors[key] && (
+                                                    <p className="text-xs text-red-500">{validationErrors[key]}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            onClick={handlePredictPlayerPoints}
+                                            disabled={loadingPlayerPoints || !selectedPlayer}
+                                            className="w-full px-4 py-3 bg-gradient-to-r from-[#CE1126] to-[#002D62] hover:from-[#8B0D1A] hover:to-[#001D42] disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-lg"
+                                        >
+                                            {loadingPlayerPoints ? (
+                                                <>
+                                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                                    Prediciendo...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Play className="w-4 h-4" />
+                                                    Predecir Puntos
+                                                </>
+                                            )}
+                                        </button>
+
+                                        {!selectedPlayer && (
+                                            <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 text-center">
+                                                ⚠️ Selecciona un jugador primero
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Panel de Resultados */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-lg bg-gradient-to-br from-[#002D62]/20 to-[#002D62]/10">
+                                        <Target className="w-5 h-5 text-[#002D62]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Resultado de la Predicción</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Puntos estimados basados en ML</p>
+                                    </div>
+                                </div>
+
+                                {playerPointsPrediction ? (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="space-y-6"
+                                    >
+                                        {/* Gauge Chart */}
+                                        <div className="flex justify-center" style={{ minHeight: '200px', minWidth: '200px' }}>
+                                            <GaugeChart
+                                                value={playerPointsPrediction.predicted_points}
+                                                max={50}
+                                                label="Puntos"
+                                                color="#CE1126"
+                                                size={200}
+                                            />
+                                        </div>
+
+                                        {/* Predicción Principal */}
+                                        <div className="p-4 rounded-xl bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10 border-2 border-[#CE1126]/30 shadow-lg">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Target className="w-5 h-5 text-[#CE1126]" />
+                                                <p className="text-xs font-bold text-[#CE1126] uppercase tracking-wider">Predicción de Puntos</p>
+                                            </div>
+                                            <p className="text-4xl font-black text-[#CE1126] mb-1">
+                                                {playerPointsPrediction.predicted_points.toFixed(1)}
+                                            </p>
+                                            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">puntos estimados</p>
+                                        </div>
+
+                                        {/* Métricas de Confianza */}
+                                        <div className="space-y-3">
+                                            <ProgressBar
+                                                value={playerPointsPrediction.confidence_score * 100}
+                                                label="Confianza del Modelo (R²)"
+                                                color="#002D62"
+                                            />
+                                        </div>
+
+                                        {/* Interpretación */}
+                                        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-700">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <CheckCircle className="w-4 h-4 text-blue-600" />
+                                                <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">Análisis</p>
+                                            </div>
+                                            <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
+                                                {playerPointsPrediction.interpretation}
+                                            </p>
+                                        </div>
+
+                                        {/* Botones de Acción */}
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setPlayerPointsPrediction(null)}
+                                                className="flex-1 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:from-gray-700 dark:to-gray-800 dark:hover:from-gray-600 dark:hover:to-gray-700 rounded-lg text-sm font-semibold transition-all shadow-md"
+                                            >
+                                                🔄 Nueva Predicción
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                        <Target className="w-20 h-20 mb-4" />
+                                        <p className="text-base font-semibold mb-2">Esperando predicción</p>
+                                        <p className="text-sm text-center max-w-xs leading-relaxed">
+                                            Selecciona un jugador, configura las estadísticas y presiona "Predecir Puntos"
+                                        </p>
+                                    </div>
+                                )}
+                            </motion.div>
                         </div>
-                    </div>
+                    </>
                 )}
 
                 {/* Team Tab */}

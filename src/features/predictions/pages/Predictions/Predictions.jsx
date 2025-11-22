@@ -529,7 +529,7 @@ const Predictions = () => {
         }
     };
 
-    const availableModels = 5; // Total de modelos ML disponibles
+    const availableModels = 5; // Total de modelos ML utilizados en el frontend
     const totalModels = modelsInfo ? Object.keys(modelsInfo).length : 0;
 
     useEffect(() => {
@@ -600,7 +600,7 @@ const Predictions = () => {
                                 {/* KPIs Premium con Glassmorphism */}
                                 <div className="grid grid-cols-4 gap-3 mb-6">
                                     {[
-                                        { label: 'Modelos V2', value: `${availableModels}/5`, icon: Brain, color: 'red', desc: 'Enhanced ML' },
+                                        { label: 'Modelos ML', value: `${totalModels}/${availableModels}`, icon: Brain, color: 'red', desc: 'Disponibles' },
                                         { label: 'Accuracy', value: modelsSummary?.average_accuracy ? `${(modelsSummary.average_accuracy * 100).toFixed(1)}%` : '85.3%', icon: Target, color: 'blue', desc: 'Promedio' },
                                         { label: 'Features', value: '66', icon: BarChart3, color: 'red', desc: 'Avanzadas' },
                                         { label: 'Predicciones', value: predictionHistory.length, icon: TrendingUp, color: 'blue', desc: 'Historial' }

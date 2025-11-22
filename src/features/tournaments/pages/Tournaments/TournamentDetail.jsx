@@ -1,148 +1,215 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Users, Trophy, Edit, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
     ActionButton,
     Badge,
-    DataCard,
     Table,
-    Chart,
     Modal,
     Toast,
     LoadingSpinner
 } from '../../../../shared/ui/components/common';
+import { tournamentsService } from '../../../../shared/api/endpoints/tournaments';
+import { gamesService } from '../../../../shared/api/endpoints/games';
 
 const TournamentDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const [tournament, setTournament] = useState(null);
+    const [games, setGames] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [toast, setToast] = useState({ isVisible: false, type: 'info', message: '' });
 
-    // Datos de ejemplo (reemplazar con llamada a API)
-    const tournament = {
-        id: 1,
-        name: 'FIBA AmeriCup 2025',
-        type: 'Internacional',
-        startDate: '2025-01-15',
-        endDate: '2025-01-28',
-        location: 'República Dominicana',
-        venue: 'Palacio de los Deportes',
-        teams: 12,
-        games: 45,
-        status: 'active',
-        description: 'Torneo internacional de baloncesto de la FIBA para equipos de las Américas.',
-        organizer: 'FIBA Americas',
-        sponsor: 'Nike Basketball',
-        prizePool: '$500,000',
-    };
+    // Cargar datos del torneo
+    useEffect(() => {
+        const loadTournamentData = async () => {
+            if (!id) return;
 
-    const stats = [
-        { title: 'Equipos Participantes', value: tournament.teams.toString(), icon: Users, change: null, trend: 'neutral' },
-        { title: 'Total de Partidos', value: tournament.games.toString(), icon: Trophy, change: '+5', trend: 'up' },
-        { title: 'Días de Duración', value: '14', icon: Calendar, change: null, trend: 'neutral' },
-        { title: 'Asistencia Promedio', value: '8,500', icon: Users, change: '+12%', trend: 'up' },
-    ];
+            setLoading(true);
+            setError(null);
 
-    // Equipos participantes
-    const teams = [
-        { id: 1, name: 'República Dominicana', logo: '🇩🇴', ranking: 18, wins: 0, losses: 0 },
-        { id: 2, name: 'Estados Unidos', logo: '🇺🇸', ranking: 1, wins: 0, losses: 0 },
-        { id: 3, name: 'Argentina', logo: '🇦🇷', ranking: 5, wins: 0, losses: 0 },
-        { id: 4, name: 'Brasil', logo: '🇧🇷', ranking: 12, wins: 0, losses: 0 },
-    ];
+            try {
+                // Cargar datos del torneo
+                const tournamentData = await tournamentsService.getById(id);
+                setTournament(tournamentData);
 
-    const teamsColumns = [
-        {
-            key: 'logo',
-            label: 'Logo',
-            sortable: false,
-            render: (value) => <span className="text-3xl">{value}</span>
-        },
-        { key: 'name', label: 'Equipo' },
-        {
-            key: 'ranking',
-            label: 'Ranking Mundial',
-            render: (value) => <Badge variant="primary">#{value}</Badge>
-        },
-        { key: 'wins', label: 'Victorias' },
-        { key: 'losses', label: 'Derrotas' },
-    ];
+                // Cargar partidos del torneo usando el endpoint correcto
+                try {
+                    const gamesResponse = await gamesService.getAll({ tournament_id: id });
+                    setGames(gamesResponse?.items || []);
+                } catch (err) {
+                    console.error('Error loading games:', err);
+                    setGames([]);
+                }
+            } catch (err) {
+                console.error('Error loading tournament:', err);
+                setError(err.response?.data?.detail || 'Error al cargar el torneo');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // Partidos del torneo
-    const games = [
-        {
-            id: 1,
-            homeTeam: 'República Dominicana',
-            homeLogo: '🇩🇴',
-            homeScore: null,
-            awayTeam: 'Brasil',
-            awayLogo: '🇧🇷',
-            awayScore: null,
-            date: '2025-01-16',
-            time: '20:00',
-            status: 'scheduled'
-        },
-        {
-            id: 2,
-            homeTeam: 'Estados Unidos',
-            homeLogo: '🇺🇸',
-            homeScore: null,
-            awayTeam: 'Argentina',
-            awayLogo: '🇦🇷',
-            awayScore: null,
-            date: '2025-01-16',
-            time: '22:00',
-            status: 'scheduled'
-        },
-    ];
+        loadTournamentData();
+    }, [id]);
 
+    // Columnas para tabla de partidos
     const gamesColumns = [
         {
-            key: 'matchup',
-            label: 'Partido',
-            sortable: false,
-            render: (_, row) => (
-                <div className="flex items-center gap-3">
-                    <span className="text-2xl">{row.homeLogo}</span>
-                    <span className="font-semibold">{row.homeTeam}</span>
-                    <span className="text-gray-400">vs</span>
-                    <span className="text-2xl">{row.awayLogo}</span>
-                    <span className="font-semibold">{row.awayTeam}</span>
-                </div>
+            key: 'game_date',
+            label: 'Fecha',
+            className: 'text-center',
+            render: (value) => (
+                <span className="font-bold text-gray-900 dark:text-white">
+                    {value ? new Date(value).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    }) : 'N/A'}
+                </span>
             )
         },
         {
-            key: 'date',
-            label: 'Fecha',
-            render: (value) => new Date(value).toLocaleDateString('es-ES')
+            key: 'round',
+            label: 'Ronda',
+            className: 'text-center',
+            render: (value) => (
+                <span className="font-bold text-gray-900 dark:text-white">
+                    {value || 'N/A'}
+                </span>
+            )
         },
-        { key: 'time', label: 'Hora' },
+        {
+            key: 'location',
+            label: 'Ubicación',
+            className: 'text-center',
+            render: (value) => (
+                <span className="font-bold text-gray-900 dark:text-white">
+                    {value || 'N/A'}
+                </span>
+            )
+        },
         {
             key: 'status',
             label: 'Estado',
+            className: 'text-center',
             render: (value) => {
-                const config = {
-                    scheduled: { variant: 'warning', label: 'Programado' },
-                    live: { variant: 'success', label: 'En Vivo' },
-                    completed: { variant: 'default', label: 'Finalizado' }
+                const statusConfig = {
+                    'scheduled': { bg: '#002D62', text: 'Programado' },
+                    'in_progress': { bg: '#FFA500', text: 'En Progreso' },
+                    'completed': { bg: '#10B981', text: 'Finalizado' },
+                    'cancelled': { bg: '#CE1126', text: 'Cancelado' }
                 };
-                return <Badge variant={config[value].variant}>{config[value].label}</Badge>;
+                const config = statusConfig[value] || { bg: '#6B7280', text: value };
+                return (
+                    <span
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white border-2 border-white/20 shadow-sm inline-block"
+                        style={{ backgroundColor: config.bg }}
+                    >
+                        {config.text}
+                    </span>
+                );
+            }
+        },
+        {
+            key: 'home_score',
+            label: 'Resultado',
+            className: 'text-center',
+            render: (value, row) => {
+                if (row.status === 'completed' && value !== null && row.away_score !== null) {
+                    const homeWon = value > row.away_score;
+                    const awayWon = row.away_score > value;
+                    return (
+                        <div className="flex items-center justify-center gap-2">
+                            <span className={`font-black text-lg px-2 py-1 rounded border-2 ${homeWon ? 'text-green-600 dark:text-green-400 border-green-500 bg-green-50 dark:bg-green-900/20' : 'text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600'
+                                }`}>
+                                {value}
+                            </span>
+                            <span className="font-bold text-gray-500 dark:text-gray-400">-</span>
+                            <span className={`font-black text-lg px-2 py-1 rounded border-2 ${awayWon ? 'text-green-600 dark:text-green-400 border-green-500 bg-green-50 dark:bg-green-900/20' : 'text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600'
+                                }`}>
+                                {row.away_score}
+                            </span>
+                        </div>
+                    );
+                }
+                return <span className="font-bold text-gray-400">-</span>;
             }
         },
     ];
 
-    // Datos para gráficos
-    const attendanceData = [
-        { name: 'Día 1', value: 7500 },
-        { name: 'Día 2', value: 8200 },
-        { name: 'Día 3', value: 8800 },
-        { name: 'Día 4', value: 9100 },
-    ];
+    // Calcular estadísticas
+    const calculateDuration = () => {
+        if (!tournament?.start_date || !tournament?.end_date) return 0;
+        const start = new Date(tournament.start_date);
+        const end = new Date(tournament.end_date);
+        const diffTime = Math.abs(end - start);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    // Calcular estadísticas de partidos
+    const completedGames = games.filter(g => g.status === 'completed').length;
+    const scheduledGames = games.filter(g => g.status === 'scheduled').length;
+    const inProgressGames = games.filter(g => g.status === 'in_progress').length;
+
+    // Calcular equipo campeón (equipo con más victorias)
+    const calculateChampion = () => {
+        if (completedGames === 0) return null;
+
+        const teamWins = {};
+        games.filter(g => g.status === 'completed').forEach(game => {
+            if (game.home_score > game.away_score) {
+                teamWins[game.home_team_id] = (teamWins[game.home_team_id] || 0) + 1;
+            } else if (game.away_score > game.home_score) {
+                teamWins[game.away_team_id] = (teamWins[game.away_team_id] || 0) + 1;
+            }
+        });
+
+        if (Object.keys(teamWins).length === 0) return null;
+
+        const championId = Object.keys(teamWins).reduce((a, b) =>
+            teamWins[a] > teamWins[b] ? a : b
+        );
+
+        return {
+            teamId: championId,
+            wins: teamWins[championId]
+        };
+    };
+
+    const champion = calculateChampion();
+
+    const allStats = tournament ? [
+        {
+            title: 'Total de Partidos',
+            value: games.length,
+            color: 'red'
+        },
+        {
+            title: 'Partidos Completados',
+            value: completedGames,
+            color: 'green'
+        },
+        {
+            title: 'Partidos Programados',
+            value: scheduledGames,
+            color: 'blue'
+        },
+        {
+            title: 'Días de Duración',
+            value: calculateDuration(),
+            color: 'purple'
+        },
+    ] : [];
+
+    // Filtrar estadísticas con valor mayor a 0
+    const stats = allStats.filter(stat => stat.value > 0);
 
     const handleDelete = async () => {
         try {
-            // Aquí iría la llamada a la API para eliminar
+            await tournamentsService.delete(id);
             setToast({
                 isVisible: true,
                 type: 'success',
@@ -150,73 +217,82 @@ const TournamentDetail = () => {
             });
             setTimeout(() => navigate('/tournaments'), 1500);
         } catch (error) {
+            console.error('Error deleting tournament:', error);
             setToast({
                 isVisible: true,
                 type: 'error',
-                message: 'Error al eliminar el torneo'
+                message: error.response?.data?.detail || 'Error al eliminar el torneo'
             });
         }
     };
 
     if (loading) {
-        return <LoadingSpinner size="large" text="Cargando detalles del torneo..." />;
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+                <LoadingSpinner size="large" text="Cargando detalles del torneo..." />
+            </div>
+        );
+    }
+
+    if (error || !tournament) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        {error || 'Torneo no encontrado'}
+                    </h2>
+                    <button
+                        onClick={() => navigate('/tournaments')}
+                        className="mt-4 px-6 py-2 bg-[#CE1126] text-white rounded-lg hover:bg-[#8B0D1A] transition-colors"
+                    >
+                        Volver a Torneos
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Hero Section con gradiente dominicano */}
+            {/* Hero Section compacto */}
             <div className="relative bg-gradient-to-r from-[#CE1126] via-[#8B0D1A] to-[#002D62] overflow-hidden">
-                {/* Patrón de fondo animado */}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute inset-0" style={{
                         backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)'
                     }}></div>
                 </div>
 
-                {/* Círculos decorativos */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#002D62]/20 rounded-full blur-3xl"></div>
-
-                <div className="relative max-w-7xl mx-auto px-8 py-12">
+                <div className="relative max-w-7xl mx-auto px-6 py-6">
                     <button
                         onClick={() => navigate('/tournaments')}
-                        className="flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg"
+                        className="flex items-center gap-2 text-white/90 hover:text-white mb-4 transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm"
                     >
-                        <ArrowLeft className="w-5 h-5" />
-                        Volver a Torneos
+                        <ArrowLeft className="w-4 h-4" />
+                        Volver
                     </button>
 
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-6">
-                            {/* Contenedor de icono */}
-                            <div className="w-20 h-20 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/40 overflow-hidden flex items-center justify-center">
-                                <Trophy className="w-10 h-10 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h1 className="text-4xl font-black text-white drop-shadow-2xl tracking-tight">{tournament.name}</h1>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${tournament.status === 'active'
-                                            ? 'bg-green-500/20 text-green-100 border border-green-400/30'
-                                            : 'bg-yellow-500/20 text-yellow-100 border border-yellow-400/30'
-                                        }`}>
-                                        {tournament.status === 'active' ? 'Activo' : 'Próximo'}
-                                    </span>
-                                </div>
-                                <p className="text-white/90 text-sm font-semibold">{tournament.description}</p>
-                            </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight mb-1">
+                                {tournament.name}
+                            </h1>
+                            {tournament.description && (
+                                <p className="text-white/80 text-sm">{tournament.description}</p>
+                            )}
                         </div>
 
                         <div className="flex gap-2">
                             <button
                                 onClick={() => navigate(`/tournaments/${id}/edit`)}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all hover:scale-105 font-semibold"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all text-sm font-medium"
                             >
                                 <Edit className="w-4 h-4" />
                                 Editar
                             </button>
                             <button
                                 onClick={() => setIsDeleteModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm text-white rounded-lg transition-all hover:scale-105 font-semibold border border-red-400/30"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm text-white rounded-lg transition-all text-sm font-medium border border-red-400/30"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 Eliminar
@@ -228,161 +304,196 @@ const TournamentDetail = () => {
 
             <div className="max-w-7xl mx-auto px-6 py-8">
 
-                {/* KPIs Premium con glassmorphism */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {stats.map((stat, index) => {
-                        const isRed = index % 2 === 0;
-                        return (
-                            <div
-                                key={index}
-                                className="relative bg-gradient-to-br from-white/25 via-white/15 to-white/5 backdrop-blur-xl border-2 border-white/40 hover:border-white/60 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl group"
-                            >
-                                {/* Efecto hover brillante */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
-
-                                <div className="relative">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className={`p-4 rounded-2xl bg-gradient-to-br group-hover:scale-110 transition-transform duration-300 ${isRed ? 'from-red-500/30 to-red-600/20' : 'from-blue-500/30 to-blue-600/20'
-                                            }`}>
-                                            <stat.icon className={`w-9 h-9 ${isRed ? 'text-[#CE1126] dark:text-red-400' : 'text-[#002D62] dark:text-blue-400'
-                                                }`} />
-                                        </div>
-                                    </div>
-                                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-gray-700 dark:text-gray-300 mb-2">
-                                        {stat.title}
-                                    </p>
-                                    <p className="text-6xl font-black text-gray-900 dark:text-white drop-shadow-2xl tracking-tight">
-                                        {stat.value}
-                                    </p>
-                                    {stat.change && (
-                                        <p className={`text-sm font-semibold mt-2 ${stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
-                                            }`}>
-                                            {stat.change}
+                {/* KPIs Compactos */}
+                {stats.length > 0 && (
+                    <motion.div
+                        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 max-w-5xl mx-auto"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {stats.map((stat, index) => {
+                            const colorClasses = {
+                                red: 'from-[#CE1126] to-[#8B0D1A]',
+                                green: 'from-green-500 to-green-600',
+                                blue: 'from-[#002D62] to-blue-600',
+                                purple: 'from-sky-400 to-sky-600'
+                            };
+                            return (
+                                <motion.div
+                                    key={index}
+                                    className={`relative bg-gradient-to-br ${colorClasses[stat.color]} rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-white/30`}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                >
+                                    <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                                    <div className="relative text-center">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-white/90 mb-1">
+                                            {stat.title}
                                         </p>
-                                    )}
+                                        <p className="text-4xl font-black text-white drop-shadow-md">
+                                            {stat.value}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+                )}
+
+                {/* Equipo Campeón */}
+                {champion && (
+                    <motion.div
+                        className="max-w-3xl mx-auto bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-2xl shadow-2xl border-4 border-yellow-300 p-8 mb-6 relative overflow-hidden"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                    >
+                        {/* Efecto de brillo */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+                        <div className="relative text-center">
+                            <div className="inline-block mb-4 animate-bounce">
+                                <div className="text-7xl filter drop-shadow-2xl">🏆</div>
+                            </div>
+                            <h2 className="text-3xl font-black text-white mb-4 drop-shadow-2xl uppercase tracking-wider">
+                                Equipo Campeón
+                            </h2>
+                            <div className="bg-white/30 backdrop-blur-md rounded-xl p-6 border-3 border-white/50 inline-block shadow-xl">
+                                <p className="text-xs font-bold text-white uppercase tracking-widest mb-2">ID del Equipo</p>
+                                <p className="text-4xl font-black text-white drop-shadow-lg mb-3">
+                                    {champion.teamId.substring(0, 8)}...
+                                </p>
+                                <div className="bg-white/20 rounded-lg px-4 py-2 inline-block">
+                                    <p className="text-lg font-black text-white">
+                                        {champion.wins} {champion.wins === 1 ? 'Victoria' : 'Victorias'}
+                                    </p>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Información del torneo */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
-                                <Trophy className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Información del Torneo</h2>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+                <motion.div
+                    className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border-2 border-gray-300 dark:border-gray-600 p-5 mb-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Información del Torneo</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {tournament.type && (
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Tipo</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Tipo</p>
                                 <p className="font-semibold text-gray-900 dark:text-white">{tournament.type}</p>
                             </div>
+                        )}
+                        {tournament.start_date && (
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Organizador</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{tournament.organizer}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                                     Fecha de Inicio
                                 </p>
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    {new Date(tournament.startDate).toLocaleDateString('es-ES', {
+                                    {new Date(tournament.start_date).toLocaleDateString('es-ES', {
                                         day: 'numeric',
-                                        month: 'long',
+                                        month: 'short',
                                         year: 'numeric'
                                     })}
                                 </p>
                             </div>
+                        )}
+                        {tournament.end_date && (
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                                     Fecha de Fin
                                 </p>
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    {new Date(tournament.endDate).toLocaleDateString('es-ES', {
+                                    {new Date(tournament.end_date).toLocaleDateString('es-ES', {
                                         day: 'numeric',
-                                        month: 'long',
+                                        month: 'short',
                                         year: 'numeric'
                                     })}
                                 </p>
                             </div>
+                        )}
+                        {tournament.location && (
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                                    <MapPin className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                                     Ubicación
                                 </p>
                                 <p className="font-semibold text-gray-900 dark:text-white">{tournament.location}</p>
                             </div>
+                        )}
+                        {tournament.year && (
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Sede Principal</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{tournament.venue}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Año</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{tournament.year}</p>
                             </div>
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Patrocinador</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{tournament.sponsor}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Bolsa de Premios</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{tournament.prizePool}</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
+                </motion.div>
 
-                    {/* Gráfico de asistencia */}
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
-                                <Users className="w-5 h-5 text-[#CE1126] dark:text-[#002D62]" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Asistencia por Día</h3>
+                {/* Estadísticas del Torneo */}
+                {games.length > 0 && (completedGames > 0 || scheduledGames > 0 || inProgressGames > 0) && (
+                    <motion.div
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border-2 border-gray-300 dark:border-gray-600 p-5 mb-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Progreso del Torneo</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {completedGames > 0 && (
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border-2 border-green-300 dark:border-green-600 text-center">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-green-700 dark:text-green-400 mb-1">Completados</p>
+                                    <p className="text-3xl font-black text-green-900 dark:text-green-300">{completedGames}</p>
+                                    <p className="text-xs font-bold text-green-600 dark:text-green-500 mt-1">
+                                        {Math.round((completedGames / games.length) * 100)}% del total
+                                    </p>
+                                </div>
+                            )}
+                            {scheduledGames > 0 && (
+                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border-2 border-blue-300 dark:border-blue-600 text-center">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-1">Programados</p>
+                                    <p className="text-3xl font-black text-blue-900 dark:text-blue-300">{scheduledGames}</p>
+                                    <p className="text-xs font-bold text-blue-600 dark:text-blue-500 mt-1">
+                                        {Math.round((scheduledGames / games.length) * 100)}% del total
+                                    </p>
+                                </div>
+                            )}
+                            {inProgressGames > 0 && (
+                                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg p-4 border-2 border-yellow-300 dark:border-yellow-600 text-center">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400 mb-1">En Progreso</p>
+                                    <p className="text-3xl font-black text-yellow-900 dark:text-yellow-300">{inProgressGames}</p>
+                                    <p className="text-xs font-bold text-yellow-600 dark:text-yellow-500 mt-1">
+                                        {Math.round((inProgressGames / games.length) * 100)}% del total
+                                    </p>
+                                </div>
+                            )}
                         </div>
-                        <Chart
-                            type="bar"
-                            data={attendanceData}
-                            xKey="name"
-                            yKey="value"
-                            height={280}
-                        />
-                    </div>
-                </div>
-
-                {/* Equipos Participantes */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
-                            <Users className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Equipos Participantes</h2>
-                    </div>
-                    <Table
-                        columns={teamsColumns}
-                        data={teams}
-                        onRowClick={(row) => navigate(`/teams/${row.id}`)}
-                        sortable
-                        hoverable
-                    />
-                </div>
+                    </motion.div>
+                )}
 
                 {/* Calendario de Partidos */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-[#CE1126]/10 to-[#002D62]/10">
-                            <Calendar className="w-6 h-6 text-[#CE1126] dark:text-[#002D62]" />
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Calendario de Partidos</h2>
-                    </div>
-                    <Table
-                        columns={gamesColumns}
-                        data={games}
-                        onRowClick={(row) => navigate(`/games/${row.id}`)}
-                        sortable
-                        hoverable
-                    />
-                </div>
+                {games.length > 0 && (
+                    <motion.div
+                        className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border-2 border-gray-300 dark:border-gray-600 p-5"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
+                    >
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Calendario de Partidos</h2>
+                        <Table
+                            columns={gamesColumns}
+                            data={games}
+                            onRowClick={(row) => navigate(`/games/${row.id}`)}
+                            sortable
+                            hoverable
+                        />
+                    </motion.div>
+                )}
             </div>
 
             {/* Modal de confirmación de eliminación */}
@@ -393,7 +504,7 @@ const TournamentDetail = () => {
                 size="small"
             >
                 <div className="space-y-4">
-                    <p className="text-gray-700">
+                    <p className="text-gray-700 dark:text-gray-300">
                         ¿Estás seguro de que deseas eliminar el torneo <strong>{tournament.name}</strong>?
                         Esta acción no se puede deshacer.
                     </p>

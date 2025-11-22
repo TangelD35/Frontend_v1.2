@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo-rdscore.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
   <meta name="description"
     content="Sistema de análisis táctico y predictivo de la Selección Nacional de Baloncesto de la República Dominicana">
   <title> BasketscoreRD - Sistema de Análisis</title>
@@ -144,6 +144,50 @@
       document.documentElement.classList.add(theme);
     })();
   </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('[SW] Service Worker registrado correctamente:', registration.scope);
+
+            // Verificar actualizaciones cada hora
+            setInterval(() => {
+              registration.update();
+            }, 60 * 60 * 1000);
+
+            // Manejar actualizaciones del SW
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Hay una nueva versión disponible
+                  if (confirm('Hay una nueva versión de RDscore disponible. ¿Deseas actualizar?')) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                  }
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.error('[SW] Error al registrar Service Worker:', error);
+          });
+
+        // Recargar cuando el nuevo SW tome control
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      });
+    }
+  </script>
+
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

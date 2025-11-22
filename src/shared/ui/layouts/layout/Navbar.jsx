@@ -9,6 +9,7 @@ import useAuthStore from '../../../../shared/store/authStore';
 import { config } from '../../../../lib/constants/index';
 import NotificationPanel from '../../components/common/feedback/NotificationPanel';
 import useNotifications from '../../../../shared/hooks/useNotifications';
+import MobileMenu from './MobileMenu';
 
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showSearchModal, setShowSearchModal] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     // Usar hook de notificaciones
     const {
@@ -113,17 +115,20 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                     <div className="flex items-center justify-between h-16">
                         {/* Left Section */}
                         <div className="flex items-center gap-4">
-                            {/* Menu Toggle Button with enhanced animation */}
+                            {/* Menu Toggle Button - Desktop: Sidebar, Mobile: MobileMenu */}
                             <button
-                                onClick={onMenuToggle}
-                                className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-[#CE1126]/10 hover:to-[#002D62]/10 dark:hover:from-[#CE1126]/20 dark:hover:to-[#002D62]/20 transition-all duration-300 hover:shadow-md border border-gray-200/50 dark:border-white/10"
+                                onClick={() => {
+                                    // En móvil (< md) abrir MobileMenu, en desktop abrir Sidebar
+                                    if (window.innerWidth < 768) {
+                                        setShowMobileMenu(true);
+                                    } else {
+                                        onMenuToggle();
+                                    }
+                                }}
+                                className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-[#CE1126]/10 hover:to-[#002D62]/10 dark:hover:from-[#CE1126]/20 dark:hover:to-[#002D62]/20 transition-all duration-300 hover:shadow-md border border-gray-200/50 dark:border-white/10 touch-target"
                                 aria-label="Toggle menu"
                             >
-                                {isSidebarOpen ? (
-                                    <X className="w-5 h-5" />
-                                ) : (
-                                    <Menu className="w-5 h-5" />
-                                )}
+                                <Menu className="w-5 h-5" />
                             </button>
 
                             {/* Logo */}
@@ -351,6 +356,12 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                     </div>
                 </div>
             )}
+
+            {/* Mobile Menu */}
+            <MobileMenu
+                isOpen={showMobileMenu}
+                onClose={() => setShowMobileMenu(false)}
+            />
         </>
     );
 };

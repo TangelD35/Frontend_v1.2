@@ -1,0 +1,462 @@
+/**
+ * Utilidades CSS para Optimización Móvil
+ * BasktAPI - RDscore
+ */
+
+/* ==========================================
+   TOUCH TARGETS - Mínimo 44x44px
+   ========================================== */
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-center: center;
+}
+
+.touch-target-sm {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.touch-target-lg {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* ==========================================
+   SCROLLBARS PERSONALIZADOS
+   ========================================== */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209 213 219) transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: rgb(75 85 99) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219);
+  border-radius: 3px;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(156 163 175);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(107 114 128);
+}
+
+/* ==========================================
+   SCROLL HORIZONTAL SUAVE
+   ========================================== */
+
+.scroll-smooth-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.scroll-smooth-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ==========================================
+   PREVENCIÓN DE ZOOM EN INPUTS (iOS)
+   ========================================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+/* En desktop, permitir tamaños más pequeños */
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    font-size: inherit !important;
+  }
+}
+
+/* ==========================================
+   TOUCH MANIPULATION
+   ========================================== */
+
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================
+   RESPONSIVE TEXT SIZES
+   ========================================== */
+
+.text-responsive-xs {
+  font-size: 0.75rem; /* 12px */
+}
+
+.text-responsive-sm {
+  font-size: 0.875rem; /* 14px */
+}
+
+.text-responsive-base {
+  font-size: 1rem; /* 16px */
+}
+
+.text-responsive-lg {
+  font-size: 1.125rem; /* 18px */
+}
+
+.text-responsive-xl {
+  font-size: 1.25rem; /* 20px */
+}
+
+@media (min-width: 640px) {
+  .text-responsive-xs { font-size: 0.75rem; }
+  .text-responsive-sm { font-size: 0.875rem; }
+  .text-responsive-base { font-size: 1rem; }
+  .text-responsive-lg { font-size: 1.125rem; }
+  .text-responsive-xl { font-size: 1.5rem; }
+}
+
+/* ==========================================
+   SPACING RESPONSIVE
+   ========================================== */
+
+.spacing-mobile {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .spacing-mobile {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .spacing-mobile {
+    padding: 2rem;
+  }
+}
+
+/* ==========================================
+   GRID RESPONSIVE AUTOMÁTICO
+   ========================================== */
+
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.grid-auto-fill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ==========================================
+   CARDS RESPONSIVE
+   ========================================== */
+
+.card-mobile {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .card-mobile {
+    padding: 1.5rem;
+  }
+}
+
+.dark .card-mobile {
+  background: rgb(31 41 55);
+}
+
+/* ==========================================
+   SAFE AREA (iPhone X+)
+   ========================================== */
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-inset-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-inset-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-inset-all {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ==========================================
+   HIDE/SHOW MOBILE
+   ========================================== */
+
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+.show-mobile {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .show-mobile {
+    display: none;
+  }
+}
+
+/* ==========================================
+   ASPECT RATIOS RESPONSIVE
+   ========================================== */
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-portrait {
+  aspect-ratio: 3 / 4;
+}
+
+/* ==========================================
+   TRUNCATE TEXT RESPONSIVE
+   ========================================== */
+
+.truncate-mobile {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-mobile-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-mobile-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==========================================
+   STICKY HEADERS MOBILE
+   ========================================== */
+
+.sticky-mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  backdrop-filter: blur(10px);
+}
+
+.dark .sticky-mobile-header {
+  background: rgb(17 24 39);
+}
+
+/* ==========================================
+   BOTTOM NAVIGATION (Mobile)
+   ========================================== */
+
+.bottom-nav-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid rgb(229 231 235);
+  padding: 0.5rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+.dark .bottom-nav-mobile {
+  background: rgb(31 41 55);
+  border-top-color: rgb(75 85 99);
+}
+
+@media (min-width: 768px) {
+  .bottom-nav-mobile {
+    display: none;
+  }
+}
+
+/* ==========================================
+   PULL TO REFRESH PREVENTION
+   ========================================== */
+
+.no-pull-refresh {
+  overscroll-behavior-y: contain;
+}
+
+/* ==========================================
+   SMOOTH TRANSITIONS MOBILE
+   ========================================== */
+
+.transition-mobile {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================
+   LOADING SKELETON MOBILE
+   ========================================== */
+
+.skeleton-mobile {
+  background: linear-gradient(
+    90deg,
+    rgb(243 244 246) 25%,
+    rgb(229 231 235) 50%,
+    rgb(243 244 246) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-mobile {
+  background: linear-gradient(
+    90deg,
+    rgb(55 65 81) 25%,
+    rgb(75 85 99) 50%,
+    rgb(55 65 81) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ==========================================
+   FOCUS VISIBLE (Accesibilidad)
+   ========================================== */
+
+.focus-visible-mobile:focus-visible {
+  outline: 2px solid #CE1126;
+  outline-offset: 2px;
+}
+
+/* ==========================================
+   RESPONSIVE CONTAINERS
+   ========================================== */
+
+.container-mobile {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-mobile {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-mobile {
+    max-width: 768px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-mobile {
+    max-width: 1024px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-mobile {
+    max-width: 1280px;
+  }
+}
+
+/* ==========================================
+   PRINT STYLES
+   ========================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-full-width {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}

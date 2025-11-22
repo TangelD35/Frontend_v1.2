@@ -7,6 +7,9 @@
 @import './themes/dark.css';
 @import './themes/animations.css';
 
+/* Import mobile utilities */
+@import '../../shared/styles/mobile-utilities.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

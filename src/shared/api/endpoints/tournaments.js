@@ -30,18 +30,6 @@ export const tournamentsService = {
         const response = await axiosInstance.delete(`/tournaments/${id}`);
         return response.data;
     },
-
-    // Obtener equipos de un torneo
-    getTeams: async (id) => {
-        const response = await axiosInstance.get(`/tournaments/${id}/teams`);
-        return response.data;
-    },
-
-    // Obtener partidos de un torneo
-    getGames: async (id) => {
-        const response = await axiosInstance.get(`/tournaments/${id}/games`);
-        return response.data;
-    },
 };
 
 export default tournamentsService;

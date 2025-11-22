@@ -1,7 +1,7 @@
 // Service Worker para RDscore PWA
-const CACHE_NAME = 'rdscore-v1.0.0';
-const RUNTIME_CACHE = 'rdscore-runtime';
-const API_CACHE = 'rdscore-api';
+const CACHE_NAME = 'rdscore-v1.0.1';
+const RUNTIME_CACHE = 'rdscore-runtime-v2';
+const API_CACHE = 'rdscore-api-v2';
 
 // Recursos críticos para cachear durante la instalación
 const PRECACHE_URLS = [

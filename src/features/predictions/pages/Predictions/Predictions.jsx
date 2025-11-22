@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import mlPredictionsService from '../../../../shared/api/endpoints/mlPredictions';
 import playersService from '../../../../shared/api/endpoints/players';
+import analyticsService from '../../../../shared/api/endpoints/analytics';
 import BanderaDominicana from '../../../../assets/icons/do.svg';
 import GaugeChart from '../../components/GaugeChart';
 import ProgressBar from '../../components/ProgressBar';
@@ -13,11 +14,16 @@ import FeatureImportance from '../../components/FeatureImportance';
 import MetricsCard, { MetricsGrid } from '../../components/MetricsCard';
 import ScenarioComparison from '../../components/ScenarioComparison';
 import { PageHeader } from '../../../../shared/ui/components/common';
+import PlayerSelector from '../../components/PlayerSelector';
 
 const Predictions = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [modelsInfo, setModelsInfo] = useState(null);
     const [loadingModels, setLoadingModels] = useState(true);
+
+    // Estado para jugador seleccionado
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
 
     const [gameData, setGameData] = useState({
         rd_es_local: true, rd_fg_pct: 45.0, rival_fg_pct: 43.0,
@@ -26,9 +32,15 @@ const Predictions = () => {
     const [gamePrediction, setGamePrediction] = useState(null);
     const [loadingGame, setLoadingGame] = useState(false);
 
+    // Inicializar con valores vacíos en lugar de hardcodeados
     const [playerPointsData, setPlayerPointsData] = useState({
-        minutes_played: 32.5, field_goal_percentage: 45.5, free_throw_percentage: 80.0,
-        total_rebounds: 8.0, assists: 5.0, field_goals_made: 6.0, three_point_made: 2.0
+        minutes_played: 0,
+        field_goal_percentage: 0,
+        free_throw_percentage: 0,
+        total_rebounds: 0,
+        assists: 0,
+        field_goals_made: 0,
+        three_point_made: 0
     });
     const [playerPointsPrediction, setPlayerPointsPrediction] = useState(null);
     const [loadingPlayerPoints, setLoadingPlayerPoints] = useState(false);
@@ -240,13 +252,82 @@ const Predictions = () => {
         }
     };
 
+    // Cargar estadísticas del jugador seleccionado
+    const loadPlayerStats = async (player) => {
+        if (!player) {
+            setSelectedPlayer(null);
+            setPlayerPointsData({
+                minutes_played: 0,
+                field_goal_percentage: 0,
+                free_throw_percentage: 0,
+                total_rebounds: 0,
+                assists: 0,
+                field_goals_made: 0,
+                three_point_made: 0
+            });
+            return;
+        }
+
+        setSelectedPlayer(player);
+        setLoadingPlayerStats(true);
+
+        try {
+            const playerName = player.full_name || `${player.first_name || ''} ${player.last_name || ''}`;
+            const playerId = player.player_id || player.id;
+            console.log('📊 Cargando stats para jugador:', playerName, '| ID:', playerId);
+
+            const stats = await analyticsService.getPlayerStats(playerId);
+            console.log('✅ Stats recibidas:', stats);
+
+            const newData = {
+                minutes_played: stats.offense?.avg_minutes || 30,
+                field_goal_percentage: stats.offense?.shooting_efficiency?.fg_pct || 45,
+                free_throw_percentage: stats.offense?.shooting_efficiency?.ft_pct || 75,
+                total_rebounds: (
+                    (stats.offense?.playmaking?.avg_offensive_rebounds || 0) +
+                    (stats.defense?.defensive_metrics?.avg_defensive_rebounds || 0)
+                ),
+                assists: stats.offense?.playmaking?.avg_assists || 0,
+                field_goals_made: stats.offense?.shooting_efficiency?.fg_made ||
+                    Math.round((stats.offense?.shooting_efficiency?.fg_pct || 45) * (stats.offense?.avg_minutes || 30) / 100),
+                three_point_made: stats.offense?.shooting_efficiency?.['3p_made'] || 0
+            };
+
+            setPlayerPointsData(newData);
+            console.log('✅ Datos auto-completados:', newData);
+
+        } catch (error) {
+            console.error('❌ Error cargando stats del jugador:', error);
+            alert('No se pudieron cargar las estadísticas del jugador. Usando valores por defecto.');
+
+            setPlayerPointsData({
+                minutes_played: 30,
+                field_goal_percentage: 45,
+                free_throw_percentage: 75,
+                total_rebounds: 6,
+                assists: 3,
+                field_goals_made: 5,
+                three_point_made: 1
+            });
+        } finally {
+            setLoadingPlayerStats(false);
+        }
+    };
+
     const handlePredictPlayerPoints = async () => {
         console.log('👤 PREDICCIÓN PUNTOS JUGADOR - Iniciando...');
+
+        if (!selectedPlayer) {
+            alert('Por favor selecciona un jugador primero');
+            return;
+        }
+
         if (!validatePlayerData()) {
             console.log('❌ Validación fallida');
             alert('Por favor corrige los errores en el formulario');
             return;
         }
+
         try {
             setLoadingPlayerPoints(true);
             console.log('📡 REQUEST: POST /ml-predictions/predict/player-points');
@@ -751,6 +832,40 @@ const Predictions = () => {
                 {/* Player Tab */}
                 {activeTab === 'player' && (
                     <div className="grid grid-cols-2 gap-4">
+                        {/* Selector de Jugador - COLUMNA COMPLETA */}
+                        <div className="col-span-2 mb-4">
+                            <PlayerSelector
+                                label="Seleccionar Jugador"
+                                onSelect={loadPlayerStats}
+                                selectedPlayer={selectedPlayer}
+                                showStats={true}
+                                filterActive={true}
+                            />
+                        </div>
+
+                        {/* Indicador de carga */}
+                        {loadingPlayerStats && (
+                            <div className="col-span-2 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                        Cargando estadísticas del jugador...
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mostrar jugador seleccionado */}
+                        {selectedPlayer && (
+                            <div className="col-span-2 mb-4 p-4 bg-gradient-to-r from-[#CE1126]/10 to-[#002D62]/10 rounded-lg border border-[#CE1126]/30">
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                    Predicción para: <span className="text-[#CE1126]">{selectedPlayer.name}</span>
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    Los datos se han auto-completado con las estadísticas del jugador. Puedes ajustarlos manualmente.
+                                </p>
+                            </div>
+                        )}
                         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
                             <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Users className="w-5 h-5 text-[#CE1126]" />
@@ -1118,10 +1233,75 @@ const Predictions = () => {
                             </h2>
                             {lineupOptimization ? (
                                 <div className="space-y-4">
-                                    {/* Mostrar resultado aquí */}
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Lineup optimizado generado
-                                    </p>
+                                    {/* Lineup Óptimo */}
+                                    {lineupOptimization.optimal_lineup && lineupOptimization.optimal_lineup.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                                    Jugadores Seleccionados ({lineupOptimization.total_players || lineupOptimization.optimal_lineup.length})
+                                                </h3>
+                                                <div className="px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                                    <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                                                        Optimizado
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Lista de jugadores */}
+                                            <div className="grid gap-2">
+                                                {lineupOptimization.optimal_lineup.map((player, index) => (
+                                                    <div
+                                                        key={player.player_id || index}
+                                                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#CE1126] to-[#002D62] flex items-center justify-center text-white font-bold text-sm">
+                                                            {index + 1}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-gray-900 dark:text-white text-sm">
+                                                                {player.name || player.player_name || `Jugador ${player.player_id}`}
+                                                            </p>
+                                                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                                {player.position || player.role || 'N/A'} • Score: {player.score?.toFixed(2) || 'N/A'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Distribución de Roles */}
+                                            {lineupOptimization.roles_distribution && (
+                                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                    <h4 className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2">
+                                                        Distribución de Roles
+                                                    </h4>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {Object.entries(lineupOptimization.roles_distribution).map(([role, count]) => (
+                                                            <div key={role} className="flex items-center justify-between text-xs">
+                                                                <span className="text-gray-700 dark:text-gray-300 font-semibold">{role}:</span>
+                                                                <span className="text-blue-600 dark:text-blue-400 font-bold">{count}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Recomendación */}
+                                            {lineupOptimization.recommendation && (
+                                                <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                                                    <p className="text-xs text-green-700 dark:text-green-400">
+                                                        💡 {lineupOptimization.recommendation}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                No se generó un lineup óptimo. Verifica los datos enviados.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
